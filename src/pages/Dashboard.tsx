@@ -3,6 +3,7 @@ import { Users, Activity, Calendar, AlertTriangle } from "lucide-react";
 import { StatsCard } from "@/components/StatsCard";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { PacienteCard } from "@/components/PacienteCard";
+import { StatusBadge } from "@/components/StatusBadge";
 import { obterPacientes, obterUltimaMedicao, obterStatusDistribuicao } from "@/data/mock-data";
 
 export default function Dashboard() {
