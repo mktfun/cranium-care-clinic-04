@@ -38,10 +38,10 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
   return (
     <header
       className={cn(
-        "border-b bg-background fixed top-0 right-0 left-0 z-10 transition-all duration-300",
-        sidebarCollapsed ? "lg:pl-[70px]" : "lg:pl-[250px]",
+        "border-b bg-background fixed top-0 right-0 z-10 transition-all duration-300 h-16",
         className
       )}
+      style={{ width: 'inherit' }}
     >
       <div className="flex h-16 items-center px-4 gap-4">
         <Button variant="ghost" size="icon" onClick={toggleSidebar} className="lg:hidden">

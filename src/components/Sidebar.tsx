@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -31,19 +32,35 @@ export function Sidebar({ className }: SidebarProps) {
     setCollapsed(!collapsed);
   };
   
+  const handleLogoClick = () => {
+    navigate("/dashboard");
+  };
+  
   return (
     <div 
       className={cn(
-        "flex flex-col h-screen bg-sidebar transition-all duration-300 border-r border-border",
+        "flex flex-col h-screen bg-sidebar transition-all duration-300 border-r border-border z-20",
         collapsed ? "w-[70px]" : "w-[250px]",
         className
       )}
     >
-      <div className="flex items-center justify-between p-4 border-b">
+      <div 
+        className={cn(
+          "flex items-center justify-between p-4 border-b cursor-pointer",
+          collapsed ? "justify-center" : "justify-between"
+        )}
+        onClick={handleLogoClick}
+      >
         {!collapsed && (
           <div className="font-semibold text-turquesa text-xl">CraniumCare</div>
         )}
-        <Button variant="ghost" onClick={toggleSidebar} className="p-1.5">
+        {collapsed && (
+          <div className="font-bold text-turquesa text-xl">CC</div>
+        )}
+        <Button variant="ghost" onClick={(e) => {
+          e.stopPropagation(); // Evita que o click no botão acione o evento de clique do container
+          toggleSidebar();
+        }} className="p-1.5">
           {collapsed ? 
             <ChevronsRight className="h-5 w-5" /> : 
             <ChevronsLeft className="h-5 w-5" />
@@ -83,13 +100,13 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="border-t p-4 flex items-center justify-between">
         <ThemeToggle />
         {!collapsed && (
-          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => navigate("/login")}>
             <LogOut className="h-4 w-4 mr-2" />
             <span>Sair</span>
           </Button>
         )}
         {collapsed && (
-          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => navigate("/login")}>
             <LogOut className="h-4 w-4" />
           </Button>
         )}
