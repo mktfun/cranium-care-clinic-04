@@ -6,8 +6,7 @@ import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { PacienteCard } from "@/components/PacienteCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { obterPacientes, obterUltimaMedicao, obterStatusDistribuicao } from "@/data/mock-data";
-import { PacientesPorDiaChart } from "@/components/PacientesPorDiaChart";
-import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
+import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -100,16 +99,17 @@ export default function Dashboard() {
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <div className="md:col-span-2">
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-            <PacientesPorDiaChart altura={250} />
-            <MedicoesPorDiaChart altura={250} />
-          </div>
+          <PacientesMedicoesChart altura={350} />
         </div>
         <div className="space-y-6">
           <h3 className="text-lg font-medium">Pacientes recentes</h3>
           <div className="space-y-4">
             {pacientesParaCard.map((paciente) => (
-              <div key={paciente.id} className="bg-card p-4 rounded-lg border">
+              <div 
+                key={paciente.id} 
+                className="bg-card p-4 rounded-lg border cursor-pointer hover:border-primary hover:bg-accent/50 transition-colors duration-200"
+                onClick={() => navigate(`/pacientes/${paciente.id}`)}
+              >
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h4 className="font-medium">{paciente.nome}</h4>
@@ -135,7 +135,9 @@ export default function Dashboard() {
         <h3 className="text-lg font-medium mb-4">Pacientes em Destaque</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {pacientesParaCard.map((paciente) => (
-            <PacienteCard key={paciente.id} paciente={paciente} />
+            <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer">
+              <PacienteCard paciente={paciente} />
+            </div>
           ))}
         </div>
       </div>

@@ -15,6 +15,12 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { obterPacientes, obterUltimaMedicao } from "@/data/mock-data";
 import { Paciente, Status } from "@/data/mock-data";
+import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+
+type SortConfig = {
+  key: keyof Paciente | "ultimaAvaliacao" | "status";
+  direction: "asc" | "desc";
+};
 
 export default function Pacientes() {
   const [searchParams] = useSearchParams();
@@ -23,6 +29,7 @@ export default function Pacientes() {
   const todosPacientes = obterPacientes();
   const [filtroNome, setFiltroNome] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<Status | "todos">("todos");
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   
   // Aplicar filtro de URL se existir
   useEffect(() => {
@@ -40,24 +47,71 @@ export default function Pacientes() {
     return data.toLocaleDateString('pt-BR');
   };
   
-  // Filtrar pacientes
-  const pacientesFiltrados = todosPacientes.filter(paciente => {
-    // Filtro por nome
-    const nomeMatch = paciente.nome.toLowerCase().includes(filtroNome.toLowerCase());
-    
-    // Filtro por status
-    const ultimaMedicao = obterUltimaMedicao(paciente.id);
-    let statusMatch = filtroStatus === "todos";
-    
-    if (filtroStatus === "moderada" && statusParams === "alerta") {
-      // Caso especial: filtro de "alerta" inclui moderada e severa
-      statusMatch = ultimaMedicao && (ultimaMedicao.status === "moderada" || ultimaMedicao.status === "severa");
-    } else {
-      statusMatch = filtroStatus === "todos" || (ultimaMedicao && ultimaMedicao.status === filtroStatus);
+  // Função para ordenação
+  const requestSort = (key: SortConfig["key"]) => {
+    let direction: "asc" | "desc" = "asc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
     }
-    
-    return nomeMatch && statusMatch;
-  });
+    setSortConfig({ key, direction });
+  };
+  
+  // Filtrar e ordenar pacientes
+  const pacientesFiltrados = [...todosPacientes]
+    .filter(paciente => {
+      // Filtro por nome
+      const nomeMatch = paciente.nome.toLowerCase().includes(filtroNome.toLowerCase());
+      
+      // Filtro por status
+      const ultimaMedicao = obterUltimaMedicao(paciente.id);
+      let statusMatch = filtroStatus === "todos";
+      
+      if (filtroStatus === "moderada" && statusParams === "alerta") {
+        // Caso especial: filtro de "alerta" inclui moderada e severa
+        statusMatch = ultimaMedicao && (ultimaMedicao.status === "moderada" || ultimaMedicao.status === "severa");
+      } else {
+        statusMatch = filtroStatus === "todos" || (ultimaMedicao && ultimaMedicao.status === filtroStatus);
+      }
+      
+      return nomeMatch && statusMatch;
+    })
+    .sort((a, b) => {
+      if (!sortConfig) return 0;
+      
+      if (sortConfig.key === "ultimaAvaliacao") {
+        const ultimaMedicaoA = obterUltimaMedicao(a.id);
+        const ultimaMedicaoB = obterUltimaMedicao(b.id);
+        const dateA = ultimaMedicaoA ? new Date(ultimaMedicaoA.data).getTime() : 0;
+        const dateB = ultimaMedicaoB ? new Date(ultimaMedicaoB.data).getTime() : 0;
+        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+      }
+      
+      if (sortConfig.key === "status") {
+        const ultimaMedicaoA = obterUltimaMedicao(a.id);
+        const ultimaMedicaoB = obterUltimaMedicao(b.id);
+        const statusOrder = { normal: 0, leve: 1, moderada: 2, severa: 3 };
+        const statusA = ultimaMedicaoA ? statusOrder[ultimaMedicaoA.status] : -1;
+        const statusB = ultimaMedicaoB ? statusOrder[ultimaMedicaoB.status] : -1;
+        return sortConfig.direction === "asc" ? statusA - statusB : statusB - statusA;
+      }
+      
+      // Ordenação padrão para as outras colunas
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+
+  // Render sort icon
+  const getSortIcon = (key: SortConfig["key"]) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return null;
+    }
+    return sortConfig.direction === "asc" ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />;
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -115,11 +169,46 @@ export default function Pacientes() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Idade</TableHead>
-              <TableHead className="hidden sm:table-cell">Data de Nascimento</TableHead>
-              <TableHead className="hidden md:table-cell">Última Avaliação</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead 
+                onClick={() => requestSort("nome")} 
+                className="cursor-pointer hover:bg-accent/50"
+              >
+                <div className="flex items-center">
+                  Nome {getSortIcon("nome")}
+                </div>
+              </TableHead>
+              <TableHead 
+                onClick={() => requestSort("idadeEmMeses")} 
+                className="cursor-pointer hover:bg-accent/50"
+              >
+                <div className="flex items-center">
+                  Idade {getSortIcon("idadeEmMeses")}
+                </div>
+              </TableHead>
+              <TableHead 
+                onClick={() => requestSort("dataNascimento")} 
+                className="hidden sm:table-cell cursor-pointer hover:bg-accent/50"
+              >
+                <div className="flex items-center">
+                  Data de Nascimento {getSortIcon("dataNascimento")}
+                </div>
+              </TableHead>
+              <TableHead 
+                onClick={() => requestSort("ultimaAvaliacao")} 
+                className="hidden md:table-cell cursor-pointer hover:bg-accent/50"
+              >
+                <div className="flex items-center">
+                  Última Avaliação {getSortIcon("ultimaAvaliacao")}
+                </div>
+              </TableHead>
+              <TableHead 
+                onClick={() => requestSort("status")} 
+                className="cursor-pointer hover:bg-accent/50"
+              >
+                <div className="flex items-center">
+                  Status {getSortIcon("status")}
+                </div>
+              </TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -144,9 +233,14 @@ export default function Pacientes() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button asChild variant="outline" size="sm">
-                        <Link to={`/pacientes/${paciente.id}`}>Ver</Link>
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={`/pacientes/${paciente.id}`}>Ver</Link>
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

@@ -17,8 +17,8 @@ export default function Layout({ title = "Dashboard" }: LayoutProps) {
 
   return (
     <div className="h-screen flex">
-      <Sidebar className="fixed left-0 top-0 z-20" />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <Sidebar className="fixed left-0 top-0 z-20 h-screen" />
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[70px]" : "lg:ml-[250px]"}`}>
         <Header 
           title={title}
           toggleSidebar={toggleSidebar}

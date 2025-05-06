@@ -1,32 +1,29 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
-import Registro from "./pages/Registro";
-import Layout from "./pages/Layout";
-import Dashboard from "./pages/Dashboard";
-import Pacientes from "./pages/Pacientes";
-import DetalhePaciente from "./pages/DetalhePaciente";
-import NovaMedicao from "./pages/NovaMedicao";
-import RelatorioMedicao from "./pages/RelatorioMedicao";
-import Historico from "./pages/Historico";
-import Relatorios from "./pages/Relatorios";
-import Configuracoes from "./pages/Configuracoes";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import { Toaster } from '@/components/ui/sonner';
 
-const queryClient = new QueryClient();
+import Login from "@/pages/Login";
+import Registro from "@/pages/Registro";
+import Dashboard from "@/pages/Dashboard";
+import Pacientes from "@/pages/Pacientes";
+import DetalhePaciente from "@/pages/DetalhePaciente";
+import NovaMedicao from "@/pages/NovaMedicao";
+import RelatorioMedicao from "@/pages/RelatorioMedicao";
+import RelatorioVisualizar from "@/pages/RelatorioVisualizar";
+import Historico from "@/pages/Historico";
+import Relatorios from "@/pages/Relatorios";
+import Configuracoes from "@/pages/Configuracoes";
+import NotFound from "@/pages/NotFound";
+import Layout from "@/pages/Layout";
+import Index from "@/pages/Index";
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+function App() {
+  return (
+    <ThemeProvider defaultTheme="light" storageKey="ui-theme">
+      <Router>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
           
@@ -36,16 +33,19 @@ const App = () => (
             <Route path="/pacientes/:id" element={<DetalhePaciente />} />
             <Route path="/pacientes/:id/nova-medicao" element={<NovaMedicao />} />
             <Route path="/pacientes/:id/relatorio" element={<RelatorioMedicao />} />
+            <Route path="/pacientes/:id/relatorios/:medicaoId" element={<RelatorioVisualizar />} />
             <Route path="/historico" element={<Historico />} />
             <Route path="/relatorios" element={<Relatorios />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
+            <Route path="/perfil" element={<Configuracoes />} />
           </Route>
-          
+
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+      </Router>
+      <Toaster />
+    </ThemeProvider>
+  );
+}
 
 export default App;

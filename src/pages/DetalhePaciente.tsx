@@ -18,7 +18,8 @@ import {
   Download,
   PlusCircle,
   Pencil,
-  Trash2
+  Trash2,
+  Eye
 } from "lucide-react";
 import { 
   Dialog,
