@@ -1,10 +1,8 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Bell, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, ChevronDown, Menu, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,78 +11,80 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
-  title?: string;
+  toggleSidebar: () => void;
+  sidebarCollapsed: boolean;
+  className?: string;
 }
 
-export function Header({ title = "Dashboard" }: HeaderProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  
+export function Header({ toggleSidebar, sidebarCollapsed, className }: HeaderProps) {
+  const navigate = useNavigate();
+  const [notificationsCount] = useState(2);
+
   return (
-    <header className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0 py-4 border-b border-border px-6">
-      <div>
-        <h1 className="text-2xl font-semibold">{title}</h1>
-      </div>
-      <div className="flex items-center space-x-4 w-full md:w-auto">
-        <div className="relative w-full md:w-auto">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Buscar..."
-            className="w-full md:w-[200px] pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+    <header
+      className={cn(
+        "border-b bg-background fixed top-0 right-0 left-0 z-10 transition-all duration-300",
+        sidebarCollapsed ? "lg:pl-[70px]" : "lg:pl-[250px]",
+        className
+      )}
+    >
+      <div className="flex h-16 items-center px-4 gap-4">
+        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="lg:hidden">
+          <Menu className="h-5 w-5" />
+        </Button>
+        <div className="hidden md:flex md:flex-1 items-center">
+          <nav className="flex items-center space-x-4 lg:space-x-6">
+            <span className="text-sm font-medium transition-colors hover:text-primary">
+              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </nav>
         </div>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute h-2 w-2 top-1 right-1 rounded-full bg-destructive"></span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[300px]">
-            <DropdownMenuLabel>Notificações</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="max-h-[300px] overflow-auto">
-              <DropdownMenuItem className="flex flex-col items-start">
-                <span className="font-medium">Nova consulta agendada</span>
-                <span className="text-sm text-muted-foreground">Paciente: Sofia Oliveira - 15:00</span>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            {notificationsCount > 0 && (
+              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
+                {notificationsCount}
+              </span>
+            )}
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative flex items-center gap-2 px-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/avatar.png" />
+                  <AvatarFallback>DA</AvatarFallback>
+                </Avatar>
+                <div className="hidden md:block text-sm font-medium text-left">
+                  <div>Dr. Ana Silva</div>
+                  <div className="text-xs text-muted-foreground">Pediatra</div>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/configuracoes")} className="flex items-center gap-2 cursor-pointer">
+                <User className="h-4 w-4" />
+                <span>Meu perfil</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start">
-                <span className="font-medium">Relatório disponível</span>
-                <span className="text-sm text-muted-foreground">Paciente: Lucas Santos</span>
+              <DropdownMenuItem onClick={() => navigate("/configuracoes")} className="flex items-center gap-2 cursor-pointer">
+                <Settings className="h-4 w-4" />
+                <span>Configurações</span>
               </DropdownMenuItem>
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="" alt="Dr. Ana Silva" />
-                <AvatarFallback className="bg-azul text-white">AS</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Dra. Ana Silva</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/perfil">Meu Perfil</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/configuracoes">Configurações</Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/login">Sair</Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/login")} className="text-destructive cursor-pointer">
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

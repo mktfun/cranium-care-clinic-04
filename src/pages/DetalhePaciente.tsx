@@ -17,15 +17,42 @@ import {
   Calendar,
   Download,
   PlusCircle,
-  Pencil
+  Pencil,
+  Trash2
 } from "lucide-react";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { obterPacientePorId } from "@/data/mock-data";
+import { EditarPacienteForm } from "@/components/EditarPacienteForm";
+import { toast } from "sonner";
 
 export default function DetalhePaciente() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const paciente = obterPacientePorId(id || "");
   const [tab, setTab] = useState("resumo");
+  const [dialogEditarAberto, setDialogEditarAberto] = useState(false);
+  const [dialogExcluirAberto, setDialogExcluirAberto] = useState(false);
+  const [dialogNovaMedicaoAberto, setDialogNovaMedicaoAberto] = useState(false);
+  const [confirmarExclusao, setConfirmarExclusao] = useState("");
   
   if (!paciente) {
     return (
@@ -47,6 +74,22 @@ export default function DetalhePaciente() {
   const formatarData = (dataString: string) => {
     const data = new Date(dataString);
     return data.toLocaleDateString('pt-BR');
+  };
+  
+  const handleExcluirPaciente = () => {
+    if (confirmarExclusao.toLowerCase() === "deletar") {
+      // Simulando a exclusão do paciente
+      toast.success("Paciente excluído com sucesso!");
+      setDialogExcluirAberto(false);
+      setConfirmarExclusao("");
+      navigate("/pacientes");
+    } else {
+      toast.error("Digite 'deletar' para confirmar a exclusão.");
+    }
+  };
+  
+  const handleNovaMedicao = () => {
+    navigate(`/pacientes/${id}/nova-medicao`);
   };
 
   return (
@@ -75,17 +118,25 @@ export default function DetalhePaciente() {
           </div>
         </div>
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" className="hidden md:flex">
+          <Button 
+            variant="outline" 
+            className="hidden md:flex"
+            onClick={() => setDialogEditarAberto(true)}
+          >
             <Pencil className="h-4 w-4 mr-2" />
             Editar Paciente
           </Button>
-          <Button className="bg-turquesa hover:bg-turquesa/90">
+          <Button 
+            className="bg-turquesa hover:bg-turquesa/90"
+            onClick={handleNovaMedicao}
+          >
             <PlusCircle className="h-4 w-4 mr-2" />
             Nova Medição
           </Button>
         </div>
       </div>
       
+      {/* Resto do conteúdo da página */}
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
@@ -342,6 +393,60 @@ export default function DetalhePaciente() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Dialog de Edição de Paciente */}
+      <Dialog open={dialogEditarAberto} onOpenChange={setDialogEditarAberto}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Editar Paciente</DialogTitle>
+            <DialogDescription>
+              Atualize os dados do paciente. Clique em salvar quando terminar.
+            </DialogDescription>
+          </DialogHeader>
+          <EditarPacienteForm 
+            paciente={paciente} 
+            onSalvar={() => {
+              setDialogEditarAberto(false);
+              toast.success("Dados do paciente atualizados com sucesso!");
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={dialogExcluirAberto} onOpenChange={setDialogExcluirAberto}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">Excluir Paciente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o paciente
+              <span className="font-medium"> {paciente.nome} </span> 
+              e todos os seus dados do sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="confirmar-exclusao">
+              Digite "deletar" para confirmar a exclusão:
+            </Label>
+            <Input 
+              id="confirmar-exclusao" 
+              value={confirmarExclusao}
+              onChange={(e) => setConfirmarExclusao(e.target.value)}
+              className="mt-2"
+              placeholder="deletar"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-destructive" 
+              onClick={handleExcluirPaciente}
+            >
+              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

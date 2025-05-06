@@ -1,15 +1,29 @@
 
 import { Users, Activity, Calendar, AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { StatsCard } from "@/components/StatsCard";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { PacienteCard } from "@/components/PacienteCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { obterPacientes, obterUltimaMedicao, obterStatusDistribuicao } from "@/data/mock-data";
+import { PacientesPorDiaChart } from "@/components/PacientesPorDiaChart";
+import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const pacientes = obterPacientes();
   const statusDistribuicao = obterStatusDistribuicao();
   const totalPacientes = pacientes.length;
+  
+  // Encontrar paciente com medição mais recente
+  const pacienteComMedicaoMaisRecente = [...pacientes]
+    .sort((a, b) => {
+      const ultimaMedicaoA = a.medicoes.length > 0 ? 
+        new Date(a.medicoes.sort((x, y) => new Date(y.data).getTime() - new Date(x.data).getTime())[0].data).getTime() : 0;
+      const ultimaMedicaoB = b.medicoes.length > 0 ? 
+        new Date(b.medicoes.sort((x, y) => new Date(y.data).getTime() - new Date(x.data).getTime())[0].data).getTime() : 0;
+      return ultimaMedicaoB - ultimaMedicaoA;
+    })[0];
   
   const pacientesParaCard = pacientes.slice(0, 4).map(paciente => {
     const ultimaMedicao = obterUltimaMedicao(paciente.id);
@@ -33,6 +47,11 @@ export default function Dashboard() {
     ? Math.round((pacientesComAlerta / totalPacientes) * 100) 
     : 0;
 
+  // Função para navegar para página de pacientes com filtro
+  const navegarParaPacientesComFiltro = (filtroStatus) => {
+    navigate(`/pacientes?status=${filtroStatus}`);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <h2 className="text-3xl font-bold">Olá, Dr. Ana</h2>
@@ -41,43 +60,50 @@ export default function Dashboard() {
       </p>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard 
-          title="Total de Pacientes"
-          value={totalPacientes}
-          description="Ativos no sistema"
-          icon={<Users className="h-4 w-4 text-muted-foreground" />}
-        />
-        <StatsCard 
-          title="Total de Medições"
-          value={medicoesRecentes}
-          description="Registradas no sistema"
-          icon={<Activity className="h-4 w-4 text-muted-foreground" />}
-        />
-        <StatsCard 
-          title="Última Avaliação"
-          value="Hoje"
-          description="Sofia Oliveira"
-          icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-        />
-        <StatsCard 
-          title="Pacientes em Alerta"
-          value={pacientesComAlerta}
-          description={`${percentualAcompanhamento}% dos pacientes`}
-          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-          trend={{
-            value: 4,
-            isPositive: false,
-          }}
-        />
+        <div onClick={() => navigate("/pacientes")} className="cursor-pointer">
+          <StatsCard 
+            title="Total de Pacientes"
+            value={totalPacientes}
+            description="Ativos no sistema"
+            icon={<Users className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
+        <div onClick={() => navigate("/historico")} className="cursor-pointer">
+          <StatsCard 
+            title="Total de Medições"
+            value={medicoesRecentes}
+            description="Registradas no sistema"
+            icon={<Activity className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
+        <div onClick={() => navigate(`/pacientes/${pacienteComMedicaoMaisRecente.id}`)} className="cursor-pointer">
+          <StatsCard 
+            title="Última Avaliação"
+            value="Hoje"
+            description={pacienteComMedicaoMaisRecente.nome}
+            icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
+        <div onClick={() => navegarParaPacientesComFiltro("alerta")} className="cursor-pointer">
+          <StatsCard 
+            title="Pacientes em Alerta"
+            value={pacientesComAlerta}
+            description={`${percentualAcompanhamento}% dos pacientes`}
+            icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+            trend={{
+              value: 4,
+              isPositive: false,
+            }}
+          />
+        </div>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <div className="md:col-span-2">
-          <MedicaoLineChart 
-            titulo="Evolução dos Índices" 
-            descricao="Tendências nas últimas avaliações"
-            altura={350}
-          />
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+            <PacientesPorDiaChart altura={250} />
+            <MedicoesPorDiaChart altura={250} />
+          </div>
         </div>
         <div className="space-y-6">
           <h3 className="text-lg font-medium">Pacientes recentes</h3>

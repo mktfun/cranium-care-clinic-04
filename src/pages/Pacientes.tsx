@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { 
   Table, 
   TableBody, 
@@ -17,9 +17,22 @@ import { obterPacientes, obterUltimaMedicao } from "@/data/mock-data";
 import { Paciente, Status } from "@/data/mock-data";
 
 export default function Pacientes() {
+  const [searchParams] = useSearchParams();
+  const statusParams = searchParams.get("status");
+  
   const todosPacientes = obterPacientes();
   const [filtroNome, setFiltroNome] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<Status | "todos">("todos");
+  
+  // Aplicar filtro de URL se existir
+  useEffect(() => {
+    if (statusParams === "alerta") {
+      setFiltroStatus("moderada"); // Considerando moderada e severa como alerta
+    } else if (statusParams === "normal" || statusParams === "leve" || 
+               statusParams === "moderada" || statusParams === "severa") {
+      setFiltroStatus(statusParams as Status);
+    }
+  }, [statusParams]);
   
   // Formatar data para formato brasileiro
   const formatarData = (dataString: string) => {
@@ -34,7 +47,14 @@ export default function Pacientes() {
     
     // Filtro por status
     const ultimaMedicao = obterUltimaMedicao(paciente.id);
-    const statusMatch = filtroStatus === "todos" || (ultimaMedicao && ultimaMedicao.status === filtroStatus);
+    let statusMatch = filtroStatus === "todos";
+    
+    if (filtroStatus === "moderada" && statusParams === "alerta") {
+      // Caso especial: filtro de "alerta" inclui moderada e severa
+      statusMatch = ultimaMedicao && (ultimaMedicao.status === "moderada" || ultimaMedicao.status === "severa");
+    } else {
+      statusMatch = filtroStatus === "todos" || (ultimaMedicao && ultimaMedicao.status === filtroStatus);
+    }
     
     return nomeMatch && statusMatch;
   });
