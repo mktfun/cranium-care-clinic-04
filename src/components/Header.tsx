@@ -18,9 +18,10 @@ interface HeaderProps {
   toggleSidebar: () => void;
   sidebarCollapsed: boolean;
   className?: string;
+  title?: string; // Added title prop
 }
 
-export function Header({ toggleSidebar, sidebarCollapsed, className }: HeaderProps) {
+export function Header({ toggleSidebar, sidebarCollapsed, className, title }: HeaderProps) {
   const navigate = useNavigate();
   const [notificationsCount] = useState(2);
 
@@ -38,6 +39,7 @@ export function Header({ toggleSidebar, sidebarCollapsed, className }: HeaderPro
         </Button>
         <div className="hidden md:flex md:flex-1 items-center">
           <nav className="flex items-center space-x-4 lg:space-x-6">
+            {title && <h1 className="text-xl font-semibold">{title}</h1>}
             <span className="text-sm font-medium transition-colors hover:text-primary">
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </span>

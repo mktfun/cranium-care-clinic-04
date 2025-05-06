@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
@@ -8,12 +9,22 @@ interface LayoutProps {
 }
 
 export default function Layout({ title = "Dashboard" }: LayoutProps) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   return (
     <div className="h-screen flex">
-      <Sidebar />
+      <Sidebar className="fixed left-0 top-0 z-20" />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title={title} />
-        <main className="flex-1 overflow-auto p-6">
+        <Header 
+          title={title}
+          toggleSidebar={toggleSidebar}
+          sidebarCollapsed={sidebarCollapsed}
+        />
+        <main className="flex-1 overflow-auto p-6 mt-16">
           <Outlet />
         </main>
       </div>

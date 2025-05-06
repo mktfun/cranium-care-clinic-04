@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { 
@@ -16,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { ChevronLeft, Upload, Save } from "lucide-react";
 import { obterPacientePorId } from "@/data/mock-data";
 import { toast } from "sonner";
+import { StatusBadge } from "@/components/StatusBadge";
 
 export default function NovaMedicao() {
   const { id } = useParams<{ id: string }>();
