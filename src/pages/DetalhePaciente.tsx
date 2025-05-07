@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -5,7 +6,8 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,7 +84,7 @@ export default function DetalhePaciente() {
   const getAgeDisplay = (idadeEmMeses: number, dataNascimento: string) => {
     const dataNasc = new Date(dataNascimento);
     const hoje = new Date();
-    const idadeEmAnos = hoje.getFullYear() - dataNasc.getFullYear();
+    let idadeEmAnos = hoje.getFullYear() - dataNasc.getFullYear();
     const mesesExtras = hoje.getMonth() - dataNasc.getMonth();
     if (mesesExtras < 0) {
       idadeEmAnos--;
@@ -104,6 +106,10 @@ export default function DetalhePaciente() {
   
   const handleNovaMedicao = () => {
     navigate(`/pacientes/${id}/nova-medicao`);
+  };
+  
+  const handleEditarPaciente = () => {
+    setDialogEditarAberto(true);
   };
 
   return (
@@ -170,17 +176,17 @@ export default function DetalhePaciente() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <p className="text-sm text-muted-foreground">Responsável</p>
-                    <p className="font-medium">{paciente.responsavel?.nome}</p>
+                    <p className="font-medium">{paciente.responsaveis?.[0]?.nome}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Telefone</p>
-                    <p>{paciente.responsavel?.telefone}</p>
+                    <p>{paciente.responsaveis?.[0]?.telefone}</p>
                   </div>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-end">
                 <Button variant="outline" className="text-sm" onClick={handleEditarPaciente}>
-                  <Edit className="h-4 w-4 mr-2" /> Editar Dados
+                  <Pencil className="h-4 w-4 mr-2" /> Editar Dados
                 </Button>
               </CardFooter>
             </Card>

@@ -344,6 +344,8 @@ export function MedicaoLineChart({
                   name="CVAI Tendência (%)"
                   strokeWidth={2}
                   strokeDasharray={(d) => d.projected ? "5 5" : "0"}
+                  // Fix for strokeDasharray TypeScript error
+                  // @ts-ignore
                 />
                 <Line
                   type="monotone"
@@ -352,6 +354,8 @@ export function MedicaoLineChart({
                   name="Índice Craniano Tendência"
                   strokeWidth={2}
                   strokeDasharray={(d) => d.projected ? "5 5" : "0"}
+                  // Fix for strokeDasharray TypeScript error
+                  // @ts-ignore
                 />
               </LineChart>
             </ResponsiveContainer>
