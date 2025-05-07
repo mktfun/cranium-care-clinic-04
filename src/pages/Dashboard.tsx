@@ -1,4 +1,3 @@
-
 import { Users, Activity, Calendar, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatsCard } from "@/components/StatsCard";
@@ -8,14 +7,12 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { obterPacientes, obterUltimaMedicao, obterStatusDistribuicao } from "@/data/mock-data";
 import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 import { UrgentTasksCard } from "@/components/UrgentTasksCard";
-import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const pacientes = obterPacientes();
   const statusDistribuicao = obterStatusDistribuicao();
   const totalPacientes = pacientes.length;
-  const clinicName = "CraniumCare"; // This would come from user settings in a real app
   
   // Encontrar paciente com medição mais recente
   const pacienteComMedicaoMaisRecente = [...pacientes]
@@ -56,19 +53,10 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-3xl font-bold">Dashboard</h2>
-            <Badge variant="outline" className="bg-background text-muted-foreground">
-              {clinicName}
-            </Badge>
-          </div>
-          <p className="text-muted-foreground">
-            Bem-vinda de volta ao painel do CraniumCare. Confira o resumo dos seus pacientes.
-          </p>
-        </div>
-      </div>
+      <h2 className="text-3xl font-bold">Olá, Dr. Ana</h2>
+      <p className="text-muted-foreground">
+        Bem-vinda de volta ao painel do CraniumCare. Confira o resumo dos seus pacientes.
+      </p>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div onClick={() => navigate("/pacientes")} className="cursor-pointer">
