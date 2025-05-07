@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -19,7 +18,9 @@ import {
   PlusCircle,
   Pencil,
   Trash2,
-  Eye
+  Eye,
+  FileText,
+  Plus
 } from "lucide-react";
 import { 
   Dialog,
@@ -44,12 +45,13 @@ import { Label } from "@/components/ui/label";
 import { obterPacientePorId } from "@/data/mock-data";
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
 import { toast } from "sonner";
+import { PatientTasks } from "@/components/PatientTasks";
 
 export default function DetalhePaciente() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const paciente = obterPacientePorId(id || "");
-  const [tab, setTab] = useState("resumo");
+  const [tab, setTab] = useState("info");
   const [dialogEditarAberto, setDialogEditarAberto] = useState(false);
   const [dialogExcluirAberto, setDialogExcluirAberto] = useState(false);
   const [dialogNovaMedicaoAberto, setDialogNovaMedicaoAberto] = useState(false);
@@ -77,6 +79,17 @@ export default function DetalhePaciente() {
     return data.toLocaleDateString('pt-BR');
   };
   
+  const getAgeDisplay = (idadeEmMeses: number, dataNascimento: string) => {
+    const dataNasc = new Date(dataNascimento);
+    const hoje = new Date();
+    const idadeEmAnos = hoje.getFullYear() - dataNasc.getFullYear();
+    const mesesExtras = hoje.getMonth() - dataNasc.getMonth();
+    if (mesesExtras < 0) {
+      idadeEmAnos--;
+    }
+    return `${idadeEmAnos} anos ${idadeEmMeses % 12} meses`;
+  };
+  
   const handleExcluirPaciente = () => {
     if (confirmarExclusao.toLowerCase() === "deletar") {
       // Simulando a exclusão do paciente
@@ -95,68 +108,89 @@ export default function DetalhePaciente() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => navigate("/pacientes")}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h2 className="text-3xl font-bold">{paciente.nome}</h2>
-          <div className="flex items-center text-muted-foreground mt-1 gap-2">
-            <span>
-              {paciente.idadeEmMeses} meses • 
-              Nasc.: {formatarData(paciente.dataNascimento)}
-            </span>
-            {ultimaMedicao && (
-              <>
-                <span>•</span>
-                <StatusBadge status={ultimaMedicao.status} />
-              </>
-            )}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate("/pacientes")}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h2 className="text-3xl font-bold">{paciente.nome}</h2>
+            <div className="text-sm text-muted-foreground">
+              {getAgeDisplay(paciente.idadeEmMeses, paciente.dataNascimento)} • {formatarData(paciente.dataNascimento)}
+            </div>
           </div>
         </div>
-        <div className="ml-auto flex gap-2">
-          <Button 
-            variant="outline" 
-            className="hidden md:flex"
-            onClick={() => setDialogEditarAberto(true)}
-          >
-            <Pencil className="h-4 w-4 mr-2" />
-            Editar Paciente
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => navigate(`/pacientes/${id}/relatorio`)}>
+            <FileText className="h-4 w-4 mr-2" /> Gerar Relatório
           </Button>
-          <Button 
-            className="bg-turquesa hover:bg-turquesa/90"
-            onClick={handleNovaMedicao}
-          >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Nova Medição
+          <Button onClick={() => navigate(`/pacientes/${id}/nova-medicao`)} className="bg-turquesa hover:bg-turquesa/90">
+            <Plus className="h-4 w-4 mr-2" /> Nova Medição
           </Button>
         </div>
       </div>
       
-      {/* Resto do conteúdo da página */}
-      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="resumo">Resumo</TabsTrigger>
-          <TabsTrigger value="medicoes">Histórico de Medições</TabsTrigger>
-          <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
-          <TabsTrigger value="dados">Dados do Paciente</TabsTrigger>
+      <Tabs defaultValue="info" className="w-full">
+        <TabsList className="w-full mb-4 overflow-x-auto flex-wrap md:flex-nowrap justify-start md:justify-center">
+          <TabsTrigger value="info" className="text-sm py-1.5 px-3 md:px-6 flex-grow">Informações</TabsTrigger>
+          <TabsTrigger value="medicoes" className="text-sm py-1.5 px-3 md:px-6 flex-grow">Medições</TabsTrigger>
+          <TabsTrigger value="evolucao" className="text-sm py-1.5 px-3 md:px-6 flex-grow">Evolução</TabsTrigger>
+          <TabsTrigger value="tarefas" className="text-sm py-1.5 px-3 md:px-6 flex-grow">Tarefas</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="resumo" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+        <TabsContent value="info">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Dados do Paciente</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Nome Completo</p>
+                    <p className="font-medium">{paciente.nome}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Data de Nascimento</p>
+                    <p className="font-medium">{formatarData(paciente.dataNascimento)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Idade</p>
+                    <p className="font-medium">{paciente.idadeEmMeses} meses</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Sexo</p>
+                    <p className="font-medium">{paciente.sexo === "M" ? "Masculino" : "Feminino"}</p>
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Responsável</p>
+                    <p className="font-medium">{paciente.responsavel?.nome}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Telefone</p>
+                    <p>{paciente.responsavel?.telefone}</p>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-end">
+                <Button variant="outline" className="text-sm" onClick={handleEditarPaciente}>
+                  <Edit className="h-4 w-4 mr-2" /> Editar Dados
+                </Button>
+              </CardFooter>
+            </Card>
+            
             <Card>
               <CardHeader>
                 <CardTitle>Última Medição</CardTitle>
-                {ultimaMedicao && (
-                  <CardDescription className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    {formatarData(ultimaMedicao.data)}
-                  </CardDescription>
-                )}
+                <CardDescription>
+                  {ultimaMedicao ? formatarData(ultimaMedicao.data) : "Nenhuma medição registrada"}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {ultimaMedicao ? (
@@ -204,32 +238,10 @@ export default function DetalhePaciente() {
                 )}
               </CardContent>
             </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Recomendações</CardTitle>
-                <CardDescription>
-                  Baseadas na última avaliação
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {ultimaMedicao?.recomendacoes?.length ? (
-                  <ul className="list-disc pl-5 space-y-1">
-                    {ultimaMedicao.recomendacoes.map((rec, idx) => (
-                      <li key={idx}>{rec}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground">Nenhuma recomendação disponível</p>
-                )}
-              </CardContent>
-            </Card>
           </div>
-          
-          <MedicaoLineChart titulo="Evolução do Paciente" />
         </TabsContent>
         
-        <TabsContent value="medicoes" className="space-y-4">
+        <TabsContent value="medicoes">
           <div className="rounded-md border">
             {medicoesOrdenadas.length > 0 ? (
               <div className="divide-y">
@@ -306,92 +318,27 @@ export default function DetalhePaciente() {
           </div>
         </TabsContent>
         
-        <TabsContent value="relatorios" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatórios Disponíveis</CardTitle>
-              <CardDescription>
-                Relatórios gerados automaticamente a partir das medições
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {medicoesOrdenadas.length > 0 ? (
-                <div className="space-y-3">
-                  {medicoesOrdenadas.map((medicao) => (
-                    <div key={medicao.id} className="flex justify-between items-center p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">
-                          Relatório de {formatarData(medicao.data)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Status: <StatusBadge status={medicao.status} className="ml-1" />
-                        </p>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">Nenhum relatório disponível</p>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="evolucao">
+          {ultimaMedicao ? (
+            <MedicaoLineChart 
+              titulo="Evolução do Paciente" 
+              descricao="Acompanhamento das medições ao longo do tempo"
+              altura={400} 
+            />
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">
+                Não há medições registradas para mostrar a evolução.
+              </p>
+              <Button onClick={() => navigate(`/pacientes/${id}/nova-medicao`)} className="bg-turquesa hover:bg-turquesa/90">
+                <Plus className="h-4 w-4 mr-2" /> Registrar Primeira Medição
+              </Button>
+            </div>
+          )}
         </TabsContent>
         
-        <TabsContent value="dados" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dados Pessoais</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Nome Completo</p>
-                  <p className="font-medium">{paciente.nome}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Data de Nascimento</p>
-                  <p className="font-medium">{formatarData(paciente.dataNascimento)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Idade</p>
-                  <p className="font-medium">{paciente.idadeEmMeses} meses</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Sexo</p>
-                  <p className="font-medium">{paciente.sexo === "M" ? "Masculino" : "Feminino"}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Responsáveis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {paciente.responsaveis.map((resp, idx) => (
-                  <div key={idx} className="p-3 border rounded-lg">
-                    <p className="font-medium">{resp.nome}</p>
-                    <div className="grid gap-2 sm:grid-cols-2 mt-2">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Telefone</p>
-                        <p>{resp.telefone}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Email</p>
-                        <p>{resp.email}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="tarefas">
+          <PatientTasks patientId={id || ""} />
         </TabsContent>
       </Tabs>
       

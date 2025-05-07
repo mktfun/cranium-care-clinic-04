@@ -1,4 +1,3 @@
-
 import { Users, Activity, Calendar, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatsCard } from "@/components/StatsCard";
@@ -7,6 +6,7 @@ import { PacienteCard } from "@/components/PacienteCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { obterPacientes, obterUltimaMedicao, obterStatusDistribuicao } from "@/data/mock-data";
 import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
+import { UrgentTasksCard } from "@/components/UrgentTasksCard";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -102,38 +102,13 @@ export default function Dashboard() {
           <PacientesMedicoesChart altura={350} />
         </div>
         <div className="space-y-6">
-          <h3 className="text-lg font-medium">Pacientes recentes</h3>
-          <div className="space-y-4">
-            {pacientesParaCard.map((paciente) => (
-              <div 
-                key={paciente.id} 
-                className="bg-card p-4 rounded-lg border cursor-pointer hover:border-primary hover:bg-accent/50 transition-colors duration-200"
-                onClick={() => navigate(`/pacientes/${paciente.id}`)}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="font-medium">{paciente.nome}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {paciente.idadeEmMeses} meses
-                    </p>
-                  </div>
-                  <div className="text-sm text-right">
-                    <p className="text-muted-foreground">Última avaliação:</p>
-                    <p>{new Date(paciente.ultimaMedicao.data).toLocaleDateString('pt-BR')}</p>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <StatusBadge status={paciente.ultimaMedicao.status} />
-                </div>
-              </div>
-            ))}
-          </div>
+          <UrgentTasksCard />
         </div>
       </div>
       
       <div>
         <h3 className="text-lg font-medium mb-4">Pacientes em Destaque</h3>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {pacientesParaCard.map((paciente) => (
             <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer">
               <PacienteCard paciente={paciente} />

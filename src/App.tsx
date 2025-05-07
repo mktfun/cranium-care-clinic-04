@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from '@/components/ui/sonner';
@@ -17,6 +16,7 @@ import Configuracoes from "@/pages/Configuracoes";
 import NotFound from "@/pages/NotFound";
 import Layout from "@/pages/Layout";
 import Index from "@/pages/Index";
+import Tarefas from "@/pages/Tarefas";
 
 function App() {
   return (
@@ -36,10 +36,11 @@ function App() {
             <Route path="/pacientes/:id/relatorios/:medicaoId" element={<RelatorioVisualizar />} />
             <Route path="/historico" element={<Historico />} />
             <Route path="/relatorios" element={<Relatorios />} />
+            <Route path="/tarefas" element={<Tarefas />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
             <Route path="/perfil" element={<Configuracoes />} />
           </Route>
-
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
