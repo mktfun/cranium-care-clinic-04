@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
   LineChart,
@@ -343,9 +342,9 @@ export function MedicaoLineChart({
                   stroke="#029daf"
                   name="CVAI Tendência (%)"
                   strokeWidth={2}
-                  strokeDasharray={(d) => d.projected ? "5 5" : "0"}
-                  // Fix for strokeDasharray TypeScript error
-                  // @ts-ignore
+                  strokeDasharray="5 5"
+                  dot={false}
+                  connectNulls
                 />
                 <Line
                   type="monotone"
@@ -353,9 +352,9 @@ export function MedicaoLineChart({
                   stroke="#276FBF"
                   name="Índice Craniano Tendência"
                   strokeWidth={2}
-                  strokeDasharray={(d) => d.projected ? "5 5" : "0"}
-                  // Fix for strokeDasharray TypeScript error
-                  // @ts-ignore
+                  strokeDasharray="5 5"
+                  dot={false}
+                  connectNulls
                 />
               </LineChart>
             </ResponsiveContainer>

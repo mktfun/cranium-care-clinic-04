@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Bell, ChevronDown, Menu, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,12 +28,56 @@ interface HeaderProps {
 
 export function Header({ toggleSidebar, sidebarCollapsed, className, title }: HeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [notificationsCount] = useState(2);
+  const [isLoading, setIsLoading] = useState(false);
   
   const notifications = [
     { id: 1, title: "Nova medição registrada", message: "A medição de João Silva foi registrada com sucesso.", time: "Há 2 horas" },
     { id: 2, title: "Lembrete de acompanhamento", message: "Maria Oliveira precisa de reavaliação hoje.", time: "Há 5 horas" },
   ];
+  
+  // Get current page name
+  const getCurrentPageName = () => {
+    const path = location.pathname;
+    
+    // Map routes to readable names
+    const routeNames: Record<string, string> = {
+      "/dashboard": "Dashboard",
+      "/pacientes": "Pacientes",
+      "/historico": "Histórico",
+      "/relatorios": "Relatórios",
+      "/configuracoes": "Configurações",
+      "/perfil": "Meu Perfil",
+      "/tarefas": "Tarefas",
+      "/notificacoes": "Notificações",
+    };
+    
+    // Check for dynamic routes
+    if (path.startsWith("/pacientes/") && path.includes("/nova-medicao")) {
+      return "Nova Medição";
+    }
+    
+    if (path.startsWith("/pacientes/") && path.includes("/relatorio")) {
+      return "Relatório de Medição";
+    }
+    
+    if (path.startsWith("/pacientes/") && !path.includes("/")) {
+      return "Detalhe do Paciente";
+    }
+    
+    return routeNames[path] || title || "";
+  };
+  
+  // Simulate loading when route changes
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 600);
+    
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   return (
     <header
@@ -50,9 +94,27 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
         <div className="hidden md:flex md:flex-1 items-center">
           <nav className="flex items-center space-x-4 lg:space-x-6">
             {title && <h1 className="text-xl font-semibold">{title}</h1>}
-            <span className="text-sm font-medium transition-colors hover:text-primary">
-              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium transition-colors hover:text-primary">
+                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </span>
+              {getCurrentPageName() && (
+                <>
+                  <span className="text-muted-foreground mx-2">•</span>
+                  <span 
+                    className={cn(
+                      "text-primary font-medium transition-all flex items-center",
+                      isLoading ? "opacity-70" : "opacity-100"
+                    )}
+                  >
+                    {getCurrentPageName()}
+                    {isLoading && (
+                      <span className="ml-2 inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    )}
+                  </span>
+                </>
+              )}
+            </div>
           </nav>
         </div>
         <div className="flex items-center gap-2">
