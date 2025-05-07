@@ -31,11 +31,20 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
   const location = useLocation();
   const [notificationsCount] = useState(2);
   const [isLoading, setIsLoading] = useState(false);
+  const [clinicaNome, setClinicaNome] = useState("CraniumCare");
   
   const notifications = [
     { id: 1, title: "Nova medição registrada", message: "A medição de João Silva foi registrada com sucesso.", time: "Há 2 horas" },
     { id: 2, title: "Lembrete de acompanhamento", message: "Maria Oliveira precisa de reavaliação hoje.", time: "Há 5 horas" },
   ];
+  
+  // Carregar o nome da clínica do localStorage
+  useEffect(() => {
+    const savedClinicaNome = localStorage.getItem('clinicaNome');
+    if (savedClinicaNome) {
+      setClinicaNome(savedClinicaNome);
+    }
+  }, [location.pathname]); // Recarrega quando muda a rota
   
   // Get current page name
   const getCurrentPageName = () => {
@@ -43,10 +52,10 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
     
     // Map routes to readable names
     const routeNames: Record<string, string> = {
-      "/dashboard": "Dashboard",
+      "/dashboard": `Dashboard – Clínica ${clinicaNome}`,
       "/pacientes": "Pacientes",
       "/historico": "Histórico",
-      "/relatorios": "Relatórios",
+      "/relatorios": `Relatórios – Clínica ${clinicaNome}`,
       "/configuracoes": "Configurações",
       "/perfil": "Meu Perfil",
       "/tarefas": "Tarefas",

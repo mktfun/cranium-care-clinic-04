@@ -1,3 +1,5 @@
+
+import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatsCard } from "@/components/StatsCard";
@@ -10,9 +12,18 @@ import { UrgentTasksCard } from "@/components/UrgentTasksCard";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [clinicaNome, setClinicaNome] = useState("CraniumCare");
   const pacientes = obterPacientes();
   const statusDistribuicao = obterStatusDistribuicao();
   const totalPacientes = pacientes.length;
+  
+  // Carregar o nome da clínica do localStorage
+  useEffect(() => {
+    const savedClinicaNome = localStorage.getItem('clinicaNome');
+    if (savedClinicaNome) {
+      setClinicaNome(savedClinicaNome);
+    }
+  }, []);
   
   // Encontrar paciente com medição mais recente
   const pacienteComMedicaoMaisRecente = [...pacientes]
@@ -53,10 +64,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <h2 className="text-3xl font-bold">Olá, Dr. Ana</h2>
-      <p className="text-muted-foreground">
-        Bem-vinda de volta ao painel do CraniumCare. Confira o resumo dos seus pacientes.
-      </p>
+      <div>
+        <h2 className="text-3xl font-bold">Olá, Dr. Ana</h2>
+        <p className="text-muted-foreground">
+          Bem-vinda de volta ao painel da {clinicaNome}. Confira o resumo dos seus pacientes.
+        </p>
+      </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div onClick={() => navigate("/pacientes")} className="cursor-pointer">

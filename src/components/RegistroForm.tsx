@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 export function RegistroForm() {
   const [nome, setNome] = useState("");
+  const [clinicaNome, setClinicaNome] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -27,8 +28,9 @@ export function RegistroForm() {
     
     setIsLoading(true);
     
-    // Simulando registro para demonstração
+    // Simulando registro para demonstração e salvando o nome da clínica
     setTimeout(() => {
+      localStorage.setItem('clinicaNome', clinicaNome || 'CraniumCare');
       setIsLoading(false);
       navigate("/login");
     }, 1500);
@@ -56,6 +58,15 @@ export function RegistroForm() {
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="clinica-nome">Nome da Clínica</Label>
+            <Input
+              id="clinica-nome"
+              placeholder="Ex: Clínica PediaCare"
+              value={clinicaNome}
+              onChange={(e) => setClinicaNome(e.target.value)}
             />
           </div>
           <div className="space-y-2">

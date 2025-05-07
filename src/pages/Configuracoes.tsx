@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Card, 
   CardContent, 
@@ -15,9 +15,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { toast } from "sonner";
 
 export default function Configuracoes() {
   const [nome, setNome] = useState("Dra. Ana Silva");
+  const [clinicaNome, setClinicaNome] = useState("");
   const [email, setEmail] = useState("ana.silva@exemplo.com");
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -25,6 +27,22 @@ export default function Configuracoes() {
   
   const [notificacoesEmail, setNotificacoesEmail] = useState(true);
   const [relatoriosAutomaticos, setRelatoriosAutomaticos] = useState(true);
+  
+  // Carregar o nome da clínica do localStorage ao montar o componente
+  useEffect(() => {
+    const savedClinicaNome = localStorage.getItem('clinicaNome');
+    if (savedClinicaNome) {
+      setClinicaNome(savedClinicaNome);
+    }
+  }, []);
+  
+  const salvarAlteracoes = () => {
+    // Salvar o nome da clínica no localStorage
+    localStorage.setItem('clinicaNome', clinicaNome || 'CraniumCare');
+    
+    // Mostrar notificação de sucesso
+    toast.success("Alterações salvas com sucesso!");
+  };
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -69,6 +87,16 @@ export default function Configuracoes() {
                 </div>
                 
                 <div className="grid gap-2">
+                  <Label htmlFor="clinica-nome">Nome da Clínica</Label>
+                  <Input 
+                    id="clinica-nome" 
+                    value={clinicaNome} 
+                    placeholder="Ex: Clínica PediaCare"
+                    onChange={(e) => setClinicaNome(e.target.value)} 
+                  />
+                </div>
+                
+                <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
                   <Input 
                     id="email" 
@@ -80,7 +108,7 @@ export default function Configuracoes() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="bg-turquesa hover:bg-turquesa/90">Salvar Alterações</Button>
+              <Button className="bg-turquesa hover:bg-turquesa/90" onClick={salvarAlteracoes}>Salvar Alterações</Button>
             </CardFooter>
           </Card>
         </TabsContent>
