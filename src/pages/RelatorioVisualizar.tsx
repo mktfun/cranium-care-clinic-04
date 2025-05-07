@@ -12,19 +12,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { StatusBadge } from "@/components/StatusBadge";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeft, Download, Printer } from "lucide-react";
 import { obterPacientePorId } from "@/data/mock-data";
 import { toast } from "sonner";
-import { PerimetroCefalicoChart } from "@/components/PerimetroCefalicoChart";
-import { DiametrosCranianosChart } from "@/components/DiametrosCranianosChart";
 
 export default function RelatorioVisualizar() {
   const { id, medicaoId } = useParams<{ id: string, medicaoId: string }>();
   const navigate = useNavigate();
   const paciente = obterPacientePorId(id || "");
   const [carregando, setCarregando] = useState(true);
-  const isMobile = useIsMobile();
   
   useEffect(() => {
     // Simular carregamento de dados
@@ -87,8 +83,8 @@ export default function RelatorioVisualizar() {
   }
   
   return (
-    <div className="space-y-6 animate-fade-in max-w-4xl mx-auto print:mx-0 px-4 sm:px-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
+    <div className="space-y-6 animate-fade-in max-w-4xl mx-auto print:mx-0">
+      <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
@@ -98,7 +94,7 @@ export default function RelatorioVisualizar() {
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold">Relatório de Avaliação</h2>
+            <h2 className="text-3xl font-bold">Relatório de Avaliação</h2>
             <div className="text-muted-foreground mt-1">
               {paciente.nome} • {formatarData(medicao.data)}
             </div>
@@ -108,14 +104,12 @@ export default function RelatorioVisualizar() {
           <Button 
             variant="outline" 
             onClick={handleImprimir}
-            size={isMobile ? "sm" : "default"}
           >
             <Printer className="h-4 w-4 mr-2" /> Imprimir
           </Button>
           <Button 
             variant="outline" 
             onClick={handleExportarPDF}
-            size={isMobile ? "sm" : "default"}
           >
             <Download className="h-4 w-4 mr-2" /> Exportar PDF
           </Button>
@@ -242,54 +236,7 @@ export default function RelatorioVisualizar() {
         </CardContent>
       </Card>
       
-      {/* Novos gráficos para análise pediátrica */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
-          <CardDescription>Comparação com padrões da OMS</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <div className="w-full min-w-[600px] sm:min-w-0">
-            <PerimetroCefalicoChart altura={isMobile ? 250 : 300} />
-          </div>
-          <div className="text-xs text-muted-foreground mt-4 px-1">
-            <strong>Projeção de crescimento:</strong> Com base no padrão de crescimento atual, 
-            estima-se que o perímetro cefálico do paciente mantenha uma taxa de crescimento de 
-            aproximadamente 0.9-1.2 cm por mês nos próximos 3 meses, permanecendo dentro do 
-            canal de crescimento adequado entre os percentis 50 e 75.
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Proporção dos Diâmetros Cranianos</CardTitle>
-          <CardDescription>Análise de simetria e forma craniana</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <div className="w-full min-w-[600px] sm:min-w-0">
-            <DiametrosCranianosChart altura={isMobile ? 250 : 300} />
-          </div>
-          <div className="text-xs text-muted-foreground mt-4 px-1">
-            <strong>Interpretação:</strong> Os diâmetros cranianos apresentam uma relação de 
-            proporcionalidade dentro dos parâmetros normais (índice craniano entre 75-85%). 
-            A diferença entre as diagonais mostra uma leve assimetria que deve ser monitorada,
-            mas que ainda não requer intervenção terapêutica especial.
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Evolução dos Índices</CardTitle>
-          <CardDescription>Tendência ao longo do tempo</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <div className="w-full min-w-[600px] sm:min-w-0">
-            <MedicaoLineChart titulo="" altura={isMobile ? 250 : 300} />
-          </div>
-        </CardContent>
-      </Card>
+      <MedicaoLineChart titulo="Evolução dos Índices" altura={300} />
       
       <Card>
         <CardHeader>
@@ -308,8 +255,6 @@ export default function RelatorioVisualizar() {
               {medicao.status === "severa" && (
                 <li>Encaminhamento para especialista em órtese craniana recomendado</li>
               )}
-              <li>Retorno para reavaliação em 30 dias para monitoramento da evolução do perímetro cefálico</li>
-              <li>Manter estímulos para fortalecimento da musculatura cervical e favorecimento do desenvolvimento neuropsicomotor</li>
             </ul>
           ) : (
             <p className="text-muted-foreground">Nenhuma recomendação disponível</p>

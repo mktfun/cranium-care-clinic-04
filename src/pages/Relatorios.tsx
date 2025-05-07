@@ -1,5 +1,4 @@
 
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,14 +28,11 @@ import {
   Cell,
   LineChart,
   Line,
-  ComposedChart,
 } from "recharts";
 import { obterStatusDistribuicao, obterPacientes, obterMedicoesRecentes } from "@/data/mock-data";
-import { Download, FileText, Eye } from "lucide-react";
-import { toast } from "sonner";
+import { Download, FileText } from "lucide-react";
 
 export default function Relatorios() {
-  const navigate = useNavigate();
   const statusDistribuicao = obterStatusDistribuicao();
   const pacientes = obterPacientes();
   
@@ -56,16 +52,6 @@ export default function Relatorios() {
     { idade: "10-12 meses", pacientes: pacientes.filter(p => p.idadeEmMeses > 9 && p.idadeEmMeses <= 12).length },
     { idade: "Acima de 12 meses", pacientes: pacientes.filter(p => p.idadeEmMeses > 12).length },
   ];
-
-  // Dados combinados para o gráfico de pacientes e medições
-  const pacientesMedicoesData = [
-    { mes: "Jan", pacientes: 5, medicoes: 8 },
-    { mes: "Fev", pacientes: 7, medicoes: 12 },
-    { mes: "Mar", pacientes: 10, medicoes: 15 },
-    { mes: "Abr", pacientes: 8, medicoes: 13 },
-    { mes: "Mai", pacientes: 12, medicoes: 20 },
-    { mes: "Jun", pacientes: 15, medicoes: 25 },
-  ];
   
   const evolucaoMensalData = [
     { mes: "Jan", normal: 3, leve: 2, moderada: 1, severa: 0 },
@@ -77,19 +63,11 @@ export default function Relatorios() {
   ];
   
   const relatoriosRecentes = [
-    { id: 1, pacienteId: "1", medicaoId: "m1", titulo: "Relatório Mensal - Maio 2024", tipo: "Mensal", data: "31/05/2024" },
-    { id: 2, pacienteId: "2", medicaoId: "m1", titulo: "Análise Clínica - Casos Severos", tipo: "Análise", data: "25/05/2024" },
-    { id: 3, pacienteId: "3", medicaoId: "m2", titulo: "Evolução de Pacientes - Q2 2024", tipo: "Trimestral", data: "15/05/2024" },
-    { id: 4, pacienteId: "1", medicaoId: "m2", titulo: "Relatório Mensal - Abril 2024", tipo: "Mensal", data: "30/04/2024" },
+    { id: 1, titulo: "Relatório Mensal - Maio 2024", tipo: "Mensal", data: "31/05/2024" },
+    { id: 2, titulo: "Análise Clínica - Casos Severos", tipo: "Análise", data: "25/05/2024" },
+    { id: 3, titulo: "Evolução de Pacientes - Q2 2024", tipo: "Trimestral", data: "15/05/2024" },
+    { id: 4, titulo: "Relatório Mensal - Abril 2024", tipo: "Mensal", data: "30/04/2024" },
   ];
-
-  const handleViewReport = (pacienteId: string, medicaoId: string) => {
-    navigate(`/pacientes/${pacienteId}/relatorios/${medicaoId}`);
-  };
-
-  const handleExportPDF = () => {
-    toast.success("Relatório exportado em PDF com sucesso!");
-  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -112,7 +90,7 @@ export default function Relatorios() {
               <SelectItem value="365">No último ano</SelectItem>
             </SelectContent>
           </Select>
-          <Button className="bg-turquesa hover:bg-turquesa/90" onClick={handleExportPDF}>
+          <Button className="bg-turquesa hover:bg-turquesa/90">
             <Download className="mr-2 h-4 w-4" />
             Exportar Dados
           </Button>
@@ -177,23 +155,25 @@ export default function Relatorios() {
         
         <Card className="md:col-span-2 lg:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle>Pacientes e Medições</CardTitle>
+            <CardTitle>Evolução Mensal</CardTitle>
             <CardDescription>
-              Relação entre pacientes e medições
+              Acompanhamento de status por mês
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={pacientesMedicoesData}>
+                <LineChart data={evolucaoMensalData}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                   <XAxis dataKey="mes" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="pacientes" fill="#8884d8" name="Pacientes" />
-                  <Line type="monotone" dataKey="medicoes" stroke="#ff7300" name="Medições" />
-                </ComposedChart>
+                  <Line type="monotone" dataKey="normal" stroke="#2ecc71" name="Normal" />
+                  <Line type="monotone" dataKey="leve" stroke="#f1c40f" name="Leve" />
+                  <Line type="monotone" dataKey="moderada" stroke="#e67e22" name="Moderada" />
+                  <Line type="monotone" dataKey="severa" stroke="#e74c3c" name="Severa" />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
@@ -222,20 +202,10 @@ export default function Relatorios() {
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleViewReport(relatorio.pacienteId, relatorio.medicaoId)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Visualizar
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleExportPDF}>
-                    <Download className="h-4 w-4 mr-2" />
-                    PDF
-                  </Button>
-                </div>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  PDF
+                </Button>
               </div>
             ))}
           </div>

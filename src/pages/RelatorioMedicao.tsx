@@ -12,19 +12,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { StatusBadge } from "@/components/StatusBadge";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeft, Download, ArrowRight } from "lucide-react";
 import { obterPacientePorId } from "@/data/mock-data";
 import { toast } from "sonner";
-import { PerimetroCefalicoChart } from "@/components/PerimetroCefalicoChart";
-import { DiametrosCranianosChart } from "@/components/DiametrosCranianosChart";
 
 export default function RelatorioMedicao() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const paciente = obterPacientePorId(id || "");
   const [carregando, setCarregando] = useState(true);
-  const isMobile = useIsMobile();
   
   useEffect(() => {
     // Simular carregamento de dados
@@ -91,8 +87,8 @@ export default function RelatorioMedicao() {
   }
   
   return (
-    <div className="space-y-6 animate-fade-in px-4 sm:px-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
@@ -102,16 +98,16 @@ export default function RelatorioMedicao() {
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold">Relatório de Avaliação</h2>
+            <h2 className="text-3xl font-bold">Relatório de Avaliação</h2>
             <div className="text-muted-foreground mt-1">
               Paciente: {paciente.nome} • {formatarData(medicao.data)}
             </div>
           </div>
         </div>
         <Button 
-          variant="outline"
+          variant="outline" 
+          className="bg-white" 
           onClick={handleExportarPDF}
-          size={isMobile ? "sm" : "default"}
         >
           <Download className="h-4 w-4 mr-2" /> Exportar PDF
         </Button>
@@ -203,44 +199,9 @@ export default function RelatorioMedicao() {
         </Card>
       </div>
       
-      {/* Novos gráficos pediátricos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
-          <CardDescription>Comparação com padrões da OMS</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <div className="w-full min-w-[600px] sm:min-w-0">
-            <PerimetroCefalicoChart altura={isMobile ? 250 : 300} />
-          </div>
-        </CardContent>
-      </Card>
+      <MedicaoLineChart titulo="Evolução do Paciente" altura={350} />
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Proporção dos Diâmetros Cranianos</CardTitle>
-          <CardDescription>Análise de simetria e forma craniana</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <div className="w-full min-w-[600px] sm:min-w-0">
-            <DiametrosCranianosChart altura={isMobile ? 250 : 300} />
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Evolução do Paciente</CardTitle>
-          <CardDescription>Tendência dos índices ao longo do tempo</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <div className="w-full min-w-[600px] sm:min-w-0">
-            <MedicaoLineChart titulo="" altura={isMobile ? 250 : 300} />
-          </div>
-        </CardContent>
-      </Card>
-      
-      <div className="flex flex-col sm:flex-row gap-4 sm:justify-between">
+      <div className="flex justify-between">
         <Button variant="outline" onClick={handleVoltar}>
           <ChevronLeft className="h-4 w-4 mr-2" /> Voltar ao Paciente
         </Button>
