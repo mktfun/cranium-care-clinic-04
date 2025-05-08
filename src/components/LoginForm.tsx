@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -16,11 +18,51 @@ export function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulando autenticação para demonstração
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data.session) {
+        toast.success("Login realizado com sucesso!");
+        navigate("/dashboard");
+      }
+    } catch (error: any) {
+      console.error("Erro no login:", error);
+      
+      // Tratamento de erros específicos
+      if (error.message.includes("Invalid login credentials")) {
+        toast.error("Email ou senha incorretos");
+      } else if (error.message.includes("Email not confirmed")) {
+        toast.error("Email não confirmado. Por favor, verifique sua caixa de entrada");
+      } else {
+        toast.error(`Erro ao fazer login: ${error.message}`);
+      }
+    } finally {
       setIsLoading(false);
-      navigate("/dashboard");
-    }, 1500);
+    }
+  };
+
+  const handleLoginWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      toast.error(`Erro ao fazer login com Google: ${error.message}`);
+    }
   };
 
   return (
@@ -42,6 +84,7 @@ export function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -58,6 +101,7 @@ export function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
         </CardContent>
@@ -65,7 +109,13 @@ export function LoginForm() {
           <Button type="submit" className="w-full bg-turquesa hover:bg-turquesa/90" disabled={isLoading}>
             {isLoading ? "Entrando..." : "Entrar"}
           </Button>
-          <Button variant="outline" className="w-full" type="button">
+          <Button 
+            variant="outline" 
+            className="w-full" 
+            type="button" 
+            onClick={handleLoginWithGoogle}
+            disabled={isLoading}
+          >
             Entrar com Google
           </Button>
           <div className="text-center text-sm">

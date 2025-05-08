@@ -7,474 +7,411 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Legend,
+  ResponsiveContainer,
   ReferenceLine,
   ReferenceArea,
-  Label
 } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getHeadCircumferenceReferenceData, generateProtocolReferenceData } from "@/lib/cranial-analysis";
-import { formatAge } from "@/lib/age-utils";
+import { calculateAge } from "@/lib/age-utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
-// Gerar dados de protocolo
-const { brachyDolichoProtocolData, plagioProtocolData } = generateProtocolReferenceData();
-
-// Dados para exibição de evolução
-interface EvolutionData {
-  mes: string;
-  data: string;
-  idade: number;
-  idadeFormatada: string;
-  cvai: number;
-  diagonal: number;
-  ic: number;
-  perimetro: number;
-  p3: number;
-  p50: number;
-  p97: number;
-  projected?: boolean;
-}
-
+// Tipos de dados
 interface MedicaoLineChartProps {
   titulo?: string;
   descricao?: string;
+  medicoes: any[];
+  dataNascimento: string;
+  sexoPaciente?: string;
   altura?: number;
-  patientData?: any;
-  sexoPaciente?: 'M' | 'F';
-  medicoes?: any[];
-  dataNascimento?: string;
+  tipoGrafico?: "indiceCraniano" | "cvai" | "perimetro";
+  linhaCorTheme?: string;
+}
+
+// Funções para cores
+function getLineColor(theme: string = "blue") {
+  const colors = {
+    blue: "rgba(37, 99, 235, 1)",
+    green: "rgba(22, 163, 74, 1)",
+    red: "rgba(220, 38, 38, 1)",
+    purple: "rgba(139, 92, 246, 1)",
+    amber: "rgba(217, 119, 6, 1)",
+    orange: "rgba(234, 88, 12, 1)",
+    rose: "rgba(225, 29, 72, 1)",
+  };
+  return colors[theme as keyof typeof colors] || colors.blue;
 }
 
 export function MedicaoLineChart({
-  titulo = "Evolução das Medições",
-  descricao = "Acompanhamento de índices ao longo do tempo",
-  altura = 300,
-  patientData,
-  sexoPaciente = 'M',
+  titulo,
+  descricao,
   medicoes = [],
   dataNascimento,
+  sexoPaciente = "M",
+  altura = 300,
+  tipoGrafico = "indiceCraniano",
+  linhaCorTheme = "blue"
 }: MedicaoLineChartProps) {
-  const [isMobile, setIsMobile] = useState(false);
-  const [activeTab, setActiveTab] = useState("indices");
-  const [evolutionData, setEvolutionData] = useState<EvolutionData[]>([]);
-  const [headCircumferenceData, setHeadCircumferenceData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Use patient data if provided, otherwise process medicoes
   useEffect(() => {
-    if (patientData?.evolution) {
-      setEvolutionData(patientData.evolution);
-    } else if (medicoes.length > 0 && dataNascimento) {
-      // Processar dados das medições
-      const processedData = medicoes
-        .sort((a: any, b: any) => new Date(a.data).getTime() - new Date(b.data).getTime())
-        .map((medicao: any) => {
-          const dataObj = new Date(medicao.data);
-          const nascimentoObj = new Date(dataNascimento);
-          
-          // Calcular idade na data da medição
-          const diffTime = Math.abs(dataObj.getTime() - nascimentoObj.getTime());
-          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-          const idadeMeses = Math.floor(diffDays / 30);
-          const idadeDias = diffDays % 30;
-          
-          const idadeFormatada = formatAge(dataNascimento, medicao.data);
-          const mes = dataObj.toLocaleDateString('pt-BR', { month: 'short' });
-          
-          return {
-            mes: `${mes}/${dataObj.getFullYear().toString().slice(-2)}`,
-            data: medicao.data,
-            idade: idadeMeses + (idadeDias / 30), // Idade em meses com fração decimal para precisão
-            idadeFormatada,
-            cvai: medicao.cvai || 0,
-            diagonal: medicao.diferencaDiagonais || 0,
-            ic: medicao.indiceCraniano || 0,
-            perimetro: medicao.perimetroCefalico || 0,
-            // Valores de referência (serão substituídos pelos reais em produção)
-            p3: 0,
-            p50: 0,
-            p97: 0
-          };
-        });
-      
-      setEvolutionData(processedData);
+    if (medicoes.length === 0) {
+      setLoading(false);
+      return;
     }
-  }, [patientData, medicoes, dataNascimento]);
-  
-  // Carregar dados de referência do perímetro cefálico baseados no sexo
-  useEffect(() => {
-    const referenceData = getHeadCircumferenceReferenceData(sexoPaciente);
-    setHeadCircumferenceData(referenceData);
-  }, [sexoPaciente]);
 
-  // Check if device is mobile and adjust chart settings
-  useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
-    
-    return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
+    const processedData = [...medicoes]
+      .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
+      .map((medicao) => {
+        const { months } = calculateAge(dataNascimento, medicao.data);
+        
+        return {
+          ...medicao,
+          idadeEmMeses: months,
+          comprimento: Number(medicao.comprimento),
+          largura: Number(medicao.largura),
+          diagonal_d: Number(medicao.diagonal_d),
+          diagonal_e: Number(medicao.diagonal_e),
+          indice_craniano: Number(medicao.indice_craniano),
+          cvai: Number(medicao.cvai),
+          perimetro_cefalico: medicao.perimetro_cefalico ? Number(medicao.perimetro_cefalico) : undefined,
+        };
+      });
 
-  // Função para mesclar dados de evolução com dados de referência
-  const getMergedDataForHeadCircumference = () => {
-    if (!evolutionData.length) return [];
+    // Adicionar dados de referência conforme o tipo de gráfico
+    const chartDataWithReference = addReferenceData(processedData, tipoGrafico, sexoPaciente);
+    setChartData(chartDataWithReference);
+    setLoading(false);
+  }, [medicoes, dataNascimento, tipoGrafico, sexoPaciente]);
+
+  // Função para adicionar dados de referência
+  const addReferenceData = (data: any[], tipo: string, sexo: string) => {
+    if (data.length === 0) return [];
     
-    return evolutionData.map(dataPoint => {
-      // Encontrar o valor de referência mais próximo para a idade
-      const closestReference = headCircumferenceData.reduce((prev, curr) => {
-        return Math.abs(curr.age - dataPoint.idade) < Math.abs(prev.age - dataPoint.idade) ? curr : prev;
-      }, headCircumferenceData[0]);
+    // Obter a faixa de idade
+    const minAge = 0;
+    const maxAge = Math.max(...data.map(d => d.idadeEmMeses), 18);
+    
+    // Criar array com pontos de referência para cada mês
+    const referencePoints = Array.from({ length: maxAge + 1 }, (_, i) => ({
+      idadeEmMeses: i,
+      paciente: null // Marcar que não são pontos do paciente
+    }));
+    
+    // Adicionar dados específicos conforme o tipo de gráfico
+    if (tipo === "indiceCraniano") {
+      return addIndiceReferenceData([...data, ...referencePoints]);
+    } else if (tipo === "cvai") {
+      return addCvaiReferenceData([...data, ...referencePoints]);
+    } else if (tipo === "perimetro") {
+      return addPerimetroReferenceData([...data, ...referencePoints], sexo);
+    }
+    
+    return data;
+  };
+
+  // Adicionar dados de referência para Índice Craniano
+  const addIndiceReferenceData = (data: any[]) => {
+    return data.map(point => ({
+      ...point,
+      // Limites para classificação de braquicefalia/dolicocefalia
+      normalLowerBound: 76,
+      normalUpperBound: 80,
+      braquiLeve: 84,
+      braquiModerada: 90,
+      dolicoLeve: 73,
+      dolicoModerada: 70,
+      mediaPopulacional: 78
+    }));
+  };
+
+  // Adicionar dados de referência para CVAI
+  const addCvaiReferenceData = (data: any[]) => {
+    return data.map(point => ({
+      ...point,
+      // Limites para classificação de plagiocefalia
+      normal: 3.5,
+      leve: 6.25,
+      moderada: 8.5,
+      mediaPopulacional: 2
+    }));
+  };
+
+  // Adicionar dados de referência para Perímetro Cefálico
+  const addPerimetroReferenceData = (data: any[], sexo: string) => {
+    return data.map(point => {
+      const idadeMeses = point.idadeEmMeses;
+      
+      // Valores aproximados baseados em curvas de crescimento
+      const baseP50 = sexo === 'M' ? 35 : 34;
+      const growthRate = sexo === 'M' ? 1.5 : 1.4;
+      let p50 = 0;
+      
+      // Cálculo do perímetro dependendo da faixa etária
+      if (idadeMeses === 0) {
+        p50 = baseP50;
+      } else if (idadeMeses <= 3) {
+        p50 = baseP50 + (growthRate * idadeMeses);
+      } else if (idadeMeses <= 6) {
+        p50 = baseP50 + (growthRate * 3) + (0.8 * (idadeMeses - 3));
+      } else if (idadeMeses <= 12) {
+        p50 = baseP50 + (growthRate * 3) + (0.8 * 3) + (0.5 * (idadeMeses - 6));
+      } else {
+        p50 = baseP50 + (growthRate * 3) + (0.8 * 3) + (0.5 * 6) + (0.3 * (idadeMeses - 12));
+      }
       
       return {
-        ...dataPoint,
-        p3: closestReference.p3,
-        p15: closestReference.p15,
-        p50: closestReference.p50,
-        p85: closestReference.p85,
-        p97: closestReference.p97
+        ...point,
+        p3: p50 * 0.94,
+        p15: p50 * 0.97,
+        p50,
+        p85: p50 * 1.03,
+        p97: p50 * 1.06,
       };
     });
   };
 
-  // Função para preparar dados para o gráfico de Índice Craniano (Protocolo)
-  const prepareCranialIndexData = () => {
-    if (!evolutionData.length) return [];
-    
-    // Mesclar dados do paciente com dados do protocolo
-    return evolutionData.map(dataPoint => {
-      // Encontrar o dado do protocolo mais próximo para a idade
-      const closestProtocol = brachyDolichoProtocolData.reduce((prev, curr) => {
-        return Math.abs(curr.age - dataPoint.idade) < Math.abs(prev.age - dataPoint.idade) ? curr : prev;
-      }, brachyDolichoProtocolData[0]);
-      
-      return {
-        ...dataPoint,
-        ...closestProtocol
-      };
-    });
-  };
-  
-  // Função para preparar dados para o gráfico de Plagiocefalia (Protocolo)
-  const preparePlagiocephalyData = () => {
-    if (!evolutionData.length) return [];
-    
-    // Mesclar dados do paciente com dados do protocolo
-    return evolutionData.map(dataPoint => {
-      // Encontrar o dado do protocolo mais próximo para a idade
-      const closestProtocol = plagioProtocolData.reduce((prev, curr) => {
-        return Math.abs(curr.age - dataPoint.idade) < Math.abs(prev.age - dataPoint.idade) ? curr : prev;
-      }, plagioProtocolData[0]);
-      
-      return {
-        ...dataPoint,
-        ...closestProtocol
-      };
-    });
+  const renderYAxis = () => {
+    if (tipoGrafico === "indiceCraniano") {
+      return (
+        <YAxis
+          label={{ value: 'Índice Craniano (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+          domain={[65, 95]}
+        />
+      );
+    } else if (tipoGrafico === "cvai") {
+      return (
+        <YAxis
+          label={{ value: 'CVAI (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+          domain={[0, 12]}
+        />
+      );
+    } else {
+      return (
+        <YAxis
+          label={{ value: 'Perímetro Cefálico (cm)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+          domain={['auto', 'auto']}
+        />
+      );
+    }
   };
 
-  // Dados para perímetro cefálico
-  const headCircumferenceChartData = getMergedDataForHeadCircumference();
-  
-  // Dados para protocolo de índice craniano
-  const cranialIndexProtocolData = prepareCranialIndexData();
-  
-  // Dados para protocolo de plagiocefalia
-  const plagiocephalyProtocolData = preparePlagiocephalyData();
+  const renderReferenceAreas = () => {
+    if (tipoGrafico === "indiceCraniano") {
+      return (
+        <>
+          <ReferenceArea y1={90} y2={95} fill="#FECDD3" fillOpacity={0.6} />
+          <ReferenceArea y1={84} y2={90} fill="#FED7AA" fillOpacity={0.6} />
+          <ReferenceArea y1={80} y2={84} fill="#FEF08A" fillOpacity={0.6} />
+          <ReferenceArea y1={76} y2={80} fill="#BBF7D0" fillOpacity={0.6} />
+          <ReferenceArea y1={73} y2={76} fill="#FEF08A" fillOpacity={0.6} />
+          <ReferenceArea y1={70} y2={73} fill="#FED7AA" fillOpacity={0.6} />
+          <ReferenceArea y1={65} y2={70} fill="#FECDD3" fillOpacity={0.6} />
+        </>
+      );
+    } else if (tipoGrafico === "cvai") {
+      return (
+        <>
+          <ReferenceArea y1={8.5} y2={12} fill="#FECDD3" fillOpacity={0.6} />
+          <ReferenceArea y1={6.25} y2={8.5} fill="#FED7AA" fillOpacity={0.6} />
+          <ReferenceArea y1={3.5} y2={6.25} fill="#FEF08A" fillOpacity={0.6} />
+          <ReferenceArea y1={0} y2={3.5} fill="#BBF7D0" fillOpacity={0.6} />
+        </>
+      );
+    }
+    return null;
+  };
+
+  const renderLines = () => {
+    if (tipoGrafico === "indiceCraniano") {
+      return (
+        <>
+          <Line
+            type="monotone"
+            dataKey="indice_craniano"
+            name="Índice Craniano"
+            stroke={getLineColor(linhaCorTheme)}
+            strokeWidth={3}
+            dot={{ fill: getLineColor(linhaCorTheme), r: 5 }}
+            activeDot={{ r: 7 }}
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="mediaPopulacional"
+            name="Média Populacional"
+            stroke="#666666"
+            strokeDasharray="5 5"
+            dot={false}
+            connectNulls
+          />
+        </>
+      );
+    } else if (tipoGrafico === "cvai") {
+      return (
+        <>
+          <Line
+            type="monotone"
+            dataKey="cvai"
+            name="CVAI"
+            stroke={getLineColor(linhaCorTheme)}
+            strokeWidth={3}
+            dot={{ fill: getLineColor(linhaCorTheme), r: 5 }}
+            activeDot={{ r: 7 }}
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="mediaPopulacional"
+            name="Média Populacional"
+            stroke="#666666"
+            strokeDasharray="5 5"
+            dot={false}
+            connectNulls
+          />
+        </>
+      );
+    } else {
+      return (
+        <>
+          <Line
+            type="monotone"
+            dataKey="perimetro_cefalico"
+            name="Perímetro Cefálico"
+            stroke={getLineColor(linhaCorTheme)}
+            strokeWidth={3}
+            dot={{ fill: getLineColor(linhaCorTheme), r: 5 }}
+            activeDot={{ r: 7 }}
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="p3"
+            name="P3"
+            stroke="#9CA3AF"
+            strokeDasharray="3 3"
+            dot={false}
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="p15"
+            name="P15"
+            stroke="#9CA3AF"
+            dot={false}
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="p50"
+            name="P50"
+            stroke="#4B5563"
+            strokeWidth={2}
+            dot={false}
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="p85"
+            name="P85"
+            stroke="#9CA3AF"
+            dot={false}
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="p97"
+            name="P97"
+            stroke="#9CA3AF"
+            strokeDasharray="3 3"
+            dot={false}
+            connectNulls
+          />
+        </>
+      );
+    }
+  };
+
+  const renderCustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length > 0) {
+      const dataPoint = payload[0].payload;
+      if (dataPoint.paciente === null) return null;
+      
+      return (
+        <div className="bg-white/90 dark:bg-slate-800/90 p-3 border rounded shadow-lg">
+          <p className="font-medium">{`Idade: ${label} meses`}</p>
+          <div className="space-y-1 mt-1">
+            {tipoGrafico === "indiceCraniano" && (
+              <>
+                <p>{`Índice Craniano: ${dataPoint.indice_craniano}%`}</p>
+                <p>{`Comprimento: ${dataPoint.comprimento} mm`}</p>
+                <p>{`Largura: ${dataPoint.largura} mm`}</p>
+              </>
+            )}
+            
+            {tipoGrafico === "cvai" && (
+              <>
+                <p>{`CVAI: ${dataPoint.cvai}%`}</p>
+                <p>{`Diagonal D: ${dataPoint.diagonal_d} mm`}</p>
+                <p>{`Diagonal E: ${dataPoint.diagonal_e} mm`}</p>
+                <p>{`Diferença: ${dataPoint.diferenca_diagonais} mm`}</p>
+              </>
+            )}
+            
+            {tipoGrafico === "perimetro" && dataPoint.perimetro_cefalico && (
+              <p>{`Perímetro Cefálico: ${dataPoint.perimetro_cefalico} mm`}</p>
+            )}
+            
+            <p className="text-xs text-muted-foreground pt-1">
+              {`Data da medição: ${new Date(dataPoint.data).toLocaleDateString('pt-BR')}`}
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  if (loading) {
+    return <Skeleton className={cn(`w-full`, `h-[${altura}px]`)} />;
+  }
+
+  if (medicoes.length === 0) {
+    return (
+      <div className={cn(`flex items-center justify-center w-full`, `h-[${altura}px]`, "border rounded-md bg-muted/30")}>
+        <p className="text-muted-foreground">Nenhuma medição disponível</p>
+      </div>
+    );
+  }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          {titulo}
-        </CardTitle>
-        <CardDescription>{descricao}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full mb-4 overflow-x-auto flex-wrap md:flex-nowrap justify-start md:justify-center grid-cols-2 md:grid-cols-4" style={{scrollbarWidth: 'none'}}>
-            <TabsTrigger value="indice-craniano" className="text-xs md:text-sm py-1 px-2 md:px-4 flex-grow">
-              Índice Craniano
-            </TabsTrigger>
-            <TabsTrigger value="plagiocefalia" className="text-xs md:text-sm py-1 px-2 md:px-4 flex-grow">
-              Plagiocefalia
-            </TabsTrigger>
-            <TabsTrigger value="perimetro" className="text-xs md:text-sm py-1 px-2 md:px-4 flex-grow">
-              Perímetro Cefálico
-            </TabsTrigger>
-            <TabsTrigger value="indices" className="text-xs md:text-sm py-1 px-2 md:px-4 flex-grow">
-              Índices Gerais
-            </TabsTrigger>
-          </TabsList>
-          
-          {/* Gráfico de Índice Craniano conforme Protocolo */}
-          <TabsContent value="indice-craniano" className="mt-0">
-            <ResponsiveContainer width="100%" height={altura}>
-              <LineChart 
-                data={cranialIndexProtocolData}
-                margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 10, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis
-                  dataKey="idade"
-                  type="number"
-                  domain={[0, 'auto']}
-                  tickCount={isMobile ? 5 : 10}
-                  tickFormatter={(value) => `${Math.floor(value)}m`}
-                  label={{ value: "Idade (meses)", position: "insideBottom", offset: -5 }}
-                />
-                <YAxis 
-                  domain={[60, 110]}
-                  tickCount={10}
-                  label={{ value: "Índice Craniano (%)", angle: -90, position: "insideLeft" }}
-                />
-                <Tooltip
-                  formatter={(value: any, name: string) => {
-                    if (name === "ic") return [`${value}%`, "Índice Craniano"];
-                    return [value, name];
-                  }}
-                  labelFormatter={(label) => {
-                    const dataPoint = cranialIndexProtocolData.find(d => d.idade === label);
-                    return dataPoint ? `Idade: ${dataPoint.idadeFormatada}` : `${Math.floor(label)} meses`;
-                  }}
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    borderColor: "var(--border)",
-                    borderRadius: "var(--radius)",
-                  }}
-                />
-                <Legend />
-                
-                {/* Zonas de Classificação */}
-                <ReferenceArea y1={90} y2={110} fill="#FF9999" fillOpacity={0.3} label={{ value: "Braquicefalia Severa", position: "insideRight" }} />
-                <ReferenceArea y1={85} y2={90} fill="#FFCC99" fillOpacity={0.3} label={{ value: "Braquicefalia Moderada", position: "insideRight" }} />
-                <ReferenceArea y1={81} y2={85} fill="#FFFF99" fillOpacity={0.3} label={{ value: "Braquicefalia Leve", position: "insideRight" }} />
-                <ReferenceArea y1={76} y2={81} fill="#CCFFCC" fillOpacity={0.3} label={{ value: "Normal", position: "insideRight" }} />
-                <ReferenceArea y1={73} y2={76} fill="#FFFF99" fillOpacity={0.3} label={{ value: "Dolicocefalia Leve", position: "insideRight" }} />
-                <ReferenceArea y1={70} y2={73} fill="#FFCC99" fillOpacity={0.3} label={{ value: "Dolicocefalia Moderada", position: "insideRight" }} />
-                <ReferenceArea y1={60} y2={70} fill="#FF9999" fillOpacity={0.3} label={{ value: "Dolicocefalia Severa", position: "insideRight" }} />
-                
-                {/* Linha de Referência (Média da população) */}
-                <ReferenceLine y={80} stroke="#666" strokeDasharray="3 3">
-                  <Label value="Média da população" position="insideBottomRight" />
-                </ReferenceLine>
-                
-                {/* Linha do Paciente */}
-                <Line
-                  type="monotone"
-                  dataKey="ic"
-                  stroke="#276FBF"
-                  activeDot={{ r: 8 }}
-                  name="Índice Craniano"
-                  strokeWidth={2}
-                  connectNulls
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </TabsContent>
-          
-          {/* Gráfico de Plagiocefalia conforme Protocolo */}
-          <TabsContent value="plagiocefalia" className="mt-0">
-            <ResponsiveContainer width="100%" height={altura}>
-              <LineChart 
-                data={plagiocephalyProtocolData}
-                margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 10, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis 
-                  dataKey="idade"
-                  type="number"
-                  domain={[0, 'auto']}
-                  tickCount={isMobile ? 5 : 10}
-                  tickFormatter={(value) => `${Math.floor(value)}m`}
-                  label={{ value: "Idade (meses)", position: "insideBottom", offset: -5 }}
-                />
-                <YAxis 
-                  domain={[0, 15]}
-                  tickCount={8}
-                  label={{ value: "CVAI (%)", angle: -90, position: "insideLeft" }}
-                />
-                <Tooltip
-                  formatter={(value: any, name: string) => {
-                    if (name === "cvai") return [`${value}%`, "CVAI"];
-                    if (name === "diagonal") return [`${value} mm`, "Diferença Diagonais"];
-                    return [value, name];
-                  }}
-                  labelFormatter={(label) => {
-                    const dataPoint = plagiocephalyProtocolData.find(d => d.idade === label);
-                    return dataPoint ? `Idade: ${dataPoint.idadeFormatada}` : `${Math.floor(label)} meses`;
-                  }}
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    borderColor: "var(--border)",
-                    borderRadius: "var(--radius)",
-                  }}
-                />
-                <Legend />
-                
-                {/* Zonas de Classificação */}
-                <ReferenceArea y1={8.5} y2={15} fill="#FF9999" fillOpacity={0.3} label={{ value: "Plagiocefalia Severa", position: "insideRight" }} />
-                <ReferenceArea y1={6.25} y2={8.5} fill="#FFCC99" fillOpacity={0.3} label={{ value: "Plagiocefalia Moderada", position: "insideRight" }} />
-                <ReferenceArea y1={3.5} y2={6.25} fill="#FFFF99" fillOpacity={0.3} label={{ value: "Plagiocefalia Leve", position: "insideRight" }} />
-                <ReferenceArea y1={0} y2={3.5} fill="#CCFFCC" fillOpacity={0.3} label={{ value: "Normal", position: "insideRight" }} />
-                
-                {/* Linha de Referência (Média da população) */}
-                <ReferenceLine y={2} stroke="#666" strokeDasharray="3 3">
-                  <Label value="Média da população" position="insideBottomRight" />
-                </ReferenceLine>
-                
-                {/* Linhas do Paciente */}
-                <Line
-                  type="monotone"
-                  dataKey="cvai"
-                  stroke="#029daf"
-                  activeDot={{ r: 8 }}
-                  name="CVAI (%)"
-                  strokeWidth={2}
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="diagonal"
-                  stroke="#AF5B5B"
-                  name="Dif. Diagonal (mm)"
-                  strokeWidth={2}
-                  connectNulls
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </TabsContent>
-          
-          {/* Gráfico de Perímetro Cefálico com curvas por sexo */}
-          <TabsContent value="perimetro" className="mt-0">
-            <ResponsiveContainer width="100%" height={altura}>
-              <LineChart 
-                data={headCircumferenceChartData} 
-                margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 5 : 0, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis 
-                  dataKey="idade"
-                  type="number"
-                  domain={[0, 'auto']}
-                  tickCount={isMobile ? 5 : 10}
-                  tickFormatter={(value) => `${Math.floor(value)}m`}
-                  label={{ value: "Idade (meses)", position: "insideBottom", offset: -5 }}
-                />
-                <YAxis 
-                  domain={['auto', 'auto']} 
-                  tickCount={8}
-                  label={{ value: "Perímetro (cm)", angle: -90, position: "insideLeft" }}
-                />
-                <Tooltip
-                  formatter={(value: any, name: string) => {
-                    if (name === "perimetro") return [`${value} cm`, "Perímetro Cefálico"];
-                    if (name === "p3") return [`${value} cm`, "Percentil 3"];
-                    if (name === "p15") return [`${value} cm`, "Percentil 15"];
-                    if (name === "p50") return [`${value} cm`, "Percentil 50"];
-                    if (name === "p85") return [`${value} cm`, "Percentil 85"];
-                    if (name === "p97") return [`${value} cm`, "Percentil 97"];
-                    return [value, name];
-                  }}
-                  labelFormatter={(label) => {
-                    const dataPoint = headCircumferenceChartData.find(d => d.idade === label);
-                    return dataPoint ? `Idade: ${dataPoint.idadeFormatada}` : `${Math.floor(label)} meses`;
-                  }}
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    borderColor: "var(--border)",
-                    borderRadius: "var(--radius)",
-                  }}
-                />
-                <Legend />
-                
-                {/* Área de Referência para Normalidade */}
-                <ReferenceArea y1="p3" y2="p97" fill="#f5f5f5" fillOpacity={0.3} />
-                
-                {/* Linhas de Percentis por Sexo */}
-                <Line type="monotone" dataKey="p3" stroke="#cccccc" strokeDasharray="3 3" name="Percentil 3" dot={false} />
-                <Line type="monotone" dataKey="p15" stroke="#bbbbbb" strokeDasharray="3 3" name="Percentil 15" dot={false} />
-                <Line type="monotone" dataKey="p50" stroke="#999999" strokeDasharray="3 3" name="Percentil 50" dot={false} />
-                <Line type="monotone" dataKey="p85" stroke="#777777" strokeDasharray="3 3" name="Percentil 85" dot={false} />
-                <Line type="monotone" dataKey="p97" stroke="#666666" strokeDasharray="3 3" name="Percentil 97" dot={false} />
-                
-                {/* Linha do Paciente */}
-                <Line
-                  type="monotone"
-                  dataKey="perimetro"
-                  stroke="#EF6C00"
-                  name="Perímetro Cefálico (cm)"
-                  strokeWidth={2}
-                  activeDot={{ r: isMobile ? 6 : 8 }}
-                  connectNulls
-                />
-              </LineChart>
-            </ResponsiveContainer>
-            <div className="text-xs text-center mt-2 text-muted-foreground">
-              Curvas de referência para sexo: {sexoPaciente === 'M' ? 'Masculino' : 'Feminino'}
-            </div>
-          </TabsContent>
-          
-          {/* Gráfico de Índices Gerais (original) */}
-          <TabsContent value="indices" className="mt-0">
-            <ResponsiveContainer width="100%" height={altura}>
-              <LineChart 
-                data={evolutionData} 
-                margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 5 : 0, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis 
-                  dataKey="idadeFormatada" 
-                  tick={{fontSize: isMobile ? 10 : 12}} 
-                />
-                <YAxis yAxisId="left" tick={{fontSize: isMobile ? 10 : 12}} />
-                <YAxis yAxisId="right" orientation="right" tick={{fontSize: isMobile ? 10 : 12}} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    borderColor: "var(--border)",
-                    borderRadius: "var(--radius)",
-                    fontSize: isMobile ? 10 : 12
-                  }}
-                />
-                <Legend wrapperStyle={{fontSize: isMobile ? 10 : 12}} />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="cvai"
-                  stroke="#029daf"
-                  activeDot={{ r: isMobile ? 6 : 8 }}
-                  name="CVAI (%)"
-                  strokeWidth={2}
-                />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="diagonal"
-                  stroke="#AF5B5B"
-                  name="Dif. Diagonal (mm)"
-                  strokeWidth={2}
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="ic"
-                  stroke="#276FBF"
-                  name="Índice Craniano"
-                  strokeWidth={2}
-                />
-                <ReferenceLine y={3.5} yAxisId="left" stroke="red" strokeDasharray="3 3">
-                  <Label value="Limite CVAI" position="insideTopRight" fill="red" fontSize={isMobile ? 10 : 12} />
-                </ReferenceLine>
-              </LineChart>
-            </ResponsiveContainer>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+    <div className="w-full">
+      {(titulo || descricao) && (
+        <div className="mb-4">
+          {titulo && <h3 className="text-lg font-medium">{titulo}</h3>}
+          {descricao && <p className="text-sm text-muted-foreground">{descricao}</p>}
+        </div>
+      )}
+      <div style={{ width: '100%', height: altura }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
+            <XAxis
+              dataKey="idadeEmMeses"
+              label={{ value: 'Idade (meses)', position: 'insideBottomRight', offset: -15 }}
+            />
+            {renderYAxis()}
+            <Tooltip content={renderCustomTooltip} />
+            <Legend />
+            {renderReferenceAreas()}
+            {renderLines()}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }
