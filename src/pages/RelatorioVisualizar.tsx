@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -15,8 +16,7 @@ import { ChevronLeft, Download, Printer } from "lucide-react";
 import { obterPacientePorId } from "@/data/mock-data";
 import { toast } from "sonner";
 import { formatAge } from "@/lib/age-utils";
-import { AsymmetryType, SeverityLevel } from "@/lib/cranial-utils";
-import { getCranialStatus } from "@/lib/cranial-utils";
+import { AsymmetryType, SeverityLevel, getCranialStatus } from "@/lib/cranial-utils";
 
 export default function RelatorioVisualizar() {
   const { id, medicaoId } = useParams<{ id: string, medicaoId: string }>();
@@ -118,7 +118,7 @@ export default function RelatorioVisualizar() {
             </h2>
             <div className="text-muted-foreground mt-1">
               {paciente.nome} • {idadeAtual}
-              {!modoConsolidado && ` • ${formatarData(medicao.data)}`}
+              {!modoConsolidado && medicao && ` • ${formatarData(medicao.data)}`}
             </div>
           </div>
         </div>
@@ -188,7 +188,7 @@ export default function RelatorioVisualizar() {
           </CardContent>
         </Card>
         
-        {!modoConsolidado && (
+        {!modoConsolidado && medicao && (
           <Card>
             <CardHeader>
               <CardTitle>Resumo da Avaliação</CardTitle>
@@ -278,7 +278,7 @@ export default function RelatorioVisualizar() {
             </div>
           </CardContent>
         </Card>
-      ) : (
+      ) : medicao ? (
         <Card>
           <CardHeader>
             <CardTitle>Parâmetros Craniais</CardTitle>
@@ -333,7 +333,7 @@ export default function RelatorioVisualizar() {
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
       
       {/* Gráficos de Evolução conforme os protocolos */}
       <div className="grid grid-cols-1 gap-6">

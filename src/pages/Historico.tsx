@@ -26,7 +26,8 @@ export default function Historico() {
     paciente.medicoes.map(medicao => ({
       ...medicao,
       pacienteId: paciente.id,
-      pacienteNome: paciente.nome
+      pacienteNome: paciente.nome,
+      pacienteNascimento: paciente.dataNascimento
     }))
   );
   
