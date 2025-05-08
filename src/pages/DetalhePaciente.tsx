@@ -13,6 +13,7 @@ import { PatientTasks } from "@/components/PatientTasks";
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
 import { MedicaoDetails } from "@/components/MedicaoDetails";
 import { formatAge, formatAgeHeader } from "@/lib/age-utils";
+import { getCranialStatus } from "@/lib/cranial-utils";
 
 export default function DetalhePaciente() {
   const { id } = useParams();
@@ -37,7 +38,7 @@ export default function DetalhePaciente() {
     ? [...paciente.medicoes].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())[0]
     : null;
   
-  // Format date and age
+  // Format date
   const formatarData = (dataString: string) => {
     const data = new Date(dataString);
     return data.toLocaleDateString('pt-BR');
@@ -45,6 +46,11 @@ export default function DetalhePaciente() {
   
   // Get current age string
   const idadeAtual = formatAgeHeader(paciente.dataNascimento);
+  
+  // Get asymmetry type and severity for the last measurement
+  const { asymmetryType, severityLevel } = ultimaMedicao
+    ? getCranialStatus(ultimaMedicao.indiceCraniano, ultimaMedicao.cvai)
+    : { asymmetryType: "Normal", severityLevel: "normal" };
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -108,7 +114,12 @@ export default function DetalhePaciente() {
           </Card>
           
           <div className="mt-6">
-            <MedicaoLineChart titulo="Evolução das Medições" />
+            <MedicaoLineChart 
+              titulo="Evolução das Medições" 
+              medicoes={paciente.medicoes} 
+              dataNascimento={paciente.dataNascimento}
+              sexoPaciente={paciente.sexo}
+            />
           </div>
         </div>
         
@@ -128,10 +139,12 @@ export default function DetalhePaciente() {
                     <span className="text-muted-foreground">Sexo:</span>
                     <span className="ml-2">{paciente.sexo === 'M' ? 'Masculino' : 'Feminino'}</span>
                   </div>
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Idade na Primeira Avaliação:</span>
-                    <span className="ml-2">{paciente.idadeEmMeses} meses</span>
-                  </div>
+                  {ultimaMedicao && (
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Idade na Última Avaliação:</span>
+                      <span className="ml-2">{formatAge(paciente.dataNascimento, ultimaMedicao.data)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               

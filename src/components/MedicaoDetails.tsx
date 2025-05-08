@@ -1,112 +1,115 @@
 
-import { Card } from "@/components/ui/card";
-import { StatusBadge } from "@/components/StatusBadge";
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { StatusBadge } from "./StatusBadge";
 import { formatAge } from "@/lib/age-utils";
-import { AsymmetryType, SeverityLevel } from "@/lib/cranial-utils";
+import { getCranialStatus } from "@/lib/cranial-utils";
 
 interface MedicaoDetailsProps {
-  medicao: {
-    id: string;
-    data: string;
-    comprimento: number;
-    largura: number;
-    diagonalD: number;
-    diagonalE: number;
-    diferencaDiagonais: number;
-    indiceCraniano: number;
-    cvai: number;
-    perimetroCefalico?: number;
-    status: SeverityLevel;
-    asymmetryType?: AsymmetryType;
-    observacoes?: string;
-  };
+  medicao: any;
   pacienteNascimento: string;
   compact?: boolean;
 }
 
-export function MedicaoDetails({ medicao, pacienteNascimento, compact = false }: MedicaoDetailsProps) {
-  // Format date
+export function MedicaoDetails({
+  medicao,
+  pacienteNascimento,
+  compact = false
+}: MedicaoDetailsProps) {
   const formatarData = (dataString: string) => {
     const data = new Date(dataString);
-    return data.toLocaleDateString('pt-BR');
+    return data.toLocaleDateString("pt-BR");
   };
+
+  // Calcular idade exata na data da medição
+  const idadeNaMedicao = formatAge(pacienteNascimento, medicao.data);
   
-  // Calculate age at measurement date
-  const idadeMedicao = formatAge(pacienteNascimento, medicao.data);
-  
+  // Obter tipo e severidade da assimetria
+  const { asymmetryType, severityLevel } = getCranialStatus(
+    medicao.indiceCraniano,
+    medicao.cvai
+  );
+
   return (
-    <Card className={`p-4 ${compact ? 'mb-2' : 'mb-4'}`}>
-      <div className="flex flex-col gap-2">
-        {/* Header with date, age and status */}
-        <div className="flex flex-wrap justify-between items-center mb-2">
+    <Card
+      className={`${
+        compact ? "border-0 shadow-none p-0" : "border shadow"
+      } mb-4`}
+    >
+      <CardContent className={compact ? "p-0" : "p-6"}>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
           <div>
-            <span className="font-medium">
-              {formatarData(medicao.data)}
-            </span>
-            <span className="text-sm text-muted-foreground ml-2">
-              Idade: {idadeMedicao}
-            </span>
-          </div>
-          <StatusBadge 
-            status={medicao.status} 
-            asymmetryType={medicao.asymmetryType}
-          />
-        </div>
-        
-        {/* Measurements - First row */}
-        <div className="grid grid-cols-3 gap-2 mb-1">
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Comprimento</span>
-            <span>{medicao.comprimento} mm</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Largura</span>
-            <span>{medicao.largura} mm</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Índice Craniano</span>
-            <span>{medicao.indiceCraniano}%</span>
-          </div>
-        </div>
-        
-        {/* Measurements - Second row */}
-        <div className="grid grid-cols-4 gap-2">
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Diagonal D</span>
-            <span>{medicao.diagonalD} mm</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Diagonal E</span>
-            <span>{medicao.diagonalE} mm</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Dif. Diagonais</span>
-            <span>{medicao.diferencaDiagonais} mm</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">CVAI</span>
-            <span>{medicao.cvai}%</span>
-          </div>
-        </div>
-        
-        {/* Perimetro cefalico if available */}
-        {medicao.perimetroCefalico && (
-          <div className="mt-1">
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">Perímetro Cefálico</span>
-              <span>{medicao.perimetroCefalico} mm</span>
+            <div className="flex items-center gap-2">
+              <div className="text-lg font-medium">
+                {formatarData(medicao.data)}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                ({idadeNaMedicao})
+              </div>
+            </div>
+
+            <div className="mt-2 space-y-3">
+              {/* Linha 1: Comprimento, Largura, Índice Craniano */}
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <div className="text-sm text-muted-foreground">Comprimento</div>
+                  <div className="text-lg font-medium">{medicao.comprimento} mm</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Largura</div>
+                  <div className="text-lg font-medium">{medicao.largura} mm</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Índice Craniano</div>
+                  <div className="text-lg font-medium">{medicao.indiceCraniano}%</div>
+                </div>
+              </div>
+              
+              {/* Linha 2: Diagonal D, Diagonal E, Diferença, CVAI */}
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <div className="text-sm text-muted-foreground">Diagonal D</div>
+                  <div className="text-lg font-medium">{medicao.diagonalD} mm</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Diagonal E</div>
+                  <div className="text-lg font-medium">{medicao.diagonalE} mm</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Diferença</div>
+                  <div className="text-lg font-medium">{medicao.diferencaDiagonais} mm</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">CVAI</div>
+                  <div className="text-lg font-medium">{medicao.cvai}%</div>
+                </div>
+              </div>
+              
+              {/* Perímetro Cefálico (se disponível) */}
+              {medicao.perimetroCefalico && (
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Perímetro Cefálico</div>
+                    <div className="text-lg font-medium">{medicao.perimetroCefalico} mm</div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        )}
-        
-        {/* Observations if available and not compact mode */}
-        {!compact && medicao.observacoes && (
-          <div className="mt-2 text-sm">
-            <span className="font-medium">Observações:</span>
-            <p className="text-muted-foreground">{medicao.observacoes}</p>
+
+          <div className="flex flex-col items-start md:items-end gap-2">
+            <div className="text-sm text-muted-foreground">Status</div>
+            <StatusBadge status={severityLevel} asymmetryType={asymmetryType} />
+          </div>
+        </div>
+
+        {medicao.observacoes && (
+          <div className="mt-4">
+            <div className="text-sm text-muted-foreground">Observações</div>
+            <p className="text-sm mt-1">{medicao.observacoes}</p>
           </div>
         )}
-      </div>
+      </CardContent>
     </Card>
   );
 }
