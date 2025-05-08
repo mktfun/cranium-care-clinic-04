@@ -15,6 +15,7 @@ import { ChevronLeft, Download, Printer } from "lucide-react";
 import { obterPacientePorId } from "@/data/mock-data";
 import { toast } from "sonner";
 import { formatAge } from "@/lib/age-utils";
+import { AsymmetryType, SeverityLevel } from "@/lib/cranial-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
 
 export default function RelatorioVisualizar() {
@@ -70,7 +71,7 @@ export default function RelatorioVisualizar() {
   // Obter o status de assimetria para a última medição
   const { asymmetryType, severityLevel } = medicao
     ? getCranialStatus(medicao.indiceCraniano, medicao.cvai)
-    : { asymmetryType: "Normal", severityLevel: "normal" };
+    : { asymmetryType: "Normal" as AsymmetryType, severityLevel: "normal" as SeverityLevel };
   
   // Função para gerar e exportar o PDF
   const handleExportarPDF = () => {
