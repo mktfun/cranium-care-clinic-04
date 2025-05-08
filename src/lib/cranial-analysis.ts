@@ -1,4 +1,3 @@
-
 // Tipos de assimetria
 export type AsymmetryType = 
   | "Braquicefalia" 
@@ -108,7 +107,8 @@ export function formatAsymmetryStatus(asymmetryType: AsymmetryType, severity: Se
 export function getTherapeuticRecommendations(
   asymmetryType: AsymmetryType, 
   severity: SeverityLevel,
-  ageInMonths: number
+  ageInMonths: number,
+  cranialIndexValue?: number
 ): string[] {
   const recommendations: string[] = [];
   
@@ -139,7 +139,7 @@ export function getTherapeuticRecommendations(
   if (severity === "severa") {
     recommendations.push("Encaminhamento para avaliação especializada de órtese craniana.");
     
-    if (asymmetryType === "Braquicefalia" && cranialIndex >= 95) {
+    if (asymmetryType === "Braquicefalia" && cranialIndexValue && cranialIndexValue >= 95) {
       recommendations.push("Considerar avaliação neurocirúrgica.");
     }
     
