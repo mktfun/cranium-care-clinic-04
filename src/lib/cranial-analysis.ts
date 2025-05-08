@@ -1,3 +1,4 @@
+
 // Tipos de assimetria
 export type AsymmetryType = 
   | "Braquicefalia" 
@@ -184,7 +185,7 @@ export function analyzeCranialMeasurement(measurement: CranialMeasurement): {
   const asymmetryType = determineAsymmetryType(cranialIndex, cvai);
   const severity = determineSeverityLevel(asymmetryType, cranialIndex, cvai);
   const formattedStatus = formatAsymmetryStatus(asymmetryType, severity);
-  const recommendations = getTherapeuticRecommendations(asymmetryType, severity, measurement.idade);
+  const recommendations = getTherapeuticRecommendations(asymmetryType, severity, measurement.idade, cranialIndex);
   
   return {
     cranialIndex,

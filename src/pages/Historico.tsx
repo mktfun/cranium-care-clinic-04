@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { obterPacientes } from "@/data/mock-data";
 import { Download } from "lucide-react";
+import { getCranialStatus } from "@/lib/cranial-utils";
+import { SeverityLevel, AsymmetryType } from "@/lib/cranial-utils";
 
 export default function Historico() {
   const [filtro, setFiltro] = useState("");
@@ -88,42 +90,50 @@ export default function Historico() {
           </TableHeader>
           <TableBody>
             {medicoesFiltradas.length > 0 ? (
-              medicoesFiltradas.map((medicao) => (
-                <TableRow key={medicao.id}>
-                  <TableCell>{formatarData(medicao.data)}</TableCell>
-                  <TableCell>
-                    <Link 
-                      to={`/pacientes/${medicao.pacienteId}`}
-                      className="text-turquesa hover:underline"
-                    >
-                      {medicao.pacienteNome}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {medicao.diferencaDiagonais} mm
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {medicao.indiceCraniano}%
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {medicao.cvai}%
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={medicao.status} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline" className="hidden sm:inline-flex">
-                        <Download className="h-4 w-4 mr-2" />
-                        PDF
-                      </Button>
-                      <Button asChild variant="outline" size="sm">
-                        <Link to={`/pacientes/${medicao.pacienteId}`}>Ver</Link>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+              medicoesFiltradas.map((medicao) => {
+                // Get the cranial status for the current measurement
+                const { asymmetryType, severityLevel } = getCranialStatus(
+                  medicao.indiceCraniano,
+                  medicao.cvai
+                );
+                
+                return (
+                  <TableRow key={medicao.id}>
+                    <TableCell>{formatarData(medicao.data)}</TableCell>
+                    <TableCell>
+                      <Link 
+                        to={`/pacientes/${medicao.pacienteId}`}
+                        className="text-turquesa hover:underline"
+                      >
+                        {medicao.pacienteNome}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {medicao.diferencaDiagonais} mm
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {medicao.indiceCraniano}%
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {medicao.cvai}%
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={severityLevel} asymmetryType={asymmetryType} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="outline" className="hidden sm:inline-flex">
+                          <Download className="h-4 w-4 mr-2" />
+                          PDF
+                        </Button>
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={`/pacientes/${medicao.pacienteId}`}>Ver</Link>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
