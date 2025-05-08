@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { StatusBadge } from "@/components/StatusBadge";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { formatAge } from "@/lib/age-utils";
 
 interface PacienteCardProps {
   paciente: {
@@ -14,6 +15,7 @@ interface PacienteCardProps {
     ultimaMedicao: {
       data: string;
       status: "normal" | "leve" | "moderada" | "severa";
+      asymmetryType?: string;
     };
   };
 }
@@ -30,15 +32,21 @@ export function PacienteCard({ paciente }: PacienteCardProps) {
     return data.toLocaleDateString('pt-BR');
   };
   
+  // Calculate and format current age
+  const idadeAtual = formatAge(paciente.dataNascimento);
+  
   return (
     <Card className="h-full">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg">{paciente.nome}</CardTitle>
-          <StatusBadge status={paciente.ultimaMedicao.status} />
+          <StatusBadge 
+            status={paciente.ultimaMedicao.status} 
+            asymmetryType={paciente.ultimaMedicao.asymmetryType as any}
+          />
         </div>
         <div className="text-sm text-muted-foreground">
-          {paciente.idadeEmMeses} meses • Nasc.: {formatarData(paciente.dataNascimento)}
+          {idadeAtual} • Nasc.: {formatarData(paciente.dataNascimento)}
         </div>
       </CardHeader>
       <CardContent className="pb-2">

@@ -1,5 +1,11 @@
-
 export type Status = "normal" | "leve" | "moderada" | "severa";
+
+export type AsymmetryType = 
+  | "Braquicefalia" 
+  | "Dolicocefalia" 
+  | "Plagiocefalia" 
+  | "Assimetria Mista" 
+  | "Normal";
 
 export interface Medicao {
   id: string;
@@ -11,7 +17,9 @@ export interface Medicao {
   diferencaDiagonais: number; // mm
   indiceCraniano: number; // %
   cvai: number; // %
+  perimetroCefalico?: number; // mm (New field)
   status: Status;
+  asymmetryType?: AsymmetryType; // New field
   observacoes?: string;
   recomendacoes?: string[];
 }
@@ -476,7 +484,7 @@ export const obterMedicoesRecentes = () => {
   ).slice(0, 10); // Retorna as 10 medições mais recentes
 };
 
-// Helper para calcular a idade em meses
+// Helper for calculating age in months and days
 export const calcularIdadeEmMeses = (dataNascimento: string) => {
   const nascimento = new Date(dataNascimento);
   const hoje = new Date();
@@ -492,3 +500,23 @@ export const calcularIdadeEmMeses = (dataNascimento: string) => {
   
   return meses;
 };
+
+// Add a function to process existing data and calculate asymmetry types
+export function processExistingData() {
+  pacientes.forEach(paciente => {
+    paciente.medicoes.forEach(medicao => {
+      // Only update if asymmetryType is not set
+      if (!medicao.asymmetryType) {
+        const { asymmetryType, severityLevel } = getCranialStatus(medicao.indiceCraniano, medicao.cvai);
+        medicao.asymmetryType = asymmetryType;
+        medicao.status = severityLevel;
+      }
+    });
+  });
+}
+
+// Import from cranial-utils
+import { getCranialStatus } from "@/lib/cranial-utils";
+
+// Process existing data when module is imported
+processExistingData();

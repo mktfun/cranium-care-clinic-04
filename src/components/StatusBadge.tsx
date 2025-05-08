@@ -1,16 +1,16 @@
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-type Status = "normal" | "leve" | "moderada" | "severa";
+import { AsymmetryType, SeverityLevel } from "@/lib/cranial-utils";
 
 interface StatusBadgeProps {
-  status: Status;
+  status: SeverityLevel;
+  asymmetryType?: AsymmetryType;
   className?: string;
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const getStatusColor = (status: Status) => {
+export function StatusBadge({ status, asymmetryType, className }: StatusBadgeProps) {
+  const getStatusColor = (status: SeverityLevel) => {
     switch (status) {
       case "normal":
         return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30";
@@ -25,12 +25,22 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     }
   };
 
+  const getStatusText = () => {
+    if (!asymmetryType) {
+      return status;
+    } else if (asymmetryType === "Normal") {
+      return "Normal";
+    } else {
+      return `${asymmetryType} (${status === 'normal' ? 'leve' : status})`;
+    }
+  };
+
   return (
     <Badge 
       variant="outline" 
       className={cn("font-medium capitalize", getStatusColor(status), className)}
     >
-      {status}
+      {getStatusText()}
     </Badge>
   );
 }
