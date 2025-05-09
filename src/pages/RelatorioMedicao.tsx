@@ -199,7 +199,12 @@ export default function RelatorioMedicao() {
         </Card>
       </div>
       
-      <MedicaoLineChart titulo="Evolução do Paciente" altura={350} />
+      <MedicaoLineChart 
+        titulo="Evolução do Paciente" 
+        altura={350}
+        medicoes={paciente.medicoes || []}
+        dataNascimento={paciente.dataNascimento}
+      />
       
       <div className="flex justify-between">
         <Button variant="outline" onClick={handleVoltar}>
