@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { obterPacientePorId } from "@/data/mock-data";
 import { formatAgeHeader } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function NovaMedicao() {
   const { id } = useParams();
@@ -34,14 +35,34 @@ export default function NovaMedicao() {
   
   // Load patient data
   useEffect(() => {
-    if (id) {
-      const pacienteData = obterPacientePorId(id);
-      if (pacienteData) {
-        setPaciente(pacienteData);
-        // Set default date to today
-        setData(new Date().toISOString().split('T')[0]);
+    async function loadPacienteData() {
+      try {
+        if (id) {
+          // Try to load from Supabase first
+          const { data: pacienteData, error } = await supabase
+            .from('pacientes')
+            .select('*')
+            .eq('id', id)
+            .single();
+          
+          if (error || !pacienteData) {
+            // Fallback to mock data
+            const mockData = obterPacientePorId(id);
+            setPaciente(mockData);
+          } else {
+            setPaciente(pacienteData);
+          }
+          
+          // Set default date to today
+          setData(new Date().toISOString().split('T')[0]);
+        }
+      } catch (error) {
+        console.error("Error loading patient data:", error);
+        toast.error("Erro ao carregar dados do paciente");
       }
     }
+    
+    loadPacienteData();
   }, [id]);
   
   // Calculate derived measurements when primary measurements change
@@ -74,44 +95,90 @@ export default function NovaMedicao() {
     }
   }, [comprimento, largura, diagonalD, diagonalE]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validation
-    if (!comprimento || !largura || !diagonalD || !diagonalE) {
+    if (!comprimento || !largura || !diagonalD || !diagonalE || !perimetroCefalico) {
       toast.error("Preencha todas as medidas obrigatórias");
       return;
     }
     
     // All required values are calculated or provided
     if (indiceCraniano !== null && diferencaDiagonais !== null && cvai !== null) {
-      // Determine status based on measurements
-      const { asymmetryType, severityLevel } = getCranialStatus(indiceCraniano, cvai);
-      
-      // Create new measurement object
-      const novaMedicao = {
-        id: `m${Date.now()}`,
-        data: new Date(data).toISOString(),
-        comprimento: Number(comprimento),
-        largura: Number(largura),
-        diagonalD: Number(diagonalD),
-        diagonalE: Number(diagonalE),
-        diferencaDiagonais,
-        indiceCraniano,
-        cvai,
-        perimetroCefalico: perimetroCefalico ? Number(perimetroCefalico) : undefined,
-        status: severityLevel,
-        asymmetryType,
-        observacoes: observacoes || undefined
-      };
-      
-      // In a real app, here we would save the measurement to the database
-      
-      toast.success("Medição registrada com sucesso!");
-      // Navigate back to patient details
-      navigate(`/pacientes/${id}`);
+      try {
+        // Determine status based on measurements
+        const { asymmetryType, severityLevel } = getCranialStatus(indiceCraniano, cvai);
+        
+        // Get user session for user ID
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // Create new measurement object
+        const novaMedicao = {
+          paciente_id: id,
+          user_id: session?.user?.id,
+          data: new Date(data).toISOString(),
+          comprimento: Number(comprimento),
+          largura: Number(largura),
+          diagonal_d: Number(diagonalD),
+          diagonal_e: Number(diagonalE),
+          diferenca_diagonais: diferencaDiagonais,
+          indice_craniano: indiceCraniano,
+          cvai: cvai,
+          perimetro_cefalico: Number(perimetroCefalico),
+          status: severityLevel,
+          observacoes: observacoes || null,
+          // Default recomendações based on severity
+          recomendacoes: generateRecomendacoes(severityLevel)
+        };
+        
+        // Save to Supabase
+        const { data, error } = await supabase
+          .from('medicoes')
+          .insert([novaMedicao])
+          .select();
+        
+        if (error) {
+          throw error;
+        }
+        
+        toast.success("Medição registrada com sucesso!");
+        // Navigate back to patient details
+        navigate(`/pacientes/${id}`);
+      } catch (error) {
+        console.error("Error saving measurement:", error);
+        toast.error("Erro ao salvar a medição. Tente novamente.");
+      }
     } else {
       toast.error("Erro ao calcular os valores derivados");
+    }
+  };
+  
+  // Generate recommendations based on severity
+  const generateRecomendacoes = (severity: string) => {
+    const baseRecs = [
+      "Monitorar posicionamento durante o sono",
+      "Estimular tempo de barriga para baixo sob supervisão"
+    ];
+    
+    if (severity === "normal") {
+      return [
+        ...baseRecs,
+        "Manter acompanhamento regular a cada 3 meses"
+      ];
+    } else if (severity === "leve") {
+      return [
+        ...baseRecs,
+        "Exercícios de estímulo cervical",
+        "Reavaliação em 2 meses"
+      ];
+    } else {
+      return [
+        ...baseRecs,
+        "Exercícios de estímulo cervical",
+        "Considerar terapia de capacete",
+        "Reavaliação em 1 mês"
+      ];
     }
   };
   
@@ -124,7 +191,7 @@ export default function NovaMedicao() {
       <div>
         <h2 className="text-3xl font-bold">Nova Medição</h2>
         <p className="text-muted-foreground">
-          Paciente: {paciente.nome} • {formatAgeHeader(paciente.dataNascimento)} • {new Date(paciente.dataNascimento).toLocaleDateString('pt-BR')}
+          Paciente: {paciente.nome} • {formatAgeHeader(paciente.dataNascimento || paciente.data_nascimento)} • {new Date(paciente.dataNascimento || paciente.data_nascimento).toLocaleDateString('pt-BR')}
         </p>
       </div>
       
@@ -208,7 +275,7 @@ export default function NovaMedicao() {
                   </div>
                 </div>
 
-                {/* New Perímetro Cefálico field */}
+                {/* Perímetro Cefálico field - now required */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="perimetroCefalico">Perímetro Cefálico (mm)</Label>
@@ -219,6 +286,7 @@ export default function NovaMedicao() {
                       step="0.1"
                       value={perimetroCefalico} 
                       onChange={(e) => setPerimetroCefalico(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
