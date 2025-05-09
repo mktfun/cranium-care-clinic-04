@@ -7,9 +7,10 @@ interface StatusBadgeProps {
   status: SeverityLevel;
   asymmetryType?: AsymmetryType;
   className?: string;
+  showAsymmetryType?: boolean;
 }
 
-export function StatusBadge({ status, asymmetryType, className }: StatusBadgeProps) {
+export function StatusBadge({ status, asymmetryType, className, showAsymmetryType = true }: StatusBadgeProps) {
   const getStatusColor = (status: SeverityLevel) => {
     switch (status) {
       case "normal":
@@ -26,7 +27,7 @@ export function StatusBadge({ status, asymmetryType, className }: StatusBadgePro
   };
 
   const getStatusText = () => {
-    if (!asymmetryType) {
+    if (!asymmetryType || !showAsymmetryType) {
       return status;
     } else if (asymmetryType === "Normal") {
       return "Normal";

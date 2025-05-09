@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Edit3, Plus, User, ArrowRight } from "lucide-react";
+import { Calendar, Edit3, Plus, User, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { obterPacientePorId } from "@/data/mock-data";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
@@ -26,6 +26,8 @@ export default function DetalhePaciente() {
   const [loading, setLoading] = useState(true);
   const [selectedMedicao, setSelectedMedicao] = useState<any>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [activeChartTab, setActiveChartTab] = useState("indiceCraniano");
+  const [chartsExpanded, setChartsExpanded] = useState(false);
   
   // Load patient data
   useEffect(() => {
@@ -105,6 +107,11 @@ export default function DetalhePaciente() {
     setSelectedMedicao(medicao);
     setIsDetailDialogOpen(true);
   };
+
+  // Toggle charts visibility
+  const toggleChartsExpanded = () => {
+    setChartsExpanded(!chartsExpanded);
+  };
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -138,10 +145,33 @@ export default function DetalhePaciente() {
             </CardHeader>
             <CardContent>
               {ultimaMedicao ? (
-                <MedicaoDetails 
-                  medicao={ultimaMedicao}
-                  pacienteNascimento={paciente.dataNascimento || paciente.data_nascimento}
-                />
+                <div>
+                  <MedicaoDetails 
+                    medicao={ultimaMedicao}
+                    pacienteNascimento={paciente.dataNascimento || paciente.data_nascimento}
+                  />
+                  <div className="mt-4">
+                    <h4 className="font-medium mb-2">Resumo para o Pediatra</h4>
+                    <div className="border p-3 rounded-md bg-muted/20">
+                      <p className="text-sm mb-2">
+                        <strong>Diagnóstico:</strong> {asymmetryType === "Normal" ? "Desenvolvimento craniano normal" : 
+                          `${asymmetryType} ${severityLevel !== 'normal' ? severityLevel : 'leve'}`}
+                      </p>
+                      <p className="text-sm mb-2">
+                        <strong>Perímetro Cefálico:</strong> {ultimaMedicao.perimetro_cefalico ? 
+                          `${ultimaMedicao.perimetro_cefalico} mm` : 'Não medido'}
+                      </p>
+                      <p className="text-sm">
+                        <strong>Recomendações:</strong>
+                      </p>
+                      <ul className="list-disc list-inside text-sm pl-2">
+                        {ultimaMedicao.recomendacoes?.map((rec: string, idx: number) => (
+                          <li key={idx}>{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground mb-4">Nenhuma medição registrada.</p>
@@ -222,99 +252,118 @@ export default function DetalhePaciente() {
         </div>
       </div>
       
-      {/* Evolution Charts - Moved to be displayed prominently */}
-      <div className="mt-8">
-        <h3 className="text-xl font-medium mb-4">Evolução das Medições</h3>
-        <div className="grid grid-cols-1 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução do Índice Craniano</CardTitle>
-              <CardDescription>
-                O Índice Craniano mede a proporção entre largura e comprimento do crânio.
-                Valores ideais ficam entre 76% e 80%, formando a zona verde no gráfico. 
-                Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% 
-                indicam tendência à dolicocefalia.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MedicaoLineChart 
-                titulo="" 
-                medicoes={medicoes}
-                dataNascimento={paciente.dataNascimento || paciente.data_nascimento}
-                tipoGrafico="indiceCraniano"
-                sexoPaciente={paciente.sexo}
-                linhaCorTheme="rose"
-              />
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução da Plagiocefalia (CVAI)</CardTitle>
-              <CardDescription>
-                O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana.
-                Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa.
-                A área verde representa a faixa de normalidade.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MedicaoLineChart 
-                titulo="" 
-                medicoes={medicoes}
-                dataNascimento={paciente.dataNascimento || paciente.data_nascimento}
-                tipoGrafico="cvai"
-                sexoPaciente={paciente.sexo}
-                linhaCorTheme="amber"
-              />
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução das Diagonais</CardTitle>
-              <CardDescription>
-                Este gráfico mostra a evolução da diferença entre as diagonais cranianas (assimetria).
-                A diferença ideal deve ser menor que 3mm, sendo que uma redução desta diferença ao longo
-                do tratamento indica melhora na simetria craniana.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MedicaoLineChart 
-                titulo="" 
-                medicoes={medicoes}
-                dataNascimento={paciente.dataNascimento || paciente.data_nascimento}
-                tipoGrafico="diagonais"
-                sexoPaciente={paciente.sexo}
-                linhaCorTheme="purple"
-              />
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
-              <CardDescription>
-                O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte 
-                mais protuberante do occipital. As linhas coloridas representam os percentis de referência 
-                para {paciente.sexo === 'M' ? 'meninos' : 'meninas'} da mesma idade,
-                sendo P50 a média populacional.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MedicaoLineChart 
-                titulo="" 
-                medicoes={medicoes}
-                dataNascimento={paciente.dataNascimento || paciente.data_nascimento}
-                tipoGrafico="perimetro"
-                sexoPaciente={paciente.sexo}
-                linhaCorTheme="blue"
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {/* Chart Section with Toggle */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-center">
+            <CardTitle>Evolução das Medições</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={toggleChartsExpanded}
+              className="flex items-center gap-1"
+            >
+              {chartsExpanded ? (
+                <>Minimizar <ChevronUp className="h-4 w-4" /></>
+              ) : (
+                <>Expandir <ChevronDown className="h-4 w-4" /></>
+              )}
+            </Button>
+          </div>
+          <CardDescription>
+            Selecione o parâmetro que deseja visualizar
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className={chartsExpanded ? "" : "h-[400px] overflow-hidden"}>
+          <Tabs defaultValue={activeChartTab} value={activeChartTab} onValueChange={setActiveChartTab} className="w-full">
+            <TabsList className="mb-4 flex flex-wrap">
+              <TabsTrigger value="indiceCraniano">Índice Craniano</TabsTrigger>
+              <TabsTrigger value="cvai">Plagiocefalia (CVAI)</TabsTrigger>
+              <TabsTrigger value="diagonais">Diagonais</TabsTrigger>
+              <TabsTrigger value="perimetro">Perímetro Cefálico</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="indiceCraniano" className="mt-0">
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  <p><strong>O que é?</strong> O Índice Craniano mede a proporção entre largura e comprimento do crânio.</p>
+                  <p><strong>Como interpretar:</strong> Valores entre 76% e 80% são considerados normais (zona verde no gráfico).</p>
+                  <p><strong>Desvios:</strong> Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% indicam tendência à dolicocefalia.</p>
+                </div>
+                <MedicaoLineChart 
+                  titulo="Evolução do Índice Craniano" 
+                  medicoes={medicoes}
+                  dataNascimento={paciente.dataNascimento || paciente.data_nascimento}
+                  tipoGrafico="indiceCraniano"
+                  sexoPaciente={paciente.sexo}
+                  linhaCorTheme="rose"
+                  height={400}
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="cvai" className="mt-0">
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  <p><strong>O que é?</strong> O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana.</p>
+                  <p><strong>Como interpretar:</strong> Valores abaixo de 3.5% são considerados normais (zona verde no gráfico).</p>
+                  <p><strong>Desvios:</strong> Valores entre 3.5% e 6.25% indicam plagiocefalia leve, entre 6.25% e 8.5% moderada, e acima de 8.5% severa.</p>
+                </div>
+                <MedicaoLineChart 
+                  titulo="Evolução da Plagiocefalia (CVAI)" 
+                  medicoes={medicoes}
+                  dataNascimento={paciente.dataNascimento || paciente.data_nascimento}
+                  tipoGrafico="cvai"
+                  sexoPaciente={paciente.sexo}
+                  linhaCorTheme="amber"
+                  height={400}
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="diagonais" className="mt-0">
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  <p><strong>O que é?</strong> Este gráfico mostra a evolução da diferença entre as diagonais cranianas (assimetria).</p>
+                  <p><strong>Como interpretar:</strong> A diferença ideal deve ser menor que 3mm (zona verde no gráfico).</p>
+                  <p><strong>Evolução:</strong> Uma redução desta diferença ao longo do tratamento indica melhora na simetria craniana.</p>
+                </div>
+                <MedicaoLineChart 
+                  titulo="Evolução das Diagonais" 
+                  medicoes={medicoes}
+                  dataNascimento={paciente.dataNascimento || paciente.data_nascimento}
+                  tipoGrafico="diagonais"
+                  sexoPaciente={paciente.sexo}
+                  linhaCorTheme="purple"
+                  height={400}
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="perimetro" className="mt-0">
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  <p><strong>O que é?</strong> O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte mais protuberante do occipital.</p>
+                  <p><strong>Como interpretar:</strong> As linhas coloridas representam os percentis de referência para {paciente.sexo === 'M' ? 'meninos' : 'meninas'} da mesma idade.</p>
+                  <p><strong>Desvios:</strong> Valores abaixo do percentil 3 ou acima do percentil 97 merecem investigação adicional.</p>
+                </div>
+                <MedicaoLineChart 
+                  titulo="Evolução do Perímetro Cefálico" 
+                  medicoes={medicoes}
+                  dataNascimento={paciente.dataNascimento || paciente.data_nascimento}
+                  tipoGrafico="perimetro"
+                  sexoPaciente={paciente.sexo}
+                  linhaCorTheme="blue"
+                  height={400}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
       
-      {/* Measurement History - Now positioned below the evolution charts */}
+      {/* Measurement History */}
       <div className="mt-8">
         <Tabs defaultValue="historico">
           <TabsList>
@@ -329,7 +378,7 @@ export default function DetalhePaciente() {
                     {medicoes.map((medicao: any) => (
                       <div key={medicao.id} 
                            onClick={() => handleMedicaoClick(medicao)}
-                           className="cursor-pointer transition hover:bg-muted/20 rounded-md">
+                           className="cursor-pointer transition hover:bg-muted/20 rounded-md p-3 border">
                         <MedicaoDetails 
                           key={medicao.id}
                           medicao={medicao}
@@ -382,7 +431,7 @@ export default function DetalhePaciente() {
                   className="bg-turquesa hover:bg-turquesa/90"
                   onClick={() => {
                     setIsDetailDialogOpen(false);
-                    navigate(`/pacientes/${id}/relatorio`);
+                    navigate(`/pacientes/${id}/relatorios/${selectedMedicao.id}`);
                   }}
                 >
                   Ver Relatório Completo

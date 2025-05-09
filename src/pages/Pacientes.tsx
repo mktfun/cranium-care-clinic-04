@@ -15,7 +15,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { obterPacientes, obterUltimaMedicao } from "@/data/mock-data";
 import { Paciente, Status } from "@/data/mock-data";
-import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Trash2, UserPlus } from "lucide-react";
+import { getCranialStatus } from "@/lib/cranial-utils";
 
 type SortConfig = {
   key: keyof Paciente | "ultimaAvaliacao" | "status";
@@ -113,12 +114,21 @@ export default function Pacientes() {
     return sortConfig.direction === "asc" ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />;
   };
 
+  // Handle navigation to signup page
+  const handleAddPaciente = () => {
+    window.location.href = "/registro";
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">Pacientes</h2>
-        <Button className="bg-turquesa hover:bg-turquesa/90">
-          Adicionar Paciente
+        <Button 
+          className="bg-turquesa hover:bg-turquesa/90 flex items-center gap-2"
+          onClick={handleAddPaciente}
+        >
+          <UserPlus className="h-4 w-4" />
+          <span>Adicionar Paciente</span>
         </Button>
       </div>
       
@@ -216,6 +226,9 @@ export default function Pacientes() {
             {pacientesFiltrados.length > 0 ? (
               pacientesFiltrados.map((paciente) => {
                 const ultimaMedicao = obterUltimaMedicao(paciente.id);
+                const { asymmetryType } = ultimaMedicao ? 
+                  getCranialStatus(ultimaMedicao.indiceCraniano, ultimaMedicao.cvai) : 
+                  { asymmetryType: "Normal" };
                 
                 return (
                   <TableRow key={paciente.id}>
@@ -227,7 +240,10 @@ export default function Pacientes() {
                     </TableCell>
                     <TableCell>
                       {ultimaMedicao ? (
-                        <StatusBadge status={ultimaMedicao.status} />
+                        <StatusBadge 
+                          status={ultimaMedicao.status} 
+                          asymmetryType={asymmetryType}
+                        />
                       ) : (
                         "N/A"
                       )}

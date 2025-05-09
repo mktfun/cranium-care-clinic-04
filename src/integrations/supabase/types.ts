@@ -23,6 +23,7 @@ export type Database = {
           largura: number
           observacoes: string | null
           paciente_id: string
+          perimetro_cefalico: number | null
           recomendacoes: string[] | null
           status: Database["public"]["Enums"]["status_medicao"]
           updated_at: string | null
@@ -41,6 +42,7 @@ export type Database = {
           largura: number
           observacoes?: string | null
           paciente_id: string
+          perimetro_cefalico?: number | null
           recomendacoes?: string[] | null
           status: Database["public"]["Enums"]["status_medicao"]
           updated_at?: string | null
@@ -59,6 +61,7 @@ export type Database = {
           largura?: number
           observacoes?: string | null
           paciente_id?: string
+          perimetro_cefalico?: number | null
           recomendacoes?: string[] | null
           status?: Database["public"]["Enums"]["status_medicao"]
           updated_at?: string | null
