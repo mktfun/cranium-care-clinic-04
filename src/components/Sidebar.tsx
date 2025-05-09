@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import {
   BarChart,
   X
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface SidebarProps {
   className?: string;
@@ -26,6 +28,7 @@ interface SidebarProps {
 export function Sidebar({ className, collapsed = false, toggleSidebar, navigateToDashboard }: SidebarProps) {
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Check if device is mobile on component mount and window resize
   useEffect(() => {
@@ -41,6 +44,20 @@ export function Sidebar({ className, collapsed = false, toggleSidebar, navigateT
   
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+  
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      toast.success("Logout realizado com sucesso!");
+      navigate("/login");
+    } catch (error: any) {
+      console.error("Erro ao fazer logout:", error);
+      toast.error(`Erro ao fazer logout: ${error.message}`);
+    }
   };
   
   return (
@@ -145,14 +162,23 @@ export function Sidebar({ className, collapsed = false, toggleSidebar, navigateT
       
       <div className="border-t p-4 flex items-center justify-between">
         <ThemeToggle />
-        {!collapsed && (
-          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive transition-colors">
+        {!collapsed ? (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-destructive hover:text-destructive transition-colors"
+            onClick={handleLogout}
+          >
             <LogOut className="h-4 w-4 mr-2" />
             <span>Sair</span>
           </Button>
-        )}
-        {collapsed && (
-          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive transition-colors">
+        ) : (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-destructive hover:text-destructive transition-colors"
+            onClick={handleLogout}
+          >
             <LogOut className="h-4 w-4" />
           </Button>
         )}

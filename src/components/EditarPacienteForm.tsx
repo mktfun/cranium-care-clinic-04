@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ResponsavelType {
   nome: string;
@@ -31,6 +33,7 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
   const [dataNascimento, setDataNascimento] = useState(paciente.dataNascimento.split('T')[0]);
   const [sexo, setSexo] = useState(paciente.sexo);
   const [responsaveis, setResponsaveis] = useState([...paciente.responsaveis]);
+  const [isLoading, setIsLoading] = useState(false);
   
   const handleResponsavelChange = (index: number, field: keyof ResponsavelType, value: string) => {
     const novosResponsaveis = [...responsaveis];
@@ -41,10 +44,57 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
     setResponsaveis(novosResponsaveis);
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Em uma aplicação real, aqui seria feita a chamada para salvar os dados
-    onSalvar();
+    setIsLoading(true);
+    
+    try {
+      // Make sure paciente.id is valid before proceeding
+      if (!paciente.id) {
+        toast.error("ID do paciente inválido");
+        return;
+      }
+  
+      // First, check if we're dealing with mock data or Supabase data
+      const { data: existingPaciente, error: checkError } = await supabase
+        .from('pacientes')
+        .select('id')
+        .eq('id', paciente.id)
+        .maybeSingle();
+  
+      if (checkError) {
+        console.error("Erro ao verificar paciente:", checkError);
+      }
+  
+      if (existingPaciente) {
+        // Update in Supabase
+        const { error } = await supabase
+          .from('pacientes')
+          .update({
+            nome,
+            data_nascimento: dataNascimento,
+            sexo,
+            responsaveis
+          })
+          .eq('id', paciente.id);
+  
+        if (error) {
+          throw error;
+        }
+  
+        toast.success("Dados do paciente atualizados com sucesso!");
+      } else {
+        // Handle mock data update - in real app this would be skipped
+        toast.success("Dados do paciente atualizados com sucesso (mock)!");
+      }
+      
+      onSalvar();
+    } catch (error: any) {
+      console.error("Erro ao atualizar paciente:", error);
+      toast.error(`Erro ao atualizar dados: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   return (
@@ -57,6 +107,7 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             required
+            disabled={isLoading}
           />
         </div>
         
@@ -69,6 +120,7 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
               value={dataNascimento}
               onChange={(e) => setDataNascimento(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           
@@ -80,6 +132,7 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
               value={sexo}
               onChange={(e) => setSexo(e.target.value as "M" | "F")}
               required
+              disabled={isLoading}
             >
               <option value="M">Masculino</option>
               <option value="F">Feminino</option>
@@ -98,6 +151,7 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
                   value={responsavel.nome}
                   onChange={(e) => handleResponsavelChange(index, "nome", e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
@@ -109,6 +163,7 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
                     value={responsavel.telefone}
                     onChange={(e) => handleResponsavelChange(index, "telefone", e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
                 
@@ -120,6 +175,7 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
                     value={responsavel.email}
                     onChange={(e) => handleResponsavelChange(index, "email", e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -129,8 +185,8 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
       </div>
       
       <DialogFooter className="mt-4">
-        <Button type="submit" className="bg-turquesa hover:bg-turquesa/90">
-          Salvar alterações
+        <Button type="submit" className="bg-turquesa hover:bg-turquesa/90" disabled={isLoading}>
+          {isLoading ? "Salvando..." : "Salvar alterações"}
         </Button>
       </DialogFooter>
     </form>

@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { 
   Table, 
   TableBody, 
@@ -25,6 +26,7 @@ type SortConfig = {
 export default function Pacientes() {
   const [searchParams] = useSearchParams();
   const statusParams = searchParams.get("status");
+  const navigate = useNavigate();
   
   const todosPacientes = obterPacientes();
   const [filtroNome, setFiltroNome] = useState("");
@@ -115,7 +117,7 @@ export default function Pacientes() {
 
   // Handle navigation to signup page
   const handleAddPaciente = () => {
-    window.location.href = "/registro";
+    navigate("/registro");
   };
 
   return (
@@ -242,6 +244,7 @@ export default function Pacientes() {
                         <StatusBadge 
                           status={ultimaMedicao.status} 
                           asymmetryType={asymmetryType}
+                          showAsymmetryType={true}
                         />
                       ) : (
                         "N/A"

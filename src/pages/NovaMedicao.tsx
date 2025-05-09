@@ -43,12 +43,17 @@ export default function NovaMedicao() {
             .from('pacientes')
             .select('*')
             .eq('id', id)
-            .single();
+            .maybeSingle(); // Using maybeSingle instead of single to avoid errors if no data is found
           
           if (error || !pacienteData) {
             // Fallback to mock data
             const mockData = obterPacientePorId(id);
-            setPaciente(mockData);
+            if (mockData) {
+              setPaciente(mockData);
+            } else {
+              toast.error("Paciente não encontrado");
+              navigate("/pacientes");
+            }
           } else {
             setPaciente(pacienteData);
           }
@@ -63,7 +68,7 @@ export default function NovaMedicao() {
     }
     
     loadPacienteData();
-  }, [id]);
+  }, [id, navigate]);
   
   // Calculate derived measurements when primary measurements change
   useEffect(() => {
@@ -113,10 +118,35 @@ export default function NovaMedicao() {
         // Get user session for user ID
         const { data: { session } } = await supabase.auth.getSession();
         
+        if (!session?.user) {
+          toast.error("Usuário não autenticado. Faça login novamente.");
+          navigate("/login");
+          return;
+        }
+        
+        // Make sure id is a valid UUID
+        let pacienteId = id;
+        
+        // If ID is not a valid UUID, try to get the actual UUID from the database
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pacienteId || '')) {
+          const { data: foundPaciente } = await supabase
+            .from('pacientes')
+            .select('id')
+            .eq('id', pacienteId)
+            .maybeSingle();
+            
+          if (foundPaciente) {
+            pacienteId = foundPaciente.id;
+          } else {
+            toast.error("ID do paciente inválido");
+            return;
+          }
+        }
+        
         // Create new measurement object
         const novaMedicao = {
-          paciente_id: id,
-          user_id: session?.user?.id,
+          paciente_id: pacienteId,
+          user_id: session.user.id,
           data: new Date(medicaoData).toISOString(), // Changed variable name
           comprimento: Number(comprimento),
           largura: Number(largura),
@@ -132,6 +162,8 @@ export default function NovaMedicao() {
           recomendacoes: generateRecomendacoes(severityLevel)
         };
         
+        console.log("Saving measurement:", novaMedicao);
+        
         // Save to Supabase
         const { data, error } = await supabase
           .from('medicoes')
@@ -139,15 +171,16 @@ export default function NovaMedicao() {
           .select();
         
         if (error) {
+          console.error("Error details:", error);
           throw error;
         }
         
         toast.success("Medição registrada com sucesso!");
         // Navigate back to patient details
-        navigate(`/pacientes/${id}`);
-      } catch (error) {
+        navigate(`/pacientes/${pacienteId}`);
+      } catch (error: any) {
         console.error("Error saving measurement:", error);
-        toast.error("Erro ao salvar a medição. Tente novamente.");
+        toast.error(`Erro ao salvar a medição: ${error.message}`);
       }
     } else {
       toast.error("Erro ao calcular os valores derivados");
@@ -275,7 +308,7 @@ export default function NovaMedicao() {
                   </div>
                 </div>
 
-                {/* Perímetro Cefálico field - now required */}
+                {/* Perímetro Cefálico field */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="perimetroCefalico">Perímetro Cefálico (mm)</Label>
