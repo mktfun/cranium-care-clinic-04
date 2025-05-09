@@ -18,9 +18,9 @@ export default function NovaMedicao() {
   const navigate = useNavigate();
   const [paciente, setPaciente] = useState<any>(null);
   
-  // Form state
+  // Form state - renamed 'data' to 'medicaoData' to avoid naming conflict
   const [activeTab, setActiveTab] = useState("manual");
-  const [data, setData] = useState("");
+  const [medicaoData, setMedicaoData] = useState("");
   const [comprimento, setComprimento] = useState("");
   const [largura, setLargura] = useState("");
   const [diagonalD, setDiagonalD] = useState("");
@@ -54,7 +54,7 @@ export default function NovaMedicao() {
           }
           
           // Set default date to today
-          setData(new Date().toISOString().split('T')[0]);
+          setMedicaoData(new Date().toISOString().split('T')[0]);
         }
       } catch (error) {
         console.error("Error loading patient data:", error);
@@ -117,7 +117,7 @@ export default function NovaMedicao() {
         const novaMedicao = {
           paciente_id: id,
           user_id: session?.user?.id,
-          data: new Date(data).toISOString(),
+          data: new Date(medicaoData).toISOString(), // Changed variable name
           comprimento: Number(comprimento),
           largura: Number(largura),
           diagonal_d: Number(diagonalD),
@@ -214,8 +214,8 @@ export default function NovaMedicao() {
                     <Input 
                       id="data" 
                       type="date" 
-                      value={data} 
-                      onChange={(e) => setData(e.target.value)}
+                      value={medicaoData} 
+                      onChange={(e) => setMedicaoData(e.target.value)}
                       required
                     />
                   </div>

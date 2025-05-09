@@ -17,7 +17,7 @@ import { obterPacientePorId } from "@/data/mock-data";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatAge } from "@/lib/age-utils";
-import { getCranialStatus } from "@/lib/cranial-utils";
+import { getCranialStatus, SeverityLevel, AsymmetryType } from "@/lib/cranial-utils";
 
 export default function RelatorioMedicao() {
   const { id } = useParams<{ id: string }>();
@@ -164,10 +164,10 @@ export default function RelatorioMedicao() {
     );
   }
   
-  // Obter o status de assimetria
+  // Obter o status de assimetria - cast the result to the proper types
   const { asymmetryType, severityLevel } = medicao
     ? getCranialStatus(medicao.indice_craniano, medicao.cvai)
-    : { asymmetryType: "Normal", severityLevel: "normal" };
+    : { asymmetryType: "Normal" as AsymmetryType, severityLevel: "normal" as SeverityLevel };
     
   // Idade do paciente na medição
   const idadeNaMedicao = medicao 
