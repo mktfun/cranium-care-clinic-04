@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -298,7 +297,7 @@ export default function DetalhePaciente() {
                   tipoGrafico="indiceCraniano"
                   sexoPaciente={paciente.sexo}
                   linhaCorTheme="rose"
-                  height={400}
+                  altura={400}
                 />
               </div>
             </TabsContent>
@@ -317,7 +316,7 @@ export default function DetalhePaciente() {
                   tipoGrafico="cvai"
                   sexoPaciente={paciente.sexo}
                   linhaCorTheme="amber"
-                  height={400}
+                  altura={400}
                 />
               </div>
             </TabsContent>
@@ -336,7 +335,7 @@ export default function DetalhePaciente() {
                   tipoGrafico="diagonais"
                   sexoPaciente={paciente.sexo}
                   linhaCorTheme="purple"
-                  height={400}
+                  altura={400}
                 />
               </div>
             </TabsContent>
@@ -355,7 +354,7 @@ export default function DetalhePaciente() {
                   tipoGrafico="perimetro"
                   sexoPaciente={paciente.sexo}
                   linhaCorTheme="blue"
-                  height={400}
+                  altura={400}
                 />
               </div>
             </TabsContent>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { 
@@ -16,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { obterPacientes, obterUltimaMedicao } from "@/data/mock-data";
 import { Paciente, Status } from "@/data/mock-data";
 import { ArrowDown, ArrowUp, Trash2, UserPlus } from "lucide-react";
-import { getCranialStatus } from "@/lib/cranial-utils";
+import { AsymmetryType, getCranialStatus } from "@/lib/cranial-utils";
 
 type SortConfig = {
   key: keyof Paciente | "ultimaAvaliacao" | "status";
@@ -228,7 +227,7 @@ export default function Pacientes() {
                 const ultimaMedicao = obterUltimaMedicao(paciente.id);
                 const { asymmetryType } = ultimaMedicao ? 
                   getCranialStatus(ultimaMedicao.indiceCraniano, ultimaMedicao.cvai) : 
-                  { asymmetryType: "Normal" };
+                  { asymmetryType: "Normal" as AsymmetryType };
                 
                 return (
                   <TableRow key={paciente.id}>
