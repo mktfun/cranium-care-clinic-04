@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   ReferenceArea,
+  Dot,
 } from "recharts";
 import { calculateAge } from "@/lib/age-utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,7 +25,7 @@ interface MedicaoLineChartProps {
   dataNascimento: string;
   sexoPaciente?: string;
   altura?: number;
-  tipoGrafico?: "indiceCraniano" | "cvai" | "perimetro";
+  tipoGrafico?: "indiceCraniano" | "cvai" | "perimetro" | "diagonais";
   linhaCorTheme?: string;
 }
 
@@ -42,18 +43,30 @@ function getLineColor(theme: string = "blue") {
   return colors[theme as keyof typeof colors] || colors.blue;
 }
 
+// Função personalizada para renderizar pontos no gráfico
+const renderCustomDot = (fill: string) => (props: any) => {
+  const { cx, cy, payload } = props;
+  // Não renderizar pontos para dados de referência
+  if (payload.paciente === null) return null;
+  
+  return (
+    <Dot cx={cx} cy={cy} r={4} fill={fill} stroke="#fff" strokeWidth={1} />
+  );
+};
+
 export function MedicaoLineChart({
   titulo,
   descricao,
   medicoes = [],
   dataNascimento,
   sexoPaciente = "M",
-  altura = 300,
+  altura = 350,
   tipoGrafico = "indiceCraniano",
   linhaCorTheme = "blue"
 }: MedicaoLineChartProps) {
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredData, setHoveredData] = useState<any>(null);
 
   useEffect(() => {
     if (medicoes.length === 0) {
@@ -64,18 +77,23 @@ export function MedicaoLineChart({
     const processedData = [...medicoes]
       .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
       .map((medicao) => {
-        const { months } = calculateAge(dataNascimento, medicao.data);
+        const { months, days } = calculateAge(dataNascimento, medicao.data);
+        const idadeMeses = months + (days / 30); // Aproximada em meses decimais para gráfico
         
         return {
           ...medicao,
-          idadeEmMeses: months,
+          idadeEmMeses: idadeMeses,
+          idadeFormatada: `${months} ${months === 1 ? 'mês' : 'meses'}${days > 0 ? ` e ${days} ${days === 1 ? 'dia' : 'dias'}` : ''}`,
           comprimento: Number(medicao.comprimento),
           largura: Number(medicao.largura),
-          diagonal_d: Number(medicao.diagonal_d),
-          diagonal_e: Number(medicao.diagonal_e),
-          indice_craniano: Number(medicao.indice_craniano),
+          diagonal_d: Number(medicao.diagonal_d || medicao.diagonalD),
+          diagonal_e: Number(medicao.diagonal_e || medicao.diagonalE),
+          diferenca_diagonais: Number(medicao.diferenca_diagonais || medicao.diferencaDiagonais),
+          indice_craniano: Number(medicao.indice_craniano || medicao.indiceCraniano),
           cvai: Number(medicao.cvai),
-          perimetro_cefalico: medicao.perimetro_cefalico ? Number(medicao.perimetro_cefalico) : undefined,
+          perimetro_cefalico: medicao.perimetro_cefalico || medicao.perimetroCefalico ? 
+            Number(medicao.perimetro_cefalico || medicao.perimetroCefalico) : undefined,
+          paciente: true, // Marcar que são pontos do paciente
         };
       });
 
@@ -91,11 +109,12 @@ export function MedicaoLineChart({
     
     // Obter a faixa de idade
     const minAge = 0;
-    const maxAge = Math.max(...data.map(d => d.idadeEmMeses), 18);
+    const maxAge = Math.max(...data.map(d => d.idadeEmMeses), 18) + 3; // Adiciona 3 meses para visualização futura
     
     // Criar array com pontos de referência para cada mês
-    const referencePoints = Array.from({ length: maxAge + 1 }, (_, i) => ({
+    const referencePoints = Array.from({ length: Math.ceil(maxAge) + 1 }, (_, i) => ({
       idadeEmMeses: i,
+      idadeFormatada: `${i} ${i === 1 ? 'mês' : 'meses'}`,
       paciente: null // Marcar que não são pontos do paciente
     }));
     
@@ -104,6 +123,8 @@ export function MedicaoLineChart({
       return addIndiceReferenceData([...data, ...referencePoints]);
     } else if (tipo === "cvai") {
       return addCvaiReferenceData([...data, ...referencePoints]);
+    } else if (tipo === "diagonais") {
+      return addDiagonaisReferenceData([...data, ...referencePoints]);
     } else if (tipo === "perimetro") {
       return addPerimetroReferenceData([...data, ...referencePoints], sexo);
     }
@@ -135,6 +156,18 @@ export function MedicaoLineChart({
       leve: 6.25,
       moderada: 8.5,
       mediaPopulacional: 2
+    }));
+  };
+
+  // Adicionar dados de referência para diferença de diagonais
+  const addDiagonaisReferenceData = (data: any[]) => {
+    return data.map(point => ({
+      ...point,
+      // Valores de referência para diferença de diagonais
+      normal: 3,
+      leve: 6,
+      moderada: 10,
+      mediaPopulacional: 1.5
     }));
   };
 
@@ -178,6 +211,7 @@ export function MedicaoLineChart({
         <YAxis
           label={{ value: 'Índice Craniano (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
           domain={[65, 95]}
+          tickFormatter={(value) => `${value}%`}
         />
       );
     } else if (tipoGrafico === "cvai") {
@@ -185,13 +219,23 @@ export function MedicaoLineChart({
         <YAxis
           label={{ value: 'CVAI (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
           domain={[0, 12]}
+          tickFormatter={(value) => `${value}%`}
+        />
+      );
+    } else if (tipoGrafico === "diagonais") {
+      return (
+        <YAxis
+          label={{ value: 'Diferença Diagonais (mm)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+          domain={[0, 'dataMax + 2']}
+          tickFormatter={(value) => `${value} mm`}
         />
       );
     } else {
       return (
         <YAxis
           label={{ value: 'Perímetro Cefálico (cm)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-          domain={['auto', 'auto']}
+          domain={['dataMin - 1', 'dataMax + 1']}
+          tickFormatter={(value) => `${value} cm`}
         />
       );
     }
@@ -219,11 +263,22 @@ export function MedicaoLineChart({
           <ReferenceArea y1={0} y2={3.5} fill="#BBF7D0" fillOpacity={0.6} />
         </>
       );
+    } else if (tipoGrafico === "diagonais") {
+      return (
+        <>
+          <ReferenceArea y1={10} y2={15} fill="#FECDD3" fillOpacity={0.6} />
+          <ReferenceArea y1={6} y2={10} fill="#FED7AA" fillOpacity={0.6} />
+          <ReferenceArea y1={3} y2={6} fill="#FEF08A" fillOpacity={0.6} />
+          <ReferenceArea y1={0} y2={3} fill="#BBF7D0" fillOpacity={0.6} />
+        </>
+      );
     }
     return null;
   };
 
   const renderLines = () => {
+    const lineColor = getLineColor(linhaCorTheme);
+    
     if (tipoGrafico === "indiceCraniano") {
       return (
         <>
@@ -231,10 +286,10 @@ export function MedicaoLineChart({
             type="monotone"
             dataKey="indice_craniano"
             name="Índice Craniano"
-            stroke={getLineColor(linhaCorTheme)}
+            stroke={lineColor}
             strokeWidth={3}
-            dot={{ fill: getLineColor(linhaCorTheme), r: 5 }}
-            activeDot={{ r: 7 }}
+            dot={renderCustomDot(lineColor)}
+            activeDot={{ r: 7, fill: lineColor }}
             connectNulls
           />
           <Line
@@ -246,6 +301,8 @@ export function MedicaoLineChart({
             dot={false}
             connectNulls
           />
+          <ReferenceLine y={76} stroke="#22C55E" strokeDasharray="3 3" label="Mín Normal" />
+          <ReferenceLine y={80} stroke="#22C55E" strokeDasharray="3 3" label="Máx Normal" />
         </>
       );
     } else if (tipoGrafico === "cvai") {
@@ -255,10 +312,10 @@ export function MedicaoLineChart({
             type="monotone"
             dataKey="cvai"
             name="CVAI"
-            stroke={getLineColor(linhaCorTheme)}
+            stroke={lineColor}
             strokeWidth={3}
-            dot={{ fill: getLineColor(linhaCorTheme), r: 5 }}
-            activeDot={{ r: 7 }}
+            dot={renderCustomDot(lineColor)}
+            activeDot={{ r: 7, fill: lineColor }}
             connectNulls
           />
           <Line
@@ -270,6 +327,32 @@ export function MedicaoLineChart({
             dot={false}
             connectNulls
           />
+          <ReferenceLine y={3.5} stroke="#22C55E" strokeDasharray="3 3" label="Limite Normal" />
+        </>
+      );
+    } else if (tipoGrafico === "diagonais") {
+      return (
+        <>
+          <Line
+            type="monotone"
+            dataKey="diferenca_diagonais"
+            name="Diferença Diagonais"
+            stroke={lineColor}
+            strokeWidth={3}
+            dot={renderCustomDot(lineColor)}
+            activeDot={{ r: 7, fill: lineColor }}
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="mediaPopulacional"
+            name="Média Populacional"
+            stroke="#666666"
+            strokeDasharray="5 5"
+            dot={false}
+            connectNulls
+          />
+          <ReferenceLine y={3} stroke="#22C55E" strokeDasharray="3 3" label="Limite Normal" />
         </>
       );
     } else {
@@ -279,10 +362,10 @@ export function MedicaoLineChart({
             type="monotone"
             dataKey="perimetro_cefalico"
             name="Perímetro Cefálico"
-            stroke={getLineColor(linhaCorTheme)}
+            stroke={lineColor}
             strokeWidth={3}
-            dot={{ fill: getLineColor(linhaCorTheme), r: 5 }}
-            activeDot={{ r: 7 }}
+            dot={renderCustomDot(lineColor)}
+            activeDot={{ r: 7, fill: lineColor }}
             connectNulls
           />
           <Line
@@ -333,37 +416,66 @@ export function MedicaoLineChart({
     }
   };
 
+  const formatXAxisTick = (value: number) => {
+    if (value === Math.floor(value)) {
+      return `${value}m`;
+    }
+    return '';
+  };
+
   const renderCustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length > 0) {
       const dataPoint = payload[0].payload;
       if (dataPoint.paciente === null) return null;
       
+      const valueFormatter = (value: number, suffix: string) => {
+        return `${value.toFixed(1)}${suffix}`;
+      };
+
+      let tooltipContent;
+      
+      if (tipoGrafico === "indiceCraniano") {
+        tooltipContent = (
+          <>
+            <p className="font-medium text-sm">{`Índice Craniano: ${valueFormatter(dataPoint.indice_craniano, '%')}`}</p>
+            <p className="text-sm">{`Comprimento: ${valueFormatter(dataPoint.comprimento, ' mm')}`}</p>
+            <p className="text-sm">{`Largura: ${valueFormatter(dataPoint.largura, ' mm')}`}</p>
+          </>
+        );
+      } else if (tipoGrafico === "cvai") {
+        tooltipContent = (
+          <>
+            <p className="font-medium text-sm">{`CVAI: ${valueFormatter(dataPoint.cvai, '%')}`}</p>
+            <p className="text-sm">{`Diagonal D: ${valueFormatter(dataPoint.diagonal_d, ' mm')}`}</p>
+            <p className="text-sm">{`Diagonal E: ${valueFormatter(dataPoint.diagonal_e, ' mm')}`}</p>
+            <p className="text-sm">{`Diferença: ${valueFormatter(dataPoint.diferenca_diagonais, ' mm')}`}</p>
+          </>
+        );
+      } else if (tipoGrafico === "diagonais") {
+        tooltipContent = (
+          <>
+            <p className="font-medium text-sm">{`Diferença de diagonais: ${valueFormatter(dataPoint.diferenca_diagonais, ' mm')}`}</p>
+            <p className="text-sm">{`Diagonal D: ${valueFormatter(dataPoint.diagonal_d, ' mm')}`}</p>
+            <p className="text-sm">{`Diagonal E: ${valueFormatter(dataPoint.diagonal_e, ' mm')}`}</p>
+          </>
+        );
+      } else if (tipoGrafico === "perimetro" && dataPoint.perimetro_cefalico) {
+        tooltipContent = (
+          <>
+            <p className="font-medium text-sm">{`Perímetro Cefálico: ${valueFormatter(dataPoint.perimetro_cefalico, ' cm')}`}</p>
+            <p className="text-sm">{`P50 (média): ${valueFormatter(dataPoint.p50, ' cm')}`}</p>
+          </>
+        );
+      } else {
+        return null;
+      }
+      
       return (
-        <div className="bg-white/90 dark:bg-slate-800/90 p-3 border rounded shadow-lg">
-          <p className="font-medium">{`Idade: ${label} meses`}</p>
-          <div className="space-y-1 mt-1">
-            {tipoGrafico === "indiceCraniano" && (
-              <>
-                <p>{`Índice Craniano: ${dataPoint.indice_craniano}%`}</p>
-                <p>{`Comprimento: ${dataPoint.comprimento} mm`}</p>
-                <p>{`Largura: ${dataPoint.largura} mm`}</p>
-              </>
-            )}
-            
-            {tipoGrafico === "cvai" && (
-              <>
-                <p>{`CVAI: ${dataPoint.cvai}%`}</p>
-                <p>{`Diagonal D: ${dataPoint.diagonal_d} mm`}</p>
-                <p>{`Diagonal E: ${dataPoint.diagonal_e} mm`}</p>
-                <p>{`Diferença: ${dataPoint.diferenca_diagonais} mm`}</p>
-              </>
-            )}
-            
-            {tipoGrafico === "perimetro" && dataPoint.perimetro_cefalico && (
-              <p>{`Perímetro Cefálico: ${dataPoint.perimetro_cefalico} mm`}</p>
-            )}
-            
-            <p className="text-xs text-muted-foreground pt-1">
+        <div className="bg-white/95 dark:bg-slate-800/95 p-3 border rounded shadow-lg">
+          <p className="font-medium">{`Idade: ${dataPoint.idadeFormatada}`}</p>
+          <div className="space-y-1 mt-2">
+            {tooltipContent}
+            <p className="text-xs text-muted-foreground pt-2">
               {`Data da medição: ${new Date(dataPoint.data).toLocaleDateString('pt-BR')}`}
             </p>
           </div>
@@ -398,11 +510,21 @@ export function MedicaoLineChart({
           <LineChart
             data={chartData}
             margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+            onMouseMove={(e) => {
+              if (e.activePayload && e.activePayload[0]) {
+                setHoveredData(e.activePayload[0].payload);
+              }
+            }}
+            onMouseLeave={() => setHoveredData(null)}
           >
             <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
             <XAxis
               dataKey="idadeEmMeses"
               label={{ value: 'Idade (meses)', position: 'insideBottomRight', offset: -15 }}
+              tickFormatter={formatXAxisTick}
+              type="number"
+              domain={[0, 'dataMax + 2']}
+              allowDecimals={false}
             />
             {renderYAxis()}
             <Tooltip content={renderCustomTooltip} />
