@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 interface ResponsavelType {
   nome: string;
@@ -32,7 +33,7 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
   const [nome, setNome] = useState(paciente.nome);
   const [dataNascimento, setDataNascimento] = useState(paciente.dataNascimento.split('T')[0]);
   const [sexo, setSexo] = useState(paciente.sexo);
-  const [responsaveis, setResponsaveis] = useState([...paciente.responsaveis]);
+  const [responsaveis, setResponsaveis] = useState<ResponsavelType[]>([...paciente.responsaveis]);
   const [isLoading, setIsLoading] = useState(false);
   
   const handleResponsavelChange = (index: number, field: keyof ResponsavelType, value: string) => {
@@ -67,14 +68,14 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
       }
   
       if (existingPaciente) {
-        // Update in Supabase
+        // Update in Supabase - convert responsaveis to Json compatible format
         const { error } = await supabase
           .from('pacientes')
           .update({
             nome,
             data_nascimento: dataNascimento,
             sexo,
-            responsaveis
+            responsaveis: responsaveis as unknown as Json
           })
           .eq('id', paciente.id);
   
