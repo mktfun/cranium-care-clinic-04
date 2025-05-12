@@ -1,105 +1,243 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, BellOff } from "lucide-react";
+import { Check, BellOff, AlertTriangle, FileText, UserPlus, CalendarCheck2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { RealNotificacao } from "@/components/Header"; // Importar a interface do Header
+import { getCranialStatus, SeverityLevel } from "@/lib/cranial-utils";
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
-// Definindo a interface Notificacao aqui também para consistência
-interface Notificacao {
-  id: string; // Mudei para string para IDs únicos mais robustos (ex: UUID)
-  title: string;
-  message: string;
-  time: string; // Ou Date para manipulação mais fácil
-  read: boolean;
-  type?: 'info' | 'lembrete' | 'alerta'; // Tipo opcional para estilização
-  link?: string; // Link opcional para navegação
-}
+const NOTIFICACOES_LIDAS_STORAGE_KEY = "craniumCareNotificacoesLidas";
+const ULTIMA_VERIFICACAO_STORAGE_KEY = "craniumCareUltimaVerificacaoNotificacoes";
 
-// Mock de notificações mais completo
-const mockNotificacoes: Notificacao[] = [
-  {
-    id: '1',
-    title: "Nova medição registrada",
-    message: "A medição de João Silva (Paciente ID: P001) foi registrada com sucesso.",
-    time: "Há 2 horas",
-    read: false,
-    type: 'info',
-    link: '/pacientes/P001/medicoes'
-  },
-  {
-    id: '2',
-    title: "Lembrete de acompanhamento",
-    message: "Maria Oliveira (Paciente ID: P002) precisa de reavaliação hoje.",
-    time: "Há 5 horas",
-    read: false,
-    type: 'lembrete',
-    link: '/pacientes/P002'
-  },
-  {
-    id: '3',
-    title: "Atualização do Sistema",
-    message: "O sistema CraniumCare foi atualizado para a versão 1.2.0 com novas funcionalidades.",
-    time: "Ontem",
-    read: true,
-    type: 'info',
-  },
-  {
-    id: '4',
-    title: "Consulta Agendada",
-    message: "Sua consulta com Dr. Carlos (Paciente ID: P003) está agendada para amanhã às 10:00.",
-    time: "Há 1 dia",
-    read: false,
-    type: 'lembrete',
-    link: '/agenda'
-  },
-  {
-    id: '5',
-    title: "Relatório Disponível",
-    message: "O relatório de progresso de Ana Beatriz (Paciente ID: P004) está pronto para visualização.",
-    time: "Há 3 dias",
-    read: true,
-    type: 'info',
-    link: '/pacientes/P004/relatorios'
-  },
-];
+// Função para buscar notificações reais (similar à do Header.tsx, mas pode ser movida para um hook/serviço)
+const fetchNotificacoesReais = async (): Promise<RealNotificacao[]> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return [];
+
+  let todasAsNotificacoes: RealNotificacao[] = [];
+  const agora = new Date();
+  const ultimaVerificacaoString = localStorage.getItem(ULTIMA_VERIFICACAO_STORAGE_KEY);
+  // Para a página de todas as notificações, talvez buscar um período maior ou todas não lidas + recentes lidas
+  const ultimaVerificacao = ultimaVerificacaoString ? new Date(ultimaVerificacaoString) : new Date(agora.getTime() - 24 * 60 * 60 * 1000 * 30); // Padrão: últimos 30 dias para a página completa
+
+  // 1. Novos Pacientes
+  try {
+    const { data: novosPacientes, error: errPacientes } = await supabase
+      .from("pacientes")
+      .select("id, nome, created_at")
+      .gt("created_at", ultimaVerificacao.toISOString())
+      .order("created_at", { ascending: false });
+
+    if (errPacientes) console.error("Erro ao buscar novos pacientes (NotificacoesPage):", errPacientes);
+    else if (novosPacientes) {
+      novosPacientes.forEach(p => {
+        todasAsNotificacoes.push({
+          id: `paciente-${p.id}`,
+          title: "Novo Paciente Registrado",
+          message: `O paciente ${p.nome} foi registrado no sistema.`,
+          timestamp: new Date(p.created_at),
+          read: false,
+          type: "novo_paciente",
+          link: `/pacientes/${p.id}`,
+          urgencia: "media",
+          referenciaId: p.id,
+        });
+      });
+    }
+  } catch (e) { console.error("Catch novos pacientes (NotificacoesPage):", e); }
+
+  // 2. Novas Medições
+  try {
+    const { data: novasMedicoes, error: errMedicoes } = await supabase
+      .from("medicoes")
+      .select("id, paciente_id, data, pacientes (nome)")
+      .gt("data", ultimaVerificacao.toISOString())
+      .order("data", { ascending: false });
+    
+    if (errMedicoes) console.error("Erro ao buscar novas medições (NotificacoesPage):", errMedicoes);
+    else if (novasMedicoes) {
+      novasMedicoes.forEach((m: any) => {
+        const nomePaciente = m.pacientes?.nome || "Paciente";
+        todasAsNotificacoes.push({
+          id: `medicao-${m.id}`,
+          title: "Nova Medição Registrada",
+          message: `Nova medição para ${nomePaciente} em ${new Date(m.data).toLocaleDateString("pt-BR")}.`,
+          timestamp: new Date(m.data),
+          read: false,
+          type: "nova_medicao",
+          link: `/pacientes/${m.paciente_id}/medicoes/${m.id}`,
+          urgencia: "media",
+          referenciaId: m.id,
+        });
+      });
+    }
+  } catch (e) { console.error("Catch novas medições (NotificacoesPage):", e); }
+
+  // 3. Tarefas (derivadas de medições para reavaliação)
+  try {
+      const { data: pacientesComMedicoes, error: errPacMed } = await supabase
+          .from('pacientes')
+          .select(`id, nome, medicoes (id, data, indice_craniano, cvai)`)
+          .order('data', { foreignTable: 'medicoes', ascending: false });
+
+      if (errPacMed) console.error("Erro ao buscar pacientes para tarefas (NotificacoesPage):", errPacMed);
+      else if (pacientesComMedicoes) {
+          const hoje = new Date();
+          const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+          const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59);
+
+          pacientesComMedicoes.forEach((pac: any) => {
+              if (pac.medicoes && pac.medicoes.length > 0) {
+                  const ultimaMedicao = pac.medicoes[0];
+                  const { severityLevel } = getCranialStatus(ultimaMedicao.indice_craniano || 0, ultimaMedicao.cvai || 0);
+                  const dataUltimaMedicao = new Date(ultimaMedicao.data);
+                  let proximaAvaliacao = new Date(dataUltimaMedicao);
+
+                  switch(severityLevel) {
+                      case 'normal': proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 3); break;
+                      case 'leve': proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2); break;
+                      case 'moderada': case 'severa': proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 1); break;
+                      default: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2);
+                  }
+
+                  if (proximaAvaliacao >= inicioHoje && proximaAvaliacao <= fimHoje) {
+                      todasAsNotificacoes.push({
+                          id: `tarefa-hoje-${pac.id}-${ultimaMedicao.id}`,
+                          title: "Tarefa para Hoje",
+                          message: `Reavaliação de ${pac.nome} agendada para hoje.`,
+                          timestamp: proximaAvaliacao,
+                          read: false,
+                          type: "tarefa_hoje",
+                          link: `/pacientes/${pac.id}`,
+                          urgencia: "alta",
+                          referenciaId: pac.id,
+                      });
+                  } else if (proximaAvaliacao < inicioHoje) {
+                      const diasAtraso = (inicioHoje.getTime() - proximaAvaliacao.getTime()) / (1000 * 3600 * 24);
+                      if (diasAtraso <= 30) { // Aumentar o range para a página de todas as notificações
+                          todasAsNotificacoes.push({
+                              id: `tarefa-atrasada-${pac.id}-${ultimaMedicao.id}`,
+                              title: "Tarefa Atrasada",
+                              message: `Reavaliação de ${pac.nome} está atrasada.`,
+                              timestamp: proximaAvaliacao,
+                              read: false,
+                              type: "tarefa_atrasada",
+                              link: `/pacientes/${pac.id}`,
+                              urgencia: "alta",
+                              referenciaId: pac.id,
+                          });
+                      }
+                  }
+              }
+          });
+      }
+  } catch (e) { console.error("Catch tarefas (NotificacoesPage):", e); }
+  
+  // Remover duplicatas pelo ID, caso alguma lógica gere IDs iguais
+  const uniqueNotificacoes = Array.from(new Map(todasAsNotificacoes.map(item => [item.id, item])).values());
+
+  uniqueNotificacoes.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  return uniqueNotificacoes;
+};
+
+const getNotificacoesLidas = (): string[] => {
+  const lidas = localStorage.getItem(NOTIFICACOES_LIDAS_STORAGE_KEY);
+  return lidas ? JSON.parse(lidas) : [];
+};
+
+const marcarNotificacaoComoLidaStorage = (id: string) => {
+  const lidas = getNotificacoesLidas();
+  if (!lidas.includes(id)) {
+    localStorage.setItem(NOTIFICACOES_LIDAS_STORAGE_KEY, JSON.stringify([...lidas, id]));
+  }
+};
+
+const marcarTodasComoLidasStorage = (notifs: RealNotificacao[]) => {
+  const todasIds = notifs.map(n => n.id);
+  const lidasAtuais = getNotificacoesLidas();
+  const novasLidas = Array.from(new Set([...lidasAtuais, ...todasIds]));
+  localStorage.setItem(NOTIFICACOES_LIDAS_STORAGE_KEY, JSON.stringify(novasLidas));
+};
+
+const limparNotificacoesLidasStorage = (notifs: RealNotificacao[]) => {
+    const idsNaoLidas = notifs.filter(n => !n.read).map(n => n.id);
+    localStorage.setItem(NOTIFICACOES_LIDAS_STORAGE_KEY, JSON.stringify(idsNaoLidas));
+};
 
 export function NotificacoesPage() {
-  const [notificacoes, setNotificacoes] = useState<Notificacao[]>(mockNotificacoes);
+  const [notificacoes, setNotificacoes] = useState<RealNotificacao[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const navigate = useNavigate();
+
+  const carregarNotificacoes = useCallback(async () => {
+    setCarregando(true);
+    const notificacoesReais = await fetchNotificacoesReais();
+    const lidasIds = getNotificacoesLidas();
+    const notificacoesComStatusLida = notificacoesReais.map(n => ({
+      ...n,
+      read: lidasIds.includes(n.id)
+    }));
+    setNotificacoes(notificacoesComStatusLida);
+    localStorage.setItem(ULTIMA_VERIFICACAO_STORAGE_KEY, new Date().toISOString()); // Atualiza a última verificação
+    setCarregando(false);
+  }, []);
+
+  useEffect(() => {
+    carregarNotificacoes();
+  }, [carregarNotificacoes]);
 
   const marcarComoLida = (id: string) => {
+    marcarNotificacaoComoLidaStorage(id);
     setNotificacoes(prevNotificacoes =>
       prevNotificacoes.map(n => (n.id === id ? { ...n, read: true } : n))
     );
-    // Aqui, em uma implementação real, você também faria uma chamada à API para atualizar o status no backend
   };
 
   const marcarTodasComoLidas = () => {
+    marcarTodasComoLidasStorage(notificacoes);
     setNotificacoes(prevNotificacoes =>
       prevNotificacoes.map(n => ({ ...n, read: true }))
     );
-    // Chamada à API para marcar todas como lidas no backend
   };
 
   const limparNotificacoesLidas = () => {
+    limparNotificacoesLidasStorage(notificacoes);
     setNotificacoes(prevNotificacoes => prevNotificacoes.filter(n => !n.read));
-    // Chamada à API para remover/arquivar notificações lidas no backend
   };
 
   const todasLidas = notificacoes.every(n => n.read);
+  const naoLidasCount = notificacoes.filter(n => !n.read).length;
+
+  const getIconForType = (type: RealNotificacao['type']) => {
+    switch (type) {
+      case 'novo_paciente': return <UserPlus className="h-5 w-5 mr-3 text-blue-500" />;
+      case 'nova_medicao': return <FileText className="h-5 w-5 mr-3 text-green-500" />;
+      case 'tarefa_hoje': return <CalendarCheck2 className="h-5 w-5 mr-3 text-orange-500" />;
+      case 'tarefa_atrasada': return <AlertTriangle className="h-5 w-5 mr-3 text-red-500" />;
+      default: return <BellOff className="h-5 w-5 mr-3 text-gray-400" />;
+    }
+  };
+  
+  const formatarTempoNotificacao = (timestamp: Date): string => {
+    return formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: ptBR });
+  };
 
   return (
-    <div className="container mx-auto py-8 px-4 md:px-6">
-      <Card className="bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-        <CardHeader className="border-b border-gray-200 dark:border-gray-700">
+    <div className="container mx-auto py-8 px-4 md:px-6 animate-fade-in">
+      <Card className="bg-card shadow-xl rounded-lg border">
+        <CardHeader className="border-b">
           <div className="flex justify-between items-center">
-            <CardTitle className="text-2xl font-semibold text-gray-900 dark:text-white">Todas as Notificações</CardTitle>
+            <CardTitle className="text-2xl font-semibold text-card-foreground">Todas as Notificações</CardTitle>
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={marcarTodasComoLidas}
-                disabled={todasLidas || notificacoes.filter(n => !n.read).length === 0}
-                className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                disabled={naoLidasCount === 0}
               >
                 <Check className="mr-2 h-4 w-4" /> Marcar todas como lidas
               </Button>
@@ -108,7 +246,6 @@ export function NotificacoesPage() {
                 size="sm" 
                 onClick={limparNotificacoesLidas}
                 disabled={notificacoes.filter(n => n.read).length === 0}
-                className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <BellOff className="mr-2 h-4 w-4" /> Limpar lidas
               </Button>
@@ -116,48 +253,57 @@ export function NotificacoesPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {notificacoes.length === 0 ? (
-            <div className="p-10 text-center text-gray-500 dark:text-gray-400">
+          {carregando ? (
+            <div className="p-10 text-center text-muted-foreground">
+                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary mb-4" />
+                <p className="text-lg">Carregando notificações...</p>
+            </div>
+          ) : notificacoes.length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground">
               <BellOff className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
               <p className="text-lg">Você não tem nenhuma notificação no momento.</p>
             </div>
           ) : (
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+            <ul className="divide-y divide-border">
               {notificacoes.map(notificacao => (
                 <li 
                   key={notificacao.id} 
                   className={cn(
-                    "p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150",
-                    notificacao.read ? "opacity-70" : "font-medium"
+                    "p-4 transition-colors duration-150 flex items-start",
+                    notificacao.read ? "bg-card hover:bg-muted/30" : "bg-primary/10 hover:bg-primary/20 font-medium",
+                    notificacao.link && "cursor-pointer"
                   )}
+                  onClick={() => {
+                    if (!notificacao.read) marcarComoLida(notificacao.id);
+                    if (notificacao.link) navigate(notificacao.link);
+                  }}
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className={cn(
-                        "text-md",
-                        notificacao.read ? "text-gray-700 dark:text-gray-300" : "text-blue-600 dark:text-blue-400"
-                      )}>
-                        {notificacao.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{notificacao.message}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{notificacao.time}</p>
-                    </div>
-                    {!notificacao.read && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => marcarComoLida(notificacao.id)}
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-500"
-                      >
-                        <Check className="mr-1 h-4 w-4" /> Marcar como lida
-                      </Button>
-                    )}
+                  {getIconForType(notificacao.type)}
+                  <div className="flex-grow">
+                    <div className="flex justify-between items-start">
+                        <h3 className={cn(
+                            "text-md",
+                            !notificacao.read ? "text-primary" : "text-card-foreground"
+                        )}>
+                            {notificacao.title}
+                        </h3>
+                        {!notificacao.read && (
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={(e) => { 
+                                    e.stopPropagation(); // Evita que o clique na li seja acionado também
+                                    marcarComoLida(notificacao.id); 
+                                }}
+                                className="text-xs text-primary hover:text-primary/80 px-2 py-1 h-auto"
+                            >
+                                <Check className="mr-1 h-3 w-3" /> Marcar como lida
+                            </Button>
+                        )}
+                    </div> 
+                    <p className="text-sm text-muted-foreground mt-1">{notificacao.message}</p>
+                    <p className="text-xs text-muted-foreground mt-2">{formatarTempoNotificacao(notificacao.timestamp)}</p>
                   </div>
-                  {notificacao.link && (
-                     <Button variant="link" size="sm" className="p-0 h-auto mt-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-500" onClick={() => console.log(`Navegar para: ${notificacao.link}`)}>
-                       Ver detalhes
-                     </Button>
-                  )}
                 </li>
               ))}
             </ul>
