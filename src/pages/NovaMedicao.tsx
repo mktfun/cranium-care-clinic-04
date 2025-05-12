@@ -124,21 +124,31 @@ export default function NovaMedicao() {
           return;
         }
         
-        // Make sure id is a valid UUID
+        // Verify if id is a valid UUID or not
         let pacienteId = id;
+        let isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pacienteId || '');
         
-        // If ID is not a valid UUID, try to get the actual UUID from the database
-        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pacienteId || '')) {
-          const { data: foundPaciente } = await supabase
+        if (!isValidUuid) {
+          // Try to find the real UUID for this patient in the database
+          console.log("Searching for patient with ID:", pacienteId);
+          const { data: foundPaciente, error: searchError } = await supabase
             .from('pacientes')
             .select('id')
-            .eq('id', pacienteId)
+            .filter('id', 'ilike', `%${pacienteId}%`)
             .maybeSingle();
-            
+          
+          if (searchError) {
+            console.error("Error searching for patient:", searchError);
+            toast.error("Erro ao buscar paciente no banco de dados");
+            return;
+          }
+          
           if (foundPaciente) {
+            console.log("Found patient:", foundPaciente);
             pacienteId = foundPaciente.id;
           } else {
-            toast.error("ID do paciente inválido");
+            console.error("Patient not found");
+            toast.error("ID do paciente inválido ou não encontrado");
             return;
           }
         }

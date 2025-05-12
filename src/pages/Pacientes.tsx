@@ -17,6 +17,8 @@ import { obterPacientes, obterUltimaMedicao } from "@/data/mock-data";
 import { Paciente, Status } from "@/data/mock-data";
 import { ArrowDown, ArrowUp, Trash2, UserPlus } from "lucide-react";
 import { AsymmetryType, getCranialStatus } from "@/lib/cranial-utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type SortConfig = {
   key: keyof Paciente | "ultimaAvaliacao" | "status";
@@ -28,10 +30,43 @@ export default function Pacientes() {
   const statusParams = searchParams.get("status");
   const navigate = useNavigate();
   
-  const todosPacientes = obterPacientes();
+  const [pacientes, setPacientes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filtroNome, setFiltroNome] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<Status | "todos">("todos");
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  
+  // Load patients from Supabase
+  useEffect(() => {
+    async function loadPacientes() {
+      try {
+        setLoading(true);
+        
+        const { data, error } = await supabase
+          .from('pacientes')
+          .select('*');
+        
+        if (error) {
+          console.error("Error loading patients:", error);
+          toast.error("Erro ao carregar pacientes");
+          // Fallback to mock data
+          const mockPacientes = obterPacientes();
+          setPacientes(mockPacientes);
+        } else {
+          setPacientes(data || []);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        // Fallback to mock data
+        const mockPacientes = obterPacientes();
+        setPacientes(mockPacientes);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadPacientes();
+  }, []);
   
   // Aplicar filtro de URL se existir
   useEffect(() => {
@@ -49,6 +84,15 @@ export default function Pacientes() {
     return data.toLocaleDateString('pt-BR');
   };
   
+  // Função para cálculo de idade em meses
+  const calcularIdadeEmMeses = (dataNascimento: string) => {
+    const hoje = new Date();
+    const nascimento = new Date(dataNascimento);
+    const diffEmMeses = (hoje.getFullYear() - nascimento.getFullYear()) * 12 + 
+                        (hoje.getMonth() - nascimento.getMonth());
+    return diffEmMeses;
+  };
+  
   // Função para ordenação
   const requestSort = (key: SortConfig["key"]) => {
     let direction: "asc" | "desc" = "asc";
@@ -59,7 +103,7 @@ export default function Pacientes() {
   };
   
   // Filtrar e ordenar pacientes
-  const pacientesFiltrados = [...todosPacientes]
+  const pacientesFiltrados = [...pacientes]
     .filter(paciente => {
       // Filtro por nome
       const nomeMatch = paciente.nome.toLowerCase().includes(filtroNome.toLowerCase());
@@ -92,16 +136,33 @@ export default function Pacientes() {
         const ultimaMedicaoA = obterUltimaMedicao(a.id);
         const ultimaMedicaoB = obterUltimaMedicao(b.id);
         const statusOrder = { normal: 0, leve: 1, moderada: 2, severa: 3 };
-        const statusA = ultimaMedicaoA ? statusOrder[ultimaMedicaoA.status] : -1;
-        const statusB = ultimaMedicaoB ? statusOrder[ultimaMedicaoB.status] : -1;
+        const statusA = ultimaMedicaoA ? statusOrder[ultimaMedicaoA.status as keyof typeof statusOrder] : -1;
+        const statusB = ultimaMedicaoB ? statusOrder[ultimaMedicaoB.status as keyof typeof statusOrder] : -1;
         return sortConfig.direction === "asc" ? statusA - statusB : statusB - statusA;
       }
       
+      // For idadeEmMeses, calculate it if it's coming from Supabase (data_nascimento instead of dataNascimento)
+      if (sortConfig.key === "idadeEmMeses") {
+        const idadeA = a.idadeEmMeses || calcularIdadeEmMeses(a.dataNascimento || a.data_nascimento);
+        const idadeB = b.idadeEmMeses || calcularIdadeEmMeses(b.dataNascimento || b.data_nascimento);
+        return sortConfig.direction === "asc" ? idadeA - idadeB : idadeB - idadeA;
+      }
+      
+      // Special handling for dataNascimento field from Supabase vs mock
+      if (sortConfig.key === "dataNascimento") {
+        const dateA = new Date(a.dataNascimento || a.data_nascimento).getTime();
+        const dateB = new Date(b.dataNascimento || b.data_nascimento).getTime();
+        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+      }
+      
       // Ordenação padrão para as outras colunas
-      if (a[sortConfig.key] < b[sortConfig.key]) {
+      const valueA = a[sortConfig.key] || "";
+      const valueB = b[sortConfig.key] || "";
+      
+      if (valueA < valueB) {
         return sortConfig.direction === "asc" ? -1 : 1;
       }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
+      if (valueA > valueB) {
         return sortConfig.direction === "asc" ? 1 : -1;
       }
       return 0;
@@ -115,10 +176,38 @@ export default function Pacientes() {
     return sortConfig.direction === "asc" ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />;
   };
 
-  // Handle navigation to signup page
+  // Handle navigation to registro page
   const handleAddPaciente = () => {
     navigate("/registro");
   };
+  
+  // Handle delete patient
+  const handleDeletePaciente = async (pacienteId: string) => {
+    if (confirm("Tem certeza que deseja excluir este paciente? Esta ação não pode ser desfeita.")) {
+      try {
+        const { error } = await supabase
+          .from('pacientes')
+          .delete()
+          .eq('id', pacienteId);
+        
+        if (error) {
+          console.error("Error deleting patient:", error);
+          toast.error("Erro ao excluir paciente");
+        } else {
+          toast.success("Paciente excluído com sucesso");
+          // Atualizar a lista de pacientes
+          setPacientes(pacientes.filter(p => p.id !== pacienteId));
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        toast.error("Erro ao excluir paciente");
+      }
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8 flex justify-center">Carregando...</div>;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -226,16 +315,21 @@ export default function Pacientes() {
           <TableBody>
             {pacientesFiltrados.length > 0 ? (
               pacientesFiltrados.map((paciente) => {
+                const idadeEmMeses = paciente.idadeEmMeses || 
+                  calcularIdadeEmMeses(paciente.dataNascimento || paciente.data_nascimento);
+                  
+                const dataNascimento = paciente.dataNascimento || paciente.data_nascimento;
                 const ultimaMedicao = obterUltimaMedicao(paciente.id);
+                
                 const { asymmetryType } = ultimaMedicao ? 
-                  getCranialStatus(ultimaMedicao.indiceCraniano, ultimaMedicao.cvai) : 
+                  getCranialStatus(ultimaMedicao.indiceCraniano || ultimaMedicao.indice_craniano, ultimaMedicao.cvai) : 
                   { asymmetryType: "Normal" as AsymmetryType };
                 
                 return (
                   <TableRow key={paciente.id}>
                     <TableCell className="font-medium">{paciente.nome}</TableCell>
-                    <TableCell>{paciente.idadeEmMeses} meses</TableCell>
-                    <TableCell className="hidden sm:table-cell">{formatarData(paciente.dataNascimento)}</TableCell>
+                    <TableCell>{idadeEmMeses} meses</TableCell>
+                    <TableCell className="hidden sm:table-cell">{formatarData(dataNascimento)}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       {ultimaMedicao ? formatarData(ultimaMedicao.data) : "N/A"}
                     </TableCell>
@@ -255,7 +349,12 @@ export default function Pacientes() {
                         <Button asChild variant="outline" size="sm">
                           <Link to={`/pacientes/${paciente.id}`}>Ver</Link>
                         </Button>
-                        <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDeletePaciente(paciente.id)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   Table, 
@@ -12,33 +12,94 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { obterPacientes } from "@/data/mock-data";
 import { Download } from "lucide-react";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { SeverityLevel, AsymmetryType } from "@/lib/cranial-utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface Medicao {
+  id: string;
+  paciente_id: string;
+  data: string;
+  indice_craniano?: number;
+  cvai?: number;
+  perimetro_cefalico?: number;
+  diferenca_diagonais?: number;
+  pacienteNome?: string;
+  pacienteNascimento?: string;
+}
+
+interface Paciente {
+  id: string;
+  nome: string;
+  data_nascimento: string;
+}
 
 export default function Historico() {
   const [filtro, setFiltro] = useState("");
-  const pacientes = obterPacientes();
+  const [medicoes, setMedicoes] = useState<Medicao[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Obter todas as medições de todos os pacientes
-  const todasMedicoes = pacientes.flatMap(paciente => 
-    paciente.medicoes.map(medicao => ({
-      ...medicao,
-      pacienteId: paciente.id,
-      pacienteNome: paciente.nome,
-      pacienteNascimento: paciente.dataNascimento
-    }))
-  );
-  
-  // Ordenar por data (mais recente primeiro)
-  const medicoesOrdenadas = [...todasMedicoes].sort((a, b) => 
-    new Date(b.data).getTime() - new Date(a.data).getTime()
-  );
+  // Carregar dados das medições do Supabase
+  useEffect(() => {
+    async function loadMedicoes() {
+      try {
+        setLoading(true);
+        
+        // Primeiro, obter todas as medições
+        const { data: medicoesData, error: medicoesError } = await supabase
+          .from('medicoes')
+          .select('*')
+          .order('data', { ascending: false });
+          
+        if (medicoesError) {
+          console.error("Erro ao carregar medições:", medicoesError);
+          toast.error("Erro ao carregar histórico de medições");
+          return;
+        }
+        
+        // Depois, obter todos os pacientes para relacionar com as medições
+        const { data: pacientesData, error: pacientesError } = await supabase
+          .from('pacientes')
+          .select('id, nome, data_nascimento');
+          
+        if (pacientesError) {
+          console.error("Erro ao carregar pacientes:", pacientesError);
+          toast.error("Erro ao carregar dados dos pacientes");
+          return;
+        }
+        
+        // Criar um mapa para relacionar pacientes com medições
+        const pacientesMap = (pacientesData || []).reduce((acc: Record<string, Paciente>, paciente) => {
+          acc[paciente.id] = paciente;
+          return acc;
+        }, {});
+        
+        // Combinar os dados de medições com os dados de pacientes
+        const medicoesCompletas = (medicoesData || []).map(medicao => ({
+          ...medicao,
+          pacienteNome: pacientesMap[medicao.paciente_id]?.nome || "Paciente desconhecido",
+          pacienteNascimento: pacientesMap[medicao.paciente_id]?.data_nascimento || ""
+        }));
+        
+        setMedicoes(medicoesCompletas);
+      } catch (err) {
+        console.error("Erro:", err);
+        toast.error("Erro ao carregar dados históricos");
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadMedicoes();
+  }, []);
   
   // Filtrar com base na busca
-  const medicoesFiltradas = medicoesOrdenadas.filter(medicao => 
-    medicao.pacienteNome.toLowerCase().includes(filtro.toLowerCase())
+  const medicoesFiltradas = medicoes.filter(medicao => 
+    medicao.pacienteNome?.toLowerCase().includes(filtro.toLowerCase())
   );
   
   // Formatar data para formato brasileiro
@@ -76,75 +137,92 @@ export default function Historico() {
         </div>
       </div>
       
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Paciente</TableHead>
-              <TableHead className="hidden md:table-cell">Dif. Diagonais</TableHead>
-              <TableHead className="hidden md:table-cell">Índice Craniano</TableHead>
-              <TableHead className="hidden sm:table-cell">CVAI</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {medicoesFiltradas.length > 0 ? (
-              medicoesFiltradas.map((medicao) => {
-                // Get the cranial status for the current measurement
-                const { asymmetryType, severityLevel } = getCranialStatus(
-                  medicao.indiceCraniano,
-                  medicao.cvai
-                );
-                
-                return (
-                  <TableRow key={medicao.id}>
-                    <TableCell>{formatarData(medicao.data)}</TableCell>
-                    <TableCell>
-                      <Link 
-                        to={`/pacientes/${medicao.pacienteId}`}
-                        className="text-turquesa hover:underline"
-                      >
-                        {medicao.pacienteNome}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {medicao.diferencaDiagonais} mm
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {medicao.indiceCraniano}%
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {medicao.cvai}%
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={severityLevel} asymmetryType={asymmetryType} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" className="hidden sm:inline-flex">
-                          <Download className="h-4 w-4 mr-2" />
-                          PDF
-                        </Button>
-                        <Button asChild variant="outline" size="sm">
-                          <Link to={`/pacientes/${medicao.pacienteId}`}>Ver</Link>
-                        </Button>
-                      </div>
-                    </TableCell>
+      {loading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Resultados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead className="hidden md:table-cell">Dif. Diagonais</TableHead>
+                    <TableHead className="hidden md:table-cell">Índice Craniano</TableHead>
+                    <TableHead className="hidden sm:table-cell">CVAI</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                );
-              })
-            ) : (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
-                  Nenhuma medição encontrada para os critérios de busca.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                </TableHeader>
+                <TableBody>
+                  {medicoesFiltradas.length > 0 ? (
+                    medicoesFiltradas.map((medicao) => {
+                      // Get the cranial status for the current measurement
+                      const { asymmetryType, severityLevel } = getCranialStatus(
+                        medicao.indice_craniano || 0,
+                        medicao.cvai || 0
+                      );
+                      
+                      return (
+                        <TableRow key={medicao.id}>
+                          <TableCell>{formatarData(medicao.data)}</TableCell>
+                          <TableCell>
+                            <Link 
+                              to={`/pacientes/${medicao.paciente_id}`}
+                              className="text-turquesa hover:underline"
+                            >
+                              {medicao.pacienteNome}
+                            </Link>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {medicao.diferenca_diagonais ? `${medicao.diferenca_diagonais} mm` : "N/A"}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {medicao.indice_craniano ? `${medicao.indice_craniano}%` : "N/A"}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            {medicao.cvai ? `${medicao.cvai}%` : "N/A"}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={severityLevel} asymmetryType={asymmetryType} showAsymmetryType={true} />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button size="sm" variant="outline" className="hidden sm:inline-flex">
+                                <Download className="h-4 w-4 mr-2" />
+                                PDF
+                              </Button>
+                              <Button asChild variant="outline" size="sm">
+                                <Link to={`/pacientes/${medicao.paciente_id}/relatorios/${medicao.id}`}>Ver</Link>
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                        {filtro ? 
+                          "Nenhuma medição encontrada para os critérios de busca." : 
+                          "Nenhuma medição registrada no sistema."}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

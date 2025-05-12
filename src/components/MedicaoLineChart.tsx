@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   LineChart,
@@ -44,12 +45,20 @@ function getLineColor(theme: string = "blue") {
 
 // Função personalizada para renderizar pontos no gráfico
 const renderCustomDot = (fill: string) => (props: any) => {
-  const { cx, cy, payload } = props;
+  const { cx, cy, payload, index } = props;
   // Não renderizar pontos para dados de referência
   if (payload.paciente === null) return null;
   
   return (
-    <Dot cx={cx} cy={cy} r={4} fill={fill} stroke="#fff" strokeWidth={1} />
+    <Dot 
+      key={`dot-${index}-${payload.idadeEmMeses || ""}`} 
+      cx={cx} 
+      cy={cy} 
+      r={4} 
+      fill={fill} 
+      stroke="#fff" 
+      strokeWidth={1} 
+    />
   );
 };
 
@@ -93,6 +102,7 @@ export function MedicaoLineChart({
           perimetro_cefalico: medicao.perimetro_cefalico || medicao.perimetroCefalico ? 
             Number(medicao.perimetro_cefalico || medicao.perimetroCefalico) : undefined,
           paciente: true, // Marcar que são pontos do paciente
+          id: medicao.id || `medicao-${Math.random()}`, // Garantir que sempre tenha um ID único
         };
       });
 
@@ -290,6 +300,7 @@ export function MedicaoLineChart({
             dot={renderCustomDot(lineColor)}
             activeDot={{ r: 7, fill: lineColor }}
             connectNulls
+            isAnimationActive={true}
           />
           <Line
             type="monotone"
@@ -299,9 +310,10 @@ export function MedicaoLineChart({
             strokeDasharray="5 5"
             dot={false}
             connectNulls
+            isAnimationActive={false}
           />
-          <ReferenceLine y={76} stroke="#22C55E" strokeDasharray="3 3" label="Mín Normal" />
-          <ReferenceLine y={80} stroke="#22C55E" strokeDasharray="3 3" label="Máx Normal" />
+          <ReferenceLine y={76} stroke="#22C55E" strokeDasharray="3 3" label={{ value: "Mín Normal", position: "insideBottomLeft" }} />
+          <ReferenceLine y={80} stroke="#22C55E" strokeDasharray="3 3" label={{ value: "Máx Normal", position: "insideTopLeft" }} />
         </>
       );
     } else if (tipoGrafico === "cvai") {
@@ -316,6 +328,7 @@ export function MedicaoLineChart({
             dot={renderCustomDot(lineColor)}
             activeDot={{ r: 7, fill: lineColor }}
             connectNulls
+            isAnimationActive={true}
           />
           <Line
             type="monotone"
@@ -325,8 +338,9 @@ export function MedicaoLineChart({
             strokeDasharray="5 5"
             dot={false}
             connectNulls
+            isAnimationActive={false}
           />
-          <ReferenceLine y={3.5} stroke="#22C55E" strokeDasharray="3 3" label="Limite Normal" />
+          <ReferenceLine y={3.5} stroke="#22C55E" strokeDasharray="3 3" label={{ value: "Limite Normal", position: "insideBottomLeft" }} />
         </>
       );
     } else if (tipoGrafico === "diagonais") {
@@ -341,6 +355,7 @@ export function MedicaoLineChart({
             dot={renderCustomDot(lineColor)}
             activeDot={{ r: 7, fill: lineColor }}
             connectNulls
+            isAnimationActive={true}
           />
           <Line
             type="monotone"
@@ -350,8 +365,9 @@ export function MedicaoLineChart({
             strokeDasharray="5 5"
             dot={false}
             connectNulls
+            isAnimationActive={false}
           />
-          <ReferenceLine y={3} stroke="#22C55E" strokeDasharray="3 3" label="Limite Normal" />
+          <ReferenceLine y={3} stroke="#22C55E" strokeDasharray="3 3" label={{ value: "Limite Normal", position: "insideBottomLeft" }} />
         </>
       );
     } else {
@@ -366,6 +382,7 @@ export function MedicaoLineChart({
             dot={renderCustomDot(lineColor)}
             activeDot={{ r: 7, fill: lineColor }}
             connectNulls
+            isAnimationActive={true}
           />
           <Line
             type="monotone"
@@ -375,6 +392,7 @@ export function MedicaoLineChart({
             strokeDasharray="3 3"
             dot={false}
             connectNulls
+            isAnimationActive={false}
           />
           <Line
             type="monotone"
@@ -383,6 +401,7 @@ export function MedicaoLineChart({
             stroke="#9CA3AF"
             dot={false}
             connectNulls
+            isAnimationActive={false}
           />
           <Line
             type="monotone"
@@ -392,6 +411,7 @@ export function MedicaoLineChart({
             strokeWidth={2}
             dot={false}
             connectNulls
+            isAnimationActive={false}
           />
           <Line
             type="monotone"
@@ -400,6 +420,7 @@ export function MedicaoLineChart({
             stroke="#9CA3AF"
             dot={false}
             connectNulls
+            isAnimationActive={false}
           />
           <Line
             type="monotone"
@@ -409,6 +430,7 @@ export function MedicaoLineChart({
             strokeDasharray="3 3"
             dot={false}
             connectNulls
+            isAnimationActive={false}
           />
         </>
       );

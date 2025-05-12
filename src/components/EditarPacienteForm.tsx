@@ -18,6 +18,7 @@ interface PacienteProps {
   id: string;
   nome: string;
   dataNascimento: string;
+  data_nascimento?: string;
   idadeEmMeses: number;
   sexo: "M" | "F";
   responsaveis: ResponsavelType[];
@@ -31,7 +32,7 @@ interface EditarPacienteFormProps {
 
 export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormProps) {
   const [nome, setNome] = useState(paciente.nome);
-  const [dataNascimento, setDataNascimento] = useState(paciente.dataNascimento.split('T')[0]);
+  const [dataNascimento, setDataNascimento] = useState((paciente.dataNascimento || paciente.data_nascimento || '').split('T')[0]);
   const [sexo, setSexo] = useState(paciente.sexo);
   const [responsaveis, setResponsaveis] = useState<ResponsavelType[]>([...paciente.responsaveis]);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +46,20 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
     setResponsaveis(novosResponsaveis);
   };
   
+  const handleAddResponsavel = () => {
+    setResponsaveis([...responsaveis, { nome: '', telefone: '', email: '' }]);
+  };
+  
+  const handleRemoveResponsavel = (index: number) => {
+    if (responsaveis.length > 1) {
+      const novosResponsaveis = [...responsaveis];
+      novosResponsaveis.splice(index, 1);
+      setResponsaveis(novosResponsaveis);
+    } else {
+      toast.error("É necessário pelo menos um responsável");
+    }
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -54,6 +69,20 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
       if (!paciente.id) {
         toast.error("ID do paciente inválido");
         return;
+      }
+      
+      // Validate form data
+      if (!nome || !dataNascimento || !sexo || responsaveis.length === 0) {
+        toast.error("Preencha todos os campos obrigatórios");
+        return;
+      }
+      
+      // Validate responsáveis data
+      for (const resp of responsaveis) {
+        if (!resp.nome || !resp.telefone || !resp.email) {
+          toast.error("Preencha todos os dados dos responsáveis");
+          return;
+        }
       }
   
       // First, check if we're dealing with mock data or Supabase data
@@ -142,9 +171,37 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
         </div>
         
         <div className="space-y-2">
-          <Label>Responsáveis</Label>
+          <div className="flex justify-between items-center">
+            <Label>Responsáveis</Label>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              onClick={handleAddResponsavel}
+              disabled={isLoading}
+            >
+              Adicionar Responsável
+            </Button>
+          </div>
+          
           {responsaveis.map((responsavel, index) => (
             <div key={index} className="space-y-2 border p-3 rounded-md">
+              <div className="flex justify-between">
+                <span className="font-medium">Responsável {index + 1}</span>
+                {responsaveis.length > 1 && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-destructive hover:bg-destructive/10 h-7 px-2"
+                    onClick={() => handleRemoveResponsavel(index)}
+                    disabled={isLoading}
+                  >
+                    Remover
+                  </Button>
+                )}
+              </div>
+              
               <div className="space-y-2">
                 <Label htmlFor={`responsavel-nome-${index}`}>Nome</Label>
                 <Input 

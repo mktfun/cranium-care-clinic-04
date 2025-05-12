@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -35,11 +36,27 @@ export default function DetalhePaciente() {
         setLoading(true);
         try {
           // Try to fetch data from Supabase
+          let patientId = id;
+          let isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patientId);
+          
+          if (!isValidUuid) {
+            // If not a valid UUID, look for a matching patient
+            const { data: matchedPatient } = await supabase
+              .from('pacientes')
+              .select('id')
+              .filter('id', 'ilike', `%${patientId}%`)
+              .maybeSingle();
+              
+            if (matchedPatient) {
+              patientId = matchedPatient.id;
+            }
+          }
+          
           const { data: pacienteData, error } = await supabase
             .from('pacientes')
             .select('*')
-            .eq('id', id)
-            .single();
+            .eq('id', patientId)
+            .maybeSingle();
           
           if (error || !pacienteData) {
             // Fallback to mock data
@@ -54,7 +71,7 @@ export default function DetalhePaciente() {
             const { data: medicoesData, error: medicoesError } = await supabase
               .from('medicoes')
               .select('*')
-              .eq('paciente_id', id)
+              .eq('paciente_id', patientId)
               .order('data', { ascending: false });
               
             if (medicoesError) {
@@ -141,6 +158,11 @@ export default function DetalhePaciente() {
           <Card>
             <CardHeader>
               <CardTitle>Última Medição</CardTitle>
+              {ultimaMedicao && (
+                <CardDescription>
+                  {formatarData(ultimaMedicao.data)} • {formatAge(paciente.dataNascimento || paciente.data_nascimento, ultimaMedicao.data)}
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent>
               {ultimaMedicao ? (
@@ -362,39 +384,83 @@ export default function DetalhePaciente() {
         </CardContent>
       </Card>
       
-      {/* Measurement History */}
+      {/* Measurement History - Improved Layout */}
       <div className="mt-8">
-        <Tabs defaultValue="historico">
-          <TabsList>
-            <TabsTrigger value="historico">Histórico de Medições</TabsTrigger>
-          </TabsList>
+        <Card>
+          <CardHeader>
+            <CardTitle>Histórico de Medições</CardTitle>
+            <CardDescription>
+              {medicoes.length > 0 
+                ? `Mostrando ${medicoes.length} registro(s) de medição`
+                : "Nenhuma medição registrada"}
+            </CardDescription>
+          </CardHeader>
           
-          <TabsContent value="historico">
-            <Card>
-              <CardContent className="py-6">
-                {medicoes.length > 0 ? (
-                  <div className="space-y-4">
-                    {medicoes.map((medicao: any) => (
-                      <div key={medicao.id} 
-                           onClick={() => handleMedicaoClick(medicao)}
-                           className="cursor-pointer transition hover:bg-muted/20 rounded-md p-3 border">
-                        <MedicaoDetails 
-                          key={medicao.id}
-                          medicao={medicao}
-                          pacienteNascimento={paciente.dataNascimento || paciente.data_nascimento}
+          <CardContent className="py-6">
+            {medicoes.length > 0 ? (
+              <div className="space-y-4">
+                {medicoes.map((medicao: any) => {
+                  const { asymmetryType, severityLevel } = getCranialStatus(
+                    medicao.indice_craniano || medicao.indiceCraniano,
+                    medicao.cvai
+                  );
+                  
+                  return (
+                    <div 
+                      key={medicao.id} 
+                      onClick={() => handleMedicaoClick(medicao)}
+                      className="cursor-pointer transition hover:bg-muted/20 rounded-md p-4 border"
+                    >
+                      <div className="flex flex-col md:flex-row justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-medium">{formatarData(medicao.data)}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Idade: {formatAge(paciente.dataNascimento || paciente.data_nascimento, medicao.data)}
+                          </p>
+                        </div>
+                        <StatusBadge 
+                          status={severityLevel} 
+                          asymmetryType={asymmetryType}
+                          showAsymmetryType={true}
+                          className="mt-2 md:mt-0"
                         />
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Nenhuma medição registrada.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                      
+                      <MedicaoDetails 
+                        medicao={medicao}
+                        pacienteNascimento={paciente.dataNascimento || paciente.data_nascimento}
+                      />
+                      
+                      <div className="flex justify-end mt-3">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/pacientes/${id}/relatorios/${medicao.id}`);
+                          }}
+                        >
+                          Ver Relatório
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Nenhuma medição registrada.</p>
+                <Button 
+                  className="mt-4 bg-turquesa hover:bg-turquesa/90" 
+                  onClick={() => navigate(`/pacientes/${id}/nova-medicao`)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Registrar Primeira Medição
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
       
       {/* Dialogs */}
@@ -405,7 +471,11 @@ export default function DetalhePaciente() {
           </DialogHeader>
           <EditarPacienteForm 
             paciente={paciente} 
-            onSalvar={() => setIsEditDialogOpen(false)}
+            onSalvar={() => {
+              setIsEditDialogOpen(false);
+              // Reload patient data after saving
+              window.location.reload();
+            }}
           />
         </DialogContent>
       </Dialog>
