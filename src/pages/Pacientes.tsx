@@ -12,15 +12,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// import { obterPacientes, obterUltimaMedicao } from "@/data/mock-data"; // Remover mock
-import { Paciente, Status } from "@/data/mock-data"; // Manter tipos se ainda usados, ou definir localmente
-import { ArrowDown, ArrowUp, Trash2, UserPlus } from "lucide-react";
+import { ArrowDown, ArrowUp, Trash2, UserPlus, Loader2 } from "lucide-react"; // Adicionado Loader2
 import { AsymmetryType, SeverityLevel, getCranialStatus } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Definição da interface Paciente (baseada nos campos usados e retornados pelo Supabase)
+interface Paciente {
+  id: string;
+  nome: string;
+  data_nascimento: string;
+  sexo: "M" | "F";
+  responsaveis?: { nome: string; telefone?: string; email?: string; parentesco?: string }[];
+  created_at: string;
+  updated_at?: string;
+  user_id?: string;
+  // Adicionar outros campos conforme necessário da tabela 'pacientes'
+}
+
+// Tipo Status agora usa SeverityLevel importado
+type Status = SeverityLevel;
+
 type SortConfig = {
-  key: keyof Paciente | "ultimaAvaliacao" | "status";
+  key: keyof Paciente | "ultimaAvaliacao" | "status" | "idadeEmMeses"; // idadeEmMeses adicionado para consistência
   direction: "asc" | "desc";
 };
 
@@ -37,9 +51,8 @@ interface Medicao {
   indice_craniano: number;
   diferenca_diagonais: number;
   cvai: number;
-  status: SeverityLevel; // Usando SeverityLevel do cranial-utils
-  recomendacoes?: string;
-  // Adicionar outras propriedades conforme necessário
+  status: SeverityLevel;
+  recomendacoes?: string[];
 }
 
 export default function Pacientes() {
@@ -47,8 +60,8 @@ export default function Pacientes() {
   const statusParams = searchParams.get("status");
   const navigate = useNavigate();
   
-  const [pacientes, setPacientes] = useState<any[]>([]);
-  const [todasMedicoes, setTodasMedicoes] = useState<Medicao[]>([]); // Estado para todas as medições
+  const [pacientes, setPacientes] = useState<Paciente[]>([]); // Tipado com Paciente
+  const [todasMedicoes, setTodasMedicoes] = useState<Medicao[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroNome, setFiltroNome] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<Status | "todos">("todos");
@@ -74,7 +87,7 @@ export default function Pacientes() {
           toast.error("Erro ao carregar pacientes");
           setPacientes([]); 
         } else {
-          setPacientes(pacientesData || []);
+          setPacientes(pacientesData as Paciente[] || []); // Cast para Paciente[]
         }
 
         const { data: medicoesData, error: medicoesError } = await supabase
@@ -103,7 +116,7 @@ export default function Pacientes() {
   
   useEffect(() => {
     if (statusParams === "alerta") {
-      setFiltroStatus("moderada");
+      setFiltroStatus("moderada"); // Ou poderia ser um array ["moderada", "severa"]
     } else if (statusParams === "normal" || statusParams === "leve" || 
                statusParams === "moderada" || statusParams === "severa") {
       setFiltroStatus(statusParams as Status);
@@ -113,13 +126,15 @@ export default function Pacientes() {
   const formatarData = (dataString: string) => {
     if (!dataString) return "N/A";
     const data = new Date(dataString);
-    return data.toLocaleDateString("pt-BR", { timeZone: "UTC" }); // Adicionar timezone para consistência
+    if (isNaN(data.getTime())) return "Data inválida";
+    return data.toLocaleDateString("pt-BR", { timeZone: "UTC" });
   };
   
   const calcularIdadeEmMeses = (dataNascimento: string) => {
     if (!dataNascimento) return 0;
     const hoje = new Date();
     const nascimento = new Date(dataNascimento);
+    if (isNaN(nascimento.getTime())) return 0;
     let diffEmMeses = (hoje.getFullYear() - nascimento.getFullYear()) * 12;
     diffEmMeses -= nascimento.getMonth();
     diffEmMeses += hoje.getMonth();
@@ -128,7 +143,6 @@ export default function Pacientes() {
 
   const getUltimaMedicaoReal = (pacienteId: string, medicoesList: Medicao[]) => {
     const medicoesDoPaciente = medicoesList.filter(m => m.paciente_id === pacienteId);
-    // As medições já são ordenadas por data descendentemente na query do Supabase
     return medicoesDoPaciente.length > 0 ? medicoesDoPaciente[0] : null;
   };
   
@@ -142,14 +156,13 @@ export default function Pacientes() {
   
   const pacientesFiltrados = [...pacientes]
     .map(paciente => {
-      // Adicionar a última medição e status ao objeto do paciente para facilitar o acesso
       const ultimaMedicao = getUltimaMedicaoReal(paciente.id, todasMedicoes);
       let statusCalculado: SeverityLevel = "normal";
       let asymmetryTypeCalculado: AsymmetryType | string = "Normal";
 
       if (ultimaMedicao) {
         const statusInfo = getCranialStatus(ultimaMedicao.indice_craniano, ultimaMedicao.cvai);
-        statusCalculado = ultimaMedicao.status || statusInfo.severityLevel; // Prioriza status da medição se existir
+        statusCalculado = ultimaMedicao.status || statusInfo.severityLevel;
         asymmetryTypeCalculado = statusInfo.asymmetryType;
       }
       return {
@@ -181,9 +194,9 @@ export default function Pacientes() {
       }
       
       if (sortConfig.key === "status") {
-        const statusOrder = { normal: 0, leve: 1, moderada: 2, severa: 3 };
-        const statusA = statusOrder[a.statusCalculado as keyof typeof statusOrder] ?? -1;
-        const statusB = statusOrder[b.statusCalculado as keyof typeof statusOrder] ?? -1;
+        const statusOrder: Record<SeverityLevel, number> = { normal: 0, leve: 1, moderada: 2, severa: 3 };
+        const statusA = statusOrder[a.statusCalculado] ?? -1;
+        const statusB = statusOrder[b.statusCalculado] ?? -1;
         return sortConfig.direction === "asc" ? statusA - statusB : statusB - statusA;
       }
       
@@ -193,15 +206,15 @@ export default function Pacientes() {
         return sortConfig.direction === "asc" ? idadeA - idadeB : idadeB - idadeA;
       }
       
-      if (sortConfig.key === "dataNascimento") {
-        const dateA = new Date(a.data_nascimento).getTime();
-        const dateB = new Date(b.data_nascimento).getTime();
-        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+      // Tratamento para chaves que são diretamente campos de Paciente
+      // Assegura que a chave é válida para o objeto 'a' (que é Paciente & { ...campos calculados })
+      const key = sortConfig.key as keyof typeof a;
+      const valueA = a[key] || "";
+      const valueB = b[key] || "";
+      
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        return sortConfig.direction === "asc" ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
       }
-      
-      const valueA = a[sortConfig.key as keyof Paciente] || "";
-      const valueB = b[sortConfig.key as keyof Paciente] || "";
-      
       if (valueA < valueB) return sortConfig.direction === "asc" ? -1 : 1;
       if (valueA > valueB) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
@@ -215,9 +228,9 @@ export default function Pacientes() {
   const handleAddPaciente = () => navigate("/pacientes/registro");
   
   const handleDeletePaciente = async (pacienteId: string) => {
-    if (confirm("Tem certeza que deseja excluir este paciente? Esta ação não pode ser desfeita.")) {
+    if (confirm("Tem certeza que deseja excluir este paciente e todas as suas medições? Esta ação não pode ser desfeita.")) {
       try {
-        // Primeiro, excluir medições associadas (se houver restrição de chave estrangeira)
+        setLoading(true);
         const { error: medicoesError } = await supabase
           .from("medicoes")
           .delete()
@@ -226,20 +239,18 @@ export default function Pacientes() {
         if (medicoesError) {
           console.error("Error deleting measurements for patient:", medicoesError);
           toast.error("Erro ao excluir medições do paciente: " + medicoesError.message);
-          // Não prosseguir com a exclusão do paciente se as medições falharem
-          // a menos que a política de FK permita (ex: ON DELETE CASCADE)
-          // Por segurança, vamos parar aqui se houver erro nas medições.
+          setLoading(false);
           return; 
         }
 
-        const { error } = await supabase
+        const { error: pacienteError } = await supabase
           .from("pacientes")
           .delete()
           .eq("id", pacienteId);
         
-        if (error) {
-          console.error("Error deleting patient:", error);
-          toast.error("Erro ao excluir paciente: " + error.message);
+        if (pacienteError) {
+          console.error("Error deleting patient:", pacienteError);
+          toast.error("Erro ao excluir paciente: " + pacienteError.message);
         } else {
           toast.success("Paciente excluído com sucesso");
           setPacientes(prevPacientes => prevPacientes.filter(p => p.id !== pacienteId));
@@ -248,20 +259,26 @@ export default function Pacientes() {
       } catch (err: any) {
         console.error("Error:", err);
         toast.error("Erro ao excluir paciente: " + err.message);
+      } finally {
+        setLoading(false);
       }
     }
   };
 
   if (loading) {
-    return <div className="p-8 flex justify-center">Carregando dados dos pacientes...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 animate-fade-in p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <h2 className="text-3xl font-bold">Pacientes</h2>
         <Button 
-          className="bg-turquesa hover:bg-turquesa/90 flex items-center gap-2"
+          className="bg-turquesa hover:bg-turquesa/90 flex items-center gap-2 w-full sm:w-auto"
           onClick={handleAddPaciente}
         >
           <UserPlus className="h-4 w-4" />
@@ -293,7 +310,7 @@ export default function Pacientes() {
           </svg>
         </div>
         
-        <div className="w-full md:w-[200px]">
+        <div className="w-full md:w-auto md:min-w-[200px]">
           <Select 
             value={filtroStatus} 
             onValueChange={(value) => setFiltroStatus(value as Status | "todos")}
@@ -302,7 +319,7 @@ export default function Pacientes() {
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="todos">Todos os Status</SelectItem>
               <SelectItem value="normal">Normal</SelectItem>
               <SelectItem value="leve">Leve</SelectItem>
               <SelectItem value="moderada">Moderada (Alerta)</SelectItem>
@@ -312,26 +329,26 @@ export default function Pacientes() {
         </div>
       </div>
       
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => requestSort("nome")} className="cursor-pointer hover:bg-accent/50">
+              <TableHead onClick={() => requestSort("nome")} className="cursor-pointer hover:bg-accent/50 whitespace-nowrap">
                 <div className="flex items-center">Nome {getSortIcon("nome")}</div>
               </TableHead>
-              <TableHead onClick={() => requestSort("idadeEmMeses")} className="cursor-pointer hover:bg-accent/50">
+              <TableHead onClick={() => requestSort("idadeEmMeses")} className="cursor-pointer hover:bg-accent/50 whitespace-nowrap">
                 <div className="flex items-center">Idade {getSortIcon("idadeEmMeses")}</div>
               </TableHead>
-              <TableHead onClick={() => requestSort("dataNascimento")} className="hidden sm:table-cell cursor-pointer hover:bg-accent/50">
-                <div className="flex items-center">Nascimento {getSortIcon("dataNascimento")}</div>
+              <TableHead onClick={() => requestSort("data_nascimento")} className="hidden sm:table-cell cursor-pointer hover:bg-accent/50 whitespace-nowrap">
+                <div className="flex items-center">Nascimento {getSortIcon("data_nascimento")}</div>
               </TableHead>
-              <TableHead onClick={() => requestSort("ultimaAvaliacao")} className="hidden md:table-cell cursor-pointer hover:bg-accent/50">
+              <TableHead onClick={() => requestSort("ultimaAvaliacao")} className="hidden md:table-cell cursor-pointer hover:bg-accent/50 whitespace-nowrap">
                 <div className="flex items-center">Última Medição {getSortIcon("ultimaAvaliacao")}</div>
               </TableHead>
-              <TableHead onClick={() => requestSort("status")} className="cursor-pointer hover:bg-accent/50">
+              <TableHead onClick={() => requestSort("status")} className="cursor-pointer hover:bg-accent/50 whitespace-nowrap">
                 <div className="flex items-center">Status {getSortIcon("status")}</div>
               </TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -339,7 +356,7 @@ export default function Pacientes() {
               pacientesFiltrados.map((paciente) => (
                 <TableRow key={paciente.id}>
                   <TableCell className="font-medium">
-                    <Link to={`/pacientes/${paciente.id}`} className="hover:underline">
+                    <Link to={`/pacientes/${paciente.id}`} className="hover:underline text-turquesa">
                       {paciente.nome}
                     </Link>
                   </TableCell>
@@ -353,10 +370,10 @@ export default function Pacientes() {
                       <StatusBadge 
                         status={paciente.statusCalculado}
                         asymmetryType={paciente.asymmetryTypeCalculado}
-                        showAsymmetryType={true} // Garante que o tipo de assimetria seja mostrado
+                        showAsymmetryType={true}
                       />
                     ) : (
-                      "Sem medição"
+                      <span className="text-xs text-muted-foreground italic">Sem medição</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -369,6 +386,7 @@ export default function Pacientes() {
                         size="sm" 
                         className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => handleDeletePaciente(paciente.id)}
+                        title="Excluir Paciente"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -378,8 +396,8 @@ export default function Pacientes() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                  Nenhum paciente encontrado com os filtros atuais.
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  {loading ? "Carregando..." : "Nenhum paciente encontrado com os filtros atuais."}
                 </TableCell>
               </TableRow>
             )}
@@ -389,4 +407,3 @@ export default function Pacientes() {
     </div>
   );
 }
-
