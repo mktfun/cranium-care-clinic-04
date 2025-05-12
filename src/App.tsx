@@ -18,7 +18,8 @@ import NotFound from "@/pages/NotFound";
 import Layout from "@/pages/Layout";
 import Index from "@/pages/Index";
 import Tarefas from "@/pages/Tarefas";
-import { NotificacoesPage } from "@/pages/NotificacoesPage"; // Importar a nova página
+import { NotificacoesPage } from "@/pages/NotificacoesPage";
+import MedicaoPorFotoPage from "@/pages/MedicaoPorFotoPage"; // Importar a nova página de medição por foto
 
 function App() {
   return (
@@ -35,6 +36,8 @@ function App() {
             <Route path="/pacientes/registro" element={<RegistroPaciente />} />
             <Route path="/pacientes/:id" element={<DetalhePaciente />} />
             <Route path="/pacientes/:id/nova-medicao" element={<NovaMedicao />} />
+            {/* Adicionar a rota para a nova página de medição por foto */}
+            <Route path="/pacientes/:id/medicao-por-foto" element={<MedicaoPorFotoPage />} /> 
             <Route path="/pacientes/:id/relatorio" element={<RelatorioMedicao />} />
             <Route path="/pacientes/:id/relatorios/:medicaoId" element={<RelatorioVisualizar />} />
             <Route path="/historico" element={<Historico />} />
@@ -42,7 +45,7 @@ function App() {
             <Route path="/tarefas" element={<Tarefas />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
             <Route path="/perfil" element={<Configuracoes />} />
-            <Route path="/notificacoes" element={<NotificacoesPage />} /> {/* Adicionar a nova rota */}
+            <Route path="/notificacoes" element={<NotificacoesPage />} />
           </Route>
           
           <Route path="*" element={<NotFound />} />
