@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, BellOff, AlertTriangle, FileText, UserPlus, CalendarCheck2 } from "lucide-react";
+import { Check, BellOff, AlertTriangle, FileText, UserPlus, CalendarCheck2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { RealNotificacao } from "@/components/Header"; // Importar a interface do Header
