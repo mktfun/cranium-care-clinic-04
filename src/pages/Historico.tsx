@@ -168,8 +168,8 @@ export default function Historico() {
                       // Get the cranial status for the current measurement
                       // Fix: indice_craniano is already defined in our Medicao interface
                       const { asymmetryType, severityLevel } = getCranialStatus(
-                        medicao.indice_craniano || 0,
-                        medicao.cvai || 0
+                        (medicao as any).indice_craniano || 0,
+                        (medicao as any).cvai || 0
                       );
                       
                       return (
@@ -187,10 +187,10 @@ export default function Historico() {
                             {medicao.diferenca_diagonais ? `${medicao.diferenca_diagonais} mm` : "N/A"}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
-                            {medicao.indice_craniano ? `${medicao.indice_craniano}%` : "N/A"}
+                            {(medicao as any).indice_craniano ? `${(medicao as any).indice_craniano}%` : "N/A"}
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">
-                            {medicao.cvai ? `${medicao.cvai}%` : "N/A"}
+                            {(medicao as any).cvai ? `${(medicao as any).cvai}%` : "N/A"}
                           </TableCell>
                           <TableCell>
                             <StatusBadge status={severityLevel} asymmetryType={asymmetryType} showAsymmetryType={true} />

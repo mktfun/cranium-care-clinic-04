@@ -13,7 +13,8 @@ import {
   Settings, 
   LogOut,
   BarChart,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,6 +28,8 @@ interface SidebarProps {
 
 export function Sidebar({ className, collapsed = false, toggleSidebar, navigateToDashboard }: SidebarProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const [clinicaNome, setClinicaNome] = useState("CraniumCare");
+  const [carregando, setCarregando] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -42,12 +45,54 @@ export function Sidebar({ className, collapsed = false, toggleSidebar, navigateT
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
   
+  // Carregar o nome da clínica
+  useEffect(() => {
+    async function carregarClinica() {
+      try {
+        // Primeiro, tentar obter do localStorage para exibição rápida
+        const savedClinicaNome = localStorage.getItem('clinicaNome');
+        if (savedClinicaNome) {
+          setClinicaNome(savedClinicaNome);
+        }
+        
+        // Depois, obter a sessão atual
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          return;
+        }
+        
+        // Carregar dados do usuário para obter o nome da clínica
+        const { data: usuarioData, error } = await supabase
+          .from('usuarios')
+          .select('clinica_nome')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (error) {
+          console.error("Erro ao carregar dados da clínica:", error);
+          return;
+        }
+        
+        if (usuarioData?.clinica_nome) {
+          setClinicaNome(usuarioData.clinica_nome);
+          localStorage.setItem('clinicaNome', usuarioData.clinica_nome);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar dados da clínica:", err);
+      }
+    }
+    
+    carregarClinica();
+  }, []);
+  
   const isActive = (path: string) => {
     return location.pathname === path;
   };
   
   const handleLogout = async () => {
     try {
+      setCarregando(true);
       const { error } = await supabase.auth.signOut();
       if (error) {
         throw error;
@@ -57,6 +102,8 @@ export function Sidebar({ className, collapsed = false, toggleSidebar, navigateT
     } catch (error: any) {
       console.error("Erro ao fazer logout:", error);
       toast.error(`Erro ao fazer logout: ${error.message}`);
+    } finally {
+      setCarregando(false);
     }
   };
   
@@ -74,14 +121,16 @@ export function Sidebar({ className, collapsed = false, toggleSidebar, navigateT
             className="font-semibold text-turquesa text-xl cursor-pointer flex items-center hover:text-turquesa/90 transition-colors"
             onClick={navigateToDashboard}
           >
-            CraniumCare
+            {clinicaNome}
           </div>
         ) : (
           <div 
             className="flex justify-center w-full cursor-pointer"
             onClick={navigateToDashboard}
           >
-            <div className="text-turquesa text-2xl font-bold">C</div>
+            <div className="text-turquesa text-2xl font-bold">
+              {clinicaNome.charAt(0)}
+            </div>
           </div>
         )}
         
@@ -168,9 +217,19 @@ export function Sidebar({ className, collapsed = false, toggleSidebar, navigateT
             size="sm" 
             className="text-destructive hover:text-destructive transition-colors"
             onClick={handleLogout}
+            disabled={carregando}
           >
-            <LogOut className="h-4 w-4 mr-2" />
-            <span>Sair</span>
+            {carregando ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <span>Saindo...</span>
+              </>
+            ) : (
+              <>
+                <LogOut className="h-4 w-4 mr-2" />
+                <span>Sair</span>
+              </>
+            )}
           </Button>
         ) : (
           <Button 
@@ -178,8 +237,9 @@ export function Sidebar({ className, collapsed = false, toggleSidebar, navigateT
             size="sm" 
             className="text-destructive hover:text-destructive transition-colors"
             onClick={handleLogout}
+            disabled={carregando}
           >
-            <LogOut className="h-4 w-4" />
+            {carregando ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
           </Button>
         )}
       </div>

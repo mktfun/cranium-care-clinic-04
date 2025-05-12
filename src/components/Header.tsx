@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Bell, ChevronDown, Menu, Settings, User } from "lucide-react";
+import { Bell, ChevronDown, Menu, Settings, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { supabase } from "@/integrations/supabase/client";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -26,17 +27,83 @@ interface HeaderProps {
   title?: string;
 }
 
+interface Notificacao {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+}
+
+interface Usuario {
+  nome: string;
+  email: string;
+  avatar_url?: string;
+  clinica_nome?: string;
+}
+
 export function Header({ toggleSidebar, sidebarCollapsed, className, title }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [notificationsCount] = useState(2);
+  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [clinicaNome, setClinicaNome] = useState("CraniumCare");
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [carregandoUsuario, setCarregandoUsuario] = useState(true);
   
-  const notifications = [
-    { id: 1, title: "Nova medição registrada", message: "A medição de João Silva foi registrada com sucesso.", time: "Há 2 horas" },
-    { id: 2, title: "Lembrete de acompanhamento", message: "Maria Oliveira precisa de reavaliação hoje.", time: "Há 5 horas" },
-  ];
+  // Carregar o usuário autenticado
+  useEffect(() => {
+    async function carregarUsuario() {
+      try {
+        setCarregandoUsuario(true);
+        
+        // Obter sessão atual
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          return;
+        }
+        
+        // Carregar dados do usuário
+        const { data: usuarioData, error } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (error) {
+          console.error("Erro ao carregar dados do usuário:", error);
+          return;
+        }
+        
+        if (usuarioData) {
+          setUsuario({
+            nome: usuarioData.nome || 'Usuário',
+            email: usuarioData.email || '',
+            avatar_url: usuarioData.avatar_url,
+            clinica_nome: usuarioData.clinica_nome
+          });
+          
+          // Atualizar nome da clínica
+          if (usuarioData.clinica_nome) {
+            setClinicaNome(usuarioData.clinica_nome);
+            localStorage.setItem('clinicaNome', usuarioData.clinica_nome);
+          }
+        }
+        
+      } catch (err) {
+        console.error("Erro ao carregar usuário:", err);
+      } finally {
+        setCarregandoUsuario(false);
+      }
+    }
+    
+    carregarUsuario();
+    
+    // Carregar notificações
+    carregarNotificacoes();
+  }, []);
   
   // Carregar o nome da clínica do localStorage
   useEffect(() => {
@@ -45,6 +112,56 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
       setClinicaNome(savedClinicaNome);
     }
   }, [location.pathname]); // Recarrega quando muda a rota
+
+  // Carregar notificações
+  const carregarNotificacoes = async () => {
+    // Aqui seria implementada a busca de notificações reais do banco
+    // Por enquanto, usamos dados de exemplo
+    
+    const notificacoesExemplo = [
+      { 
+        id: 1, 
+        title: "Nova medição registrada", 
+        message: "A medição de João Silva foi registrada com sucesso.", 
+        time: "Há 2 horas",
+        read: false
+      },
+      { 
+        id: 2, 
+        title: "Lembrete de acompanhamento", 
+        message: "Maria Oliveira precisa de reavaliação hoje.", 
+        time: "Há 5 horas",
+        read: false
+      },
+    ];
+    
+    setNotificacoes(notificacoesExemplo);
+    setNotificacoesNaoLidas(notificacoesExemplo.filter(n => !n.read).length);
+  };
+  
+  // Marcar notificação como lida
+  const marcarComoLida = (id: number) => {
+    const notificacoesAtualizadas = notificacoes.map(notificacao => {
+      if (notificacao.id === id) {
+        return { ...notificacao, read: true };
+      }
+      return notificacao;
+    });
+    
+    setNotificacoes(notificacoesAtualizadas);
+    setNotificacoesNaoLidas(notificacoesAtualizadas.filter(n => !n.read).length);
+  };
+  
+  // Marcar todas como lidas
+  const marcarTodasComoLidas = () => {
+    const notificacoesAtualizadas = notificacoes.map(notificacao => ({
+      ...notificacao,
+      read: true
+    }));
+    
+    setNotificacoes(notificacoesAtualizadas);
+    setNotificacoesNaoLidas(0);
+  };
   
   // Get current page name
   const getCurrentPageName = () => {
@@ -52,10 +169,10 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
     
     // Map routes to readable names
     const routeNames: Record<string, string> = {
-      "/dashboard": `Dashboard – Clínica ${clinicaNome}`,
+      "/dashboard": `Dashboard – ${clinicaNome}`,
       "/pacientes": "Pacientes",
       "/historico": "Histórico",
-      "/relatorios": `Relatórios – Clínica ${clinicaNome}`,
+      "/relatorios": `Relatórios – ${clinicaNome}`,
       "/configuracoes": "Configurações",
       "/perfil": "Meu Perfil",
       "/tarefas": "Tarefas",
@@ -87,6 +204,26 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
     
     return () => clearTimeout(timer);
   }, [location.pathname]);
+  
+  // Iniciais para o avatar
+  const obterIniciais = (nome: string) => {
+    return nome
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  // Logout
+  const fazerLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate("/login");
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+  };
 
   return (
     <header
@@ -131,25 +268,48 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                {notificationsCount > 0 && (
+                {notificacoesNaoLidas > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
-                    {notificationsCount}
+                    {notificacoesNaoLidas}
                   </span>
                 )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="end">
-              <div className="border-b p-3">
+              <div className="border-b p-3 flex items-center justify-between">
                 <h2 className="font-semibold">Notificações</h2>
+                {notificacoesNaoLidas > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    className="text-xs" 
+                    size="sm"
+                    onClick={marcarTodasComoLidas}
+                  >
+                    Marcar todas como lidas
+                  </Button>
+                )}
               </div>
               <div className="max-h-80 overflow-auto">
-                {notifications.map((notification) => (
-                  <div key={notification.id} className="border-b p-3 cursor-pointer hover:bg-muted">
-                    <div className="font-medium">{notification.title}</div>
-                    <div className="text-sm text-muted-foreground mt-1">{notification.message}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{notification.time}</div>
+                {notificacoes.length > 0 ? (
+                  notificacoes.map((notificacao) => (
+                    <div 
+                      key={notificacao.id} 
+                      className={cn(
+                        "border-b p-3 cursor-pointer hover:bg-muted",
+                        !notificacao.read && "bg-muted/50"
+                      )}
+                      onClick={() => marcarComoLida(notificacao.id)}
+                    >
+                      <div className="font-medium">{notificacao.title}</div>
+                      <div className="text-sm text-muted-foreground mt-1">{notificacao.message}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{notificacao.time}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    Nenhuma notificação no momento
                   </div>
-                ))}
+                )}
               </div>
               <div className="p-2 border-t">
                 <Button variant="ghost" className="w-full text-sm text-center" onClick={() => navigate("/notificacoes")}>
@@ -163,12 +323,20 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative flex items-center gap-2 px-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="/avatar.png" />
-                  <AvatarFallback>DA</AvatarFallback>
+                  {carregandoUsuario ? (
+                    <div className="h-full w-full flex items-center justify-center bg-muted">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  ) : (
+                    <>
+                      <AvatarImage src={usuario?.avatar_url || ""} />
+                      <AvatarFallback>{obterIniciais(usuario?.nome || "Usuário")}</AvatarFallback>
+                    </>
+                  )}
                 </Avatar>
                 <div className="hidden md:block text-sm font-medium text-left">
-                  <div>Dr. Ana Silva</div>
-                  <div className="text-xs text-muted-foreground">Pediatra</div>
+                  <div>{usuario?.nome || "Carregando..."}</div>
+                  <div className="text-xs text-muted-foreground">Médico(a)</div>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </Button>
@@ -185,7 +353,7 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
                 <span>Configurações</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/login")} className="text-destructive cursor-pointer">
+              <DropdownMenuItem onClick={fazerLogout} className="text-destructive cursor-pointer">
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
