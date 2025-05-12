@@ -322,11 +322,14 @@ export default function Pacientes() {
                 const ultimaMedicao = obterUltimaMedicao(paciente.id);
                 
                 // Fix: Handle both snake_case and camelCase property names for cranial index
+                // We need to use type assertion since the TypeScript type doesn't include indice_craniano
+                const cranialIndex = ultimaMedicao ? 
+                  (ultimaMedicao as any).indice_craniano || ultimaMedicao.indiceCraniano || 0 : 0;
+                
+                const cvaiValue = ultimaMedicao ? ultimaMedicao.cvai || 0 : 0;
+                
                 const { asymmetryType } = ultimaMedicao ? 
-                  getCranialStatus(
-                    ultimaMedicao.indiceCraniano || ultimaMedicao.indice_craniano || 0, 
-                    ultimaMedicao.cvai || 0
-                  ) : 
+                  getCranialStatus(cranialIndex, cvaiValue) : 
                   { asymmetryType: "Normal" as AsymmetryType };
                 
                 return (

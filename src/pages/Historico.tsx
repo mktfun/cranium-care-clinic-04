@@ -166,7 +166,7 @@ export default function Historico() {
                   {medicoesFiltradas.length > 0 ? (
                     medicoesFiltradas.map((medicao) => {
                       // Get the cranial status for the current measurement
-                      // Fix: Use either indice_craniano or indiceCraniano, whichever is available
+                      // Fix: indice_craniano is already defined in our Medicao interface
                       const { asymmetryType, severityLevel } = getCranialStatus(
                         medicao.indice_craniano || 0,
                         medicao.cvai || 0
