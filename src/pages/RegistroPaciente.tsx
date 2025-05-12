@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,9 +40,9 @@ type PacienteForm = z.infer<typeof pacienteSchema>;
 
 export default function RegistroPaciente() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [registrarMedicao, setRegistrarMedicao] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   
   const { 
     control, 
@@ -60,18 +59,42 @@ export default function RegistroPaciente() {
     }
   });
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error("Erro ao buscar usuário:", authError.message);
+        toast.error("Erro ao buscar dados do usuário. Por favor, tente novamente.");
+        return;
+      }
+      if (user) {
+        setUserId(user.id);
+      } else {
+        console.error("Usuário não autenticado.");
+        toast.error("Sessão expirada ou usuário não autenticado. Por favor, faça login novamente para registrar um paciente.");
+        navigate("/login");
+      }
+    };
+    fetchUser();
+  }, [navigate]);
+
   const onSubmit = async (data: PacienteForm) => {
+    if (!userId) {
+      toast.error("ID do usuário não está disponível. Não é possível registrar o paciente. Por favor, recarregue a página ou faça login novamente.");
+      console.error("Tentativa de submissão sem userId.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       setSubmitting(true);
       
-      // Formatar os responsáveis como JSON
       const responsaveis = {
         nome: data.responsavelNome,
         telefone: data.responsavelTelefone || "",
         email: data.responsavelEmail || "",
       };
       
-      // Inserir no Supabase
       const { data: pacienteData, error } = await supabase
         .from('pacientes')
         .insert({
@@ -79,6 +102,7 @@ export default function RegistroPaciente() {
           data_nascimento: format(data.dataNascimento, 'yyyy-MM-dd'),
           sexo: data.sexo,
           responsaveis: responsaveis,
+          user_id: userId, 
         })
         .select('id')
         .single();
@@ -86,22 +110,18 @@ export default function RegistroPaciente() {
       if (error) {
         toast.error(`Erro ao registrar paciente: ${error.message}`);
         console.error("Erro ao registrar paciente:", error);
-        return;
-      }
-
-      toast.success("Paciente registrado com sucesso!");
-      
-      if (registrarMedicao && pacienteData?.id) {
-        // Navegar para a página de nova medição
-        navigate(`/pacientes/${pacienteData.id}/nova-medicao`);
       } else {
-        // Navegar para a página de pacientes
-        navigate("/pacientes");
+        toast.success("Paciente registrado com sucesso!");
+        if (registrarMedicao && pacienteData?.id) {
+          navigate(`/pacientes/${pacienteData.id}/nova-medicao`);
+        } else {
+          navigate("/pacientes");
+        }
       }
-      
-    } catch (error) {
-      console.error("Erro ao registrar paciente:", error);
-      toast.error("Erro ao registrar paciente. Tente novamente.");
+    } catch (e) {
+      const err = e as Error;
+      console.error("Erro inesperado ao registrar paciente:", err);
+      toast.error(`Ocorreu um erro inesperado: ${err.message}. Tente novamente.`);
     } finally {
       setSubmitting(false);
     }
@@ -301,7 +321,7 @@ export default function RegistroPaciente() {
                 <Button 
                   type="submit"
                   className="bg-turquesa hover:bg-turquesa/90"
-                  disabled={submitting}
+                  disabled={submitting || !userId}
                 >
                   {submitting ? (
                     <>
@@ -320,3 +340,4 @@ export default function RegistroPaciente() {
     </div>
   );
 }
+
