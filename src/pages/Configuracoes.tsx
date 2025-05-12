@@ -27,6 +27,8 @@ interface Usuario {
   email: string;
   clinica_nome?: string;
   avatar_url?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function Configuracoes() {
