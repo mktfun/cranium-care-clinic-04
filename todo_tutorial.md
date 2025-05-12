@@ -1,0 +1,37 @@
+# Lista de Tarefas - Tutorial de Primeiro Acesso
+
+- [x] **Planejamento e Estrutura**
+    - [x] Definir a localização do novo componente do tutorial (ex: `src/components/WelcomeTutorialModal.tsx`).
+    - [x] Definir a estrutura de dados para os slides do tutorial (título, descrição, imagem opcional).
+    - [x] Decidir como integrar o tutorial no fluxo da aplicação (ex: no `Layout.tsx` ou `App.tsx` após o login).
+- [x] **Desenvolvimento do Componente do Tutorial**
+    - [x] Criar o arquivo `WelcomeTutorialModal.tsx`.
+    - [x] Implementar a estrutura básica do modal usando componentes do shadcn/ui (ex: `Dialog`).
+    - [x] Implementar a lógica de navegação entre slides (botões "Próximo", "Anterior", "Concluir").
+    - [x] Implementar a exibição do conteúdo de cada slide.
+    - [x] Estilizar o modal e os slides para uma boa experiência visual.
+- [x] **Lógica de Primeiro Acesso**
+    - [x] Implementar a função para verificar o `localStorage` (ex: `localStorage.getItem("tutorialVisto")`).
+    - [x] Implementar a função para marcar o tutorial como visto no `localStorage` (ex: `localStorage.setItem("tutorialVisto", "true")`) após a conclusão.
+    - [x] Integrar essa lógica para controlar a exibição do modal.
+- [x] **Conteúdo dos Slides**
+    - [x] Definir o conteúdo textual para cada slide, fornecendo uma visão geral do aplicativo.
+        - [x] Slide 1: Boas-vindas e propósito principal do Cranium Care Clinic.
+        - [x] Slide 2: Como registrar um novo paciente.
+        - [x] Slide 3: Como registrar e visualizar medições.
+        - [x] Slide 4: Entendendo os gráficos e relatórios.
+        - [x] Slide 5: Conclusão e como buscar ajuda ou configurações.
+    - [ ] (Opcional) Selecionar ou criar imagens/ícones simples para ilustrar cada slide.
+- [x] **Integração na Aplicação**
+    - [x] Importar e renderizar o `WelcomeTutorialModal` no local definido (ex: `Layout.tsx`).
+    - [x] Garantir que o tutorial seja disparado automaticamente apenas no primeiro login do usuário.
+- [ ] **Testes**
+    - [ ] Testar a exibição do tutorial no primeiro acesso.
+    - [ ] Testar que o tutorial não aparece em acessos subsequentes.
+    - [ ] Testar a navegação entre os slides.
+    - [ ] Testar a funcionalidade do botão "Concluir".
+    - [ ] Testar a responsividade do modal.
+- [ ] **Documentação e Finalização**
+    - [ ] Documentar a nova funcionalidade no README ou em local apropriado.
+    - [ ] Fazer commit e push das alterações.
+    - [ ] Confirmar com o usuário.

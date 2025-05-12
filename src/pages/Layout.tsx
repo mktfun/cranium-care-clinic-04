@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
+import { WelcomeTutorialModal } from "@/components/WelcomeTutorialModal"; // Importar o modal
 
 interface LayoutProps {
   title?: string;
@@ -13,7 +13,6 @@ export default function Layout({ title = "Dashboard" }: LayoutProps) {
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const navigate = useNavigate();
   
-  // Check if device is mobile on component mount and window resize
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -55,6 +54,8 @@ export default function Layout({ title = "Dashboard" }: LayoutProps) {
           <Outlet />
         </main>
       </div>
+      <WelcomeTutorialModal /> {/* Renderizar o modal aqui */}
     </div>
   );
 }
+
