@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from '@/components/ui/sonner';
@@ -19,6 +18,7 @@ import NotFound from "@/pages/NotFound";
 import Layout from "@/pages/Layout";
 import Index from "@/pages/Index";
 import Tarefas from "@/pages/Tarefas";
+import { NotificacoesPage } from "@/pages/NotificacoesPage"; // Importar a nova página
 
 function App() {
   return (
@@ -42,6 +42,7 @@ function App() {
             <Route path="/tarefas" element={<Tarefas />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
             <Route path="/perfil" element={<Configuracoes />} />
+            <Route path="/notificacoes" element={<NotificacoesPage />} /> {/* Adicionar a nova rota */}
           </Route>
           
           <Route path="*" element={<NotFound />} />
@@ -53,3 +54,4 @@ function App() {
 }
 
 export default App;
+
