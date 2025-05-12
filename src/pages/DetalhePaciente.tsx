@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,18 +28,15 @@ export default function DetalhePaciente() {
   const [activeChartTab, setActiveChartTab] = useState("indiceCraniano");
   const [chartsExpanded, setChartsExpanded] = useState(false);
   
-  // Load patient data
   useEffect(() => {
     async function fetchData() {
       if (id) {
         setLoading(true);
         try {
-          // Try to fetch data from Supabase
           let patientId = id;
           let isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patientId);
           
           if (!isValidUuid) {
-            // If not a valid UUID, look for a matching patient
             const { data: matchedPatient } = await supabase
               .from('pacientes')
               .select('id')
@@ -59,15 +55,12 @@ export default function DetalhePaciente() {
             .maybeSingle();
           
           if (error || !pacienteData) {
-            // Fallback to mock data
             const mockPaciente = obterPacientePorId(id);
             setPaciente(mockPaciente);
             setMedicoes(mockPaciente?.medicoes || []);
           } else {
-            // Use Supabase data
             setPaciente(pacienteData);
             
-            // Fetch medicoes for this patient
             const { data: medicoesData, error: medicoesError } = await supabase
               .from('medicoes')
               .select('*')
@@ -93,7 +86,6 @@ export default function DetalhePaciente() {
     fetchData();
   }, [id]);
   
-  // Handle loading state
   if (loading) {
     return <div className="p-8 flex justify-center">Carregando...</div>;
   }
@@ -104,30 +96,30 @@ export default function DetalhePaciente() {
   
   const ultimaMedicao = medicoes.length > 0 ? medicoes[0] : null;
   
-  // Format date
   const formatarData = (dataString: string) => {
     const data = new Date(dataString);
     return data.toLocaleDateString('pt-BR');
   };
   
-  // Get current age string
   const idadeAtual = formatAgeHeader(paciente.dataNascimento || paciente.data_nascimento);
   
-  // Get asymmetry type and severity for the last measurement
   const { asymmetryType, severityLevel } = ultimaMedicao
     ? getCranialStatus(ultimaMedicao.indiceCraniano || ultimaMedicao.indice_craniano, ultimaMedicao.cvai)
     : { asymmetryType: "Normal", severityLevel: "normal" };
 
-  // Handle click on a measurement in the history
   const handleMedicaoClick = (medicao: any) => {
     setSelectedMedicao(medicao);
     setIsDetailDialogOpen(true);
   };
 
-  // Toggle charts visibility
   const toggleChartsExpanded = () => {
     setChartsExpanded(!chartsExpanded);
   };
+
+  // Garantir que responsaveis seja um array para o .map
+  const responsaveisArray = paciente.responsaveis ? 
+                            (Array.isArray(paciente.responsaveis) ? paciente.responsaveis : [paciente.responsaveis]) 
+                            : [];
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -257,14 +249,19 @@ export default function DetalhePaciente() {
               
               <div>
                 <div className="text-muted-foreground mb-1">Responsáveis</div>
-                {paciente.responsaveis && paciente.responsaveis.map((resp: any, index: number) => (
+                {responsaveisArray.map((resp: any, index: number) => (
                   <div key={index} className="border rounded-md p-3 mb-2">
                     <div className="font-medium">{resp.nome}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {resp.telefone} • {resp.email}
-                    </div>
+                    { (resp.telefone || resp.email) && (
+                      <div className="text-sm text-muted-foreground">
+                        {resp.telefone}{resp.telefone && resp.email ? ' • ' : ''}{resp.email}
+                      </div>
+                    )}
                   </div>
                 ))}
+                {responsaveisArray.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Nenhum responsável cadastrado.</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -273,7 +270,6 @@ export default function DetalhePaciente() {
         </div>
       </div>
       
-      {/* Chart Section with Toggle */}
       <Card>
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
@@ -365,9 +361,7 @@ export default function DetalhePaciente() {
             <TabsContent value="perimetro" className="mt-0">
               <div className="space-y-4">
                 <div className="text-sm text-muted-foreground">
-                  <p><strong>O que é?</strong> O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte mais protuberante do occipital.</p>
-                  <p><strong>Como interpretar:</strong> As linhas coloridas representam os percentis de referência para {paciente.sexo === 'M' ? 'meninos' : 'meninas'} da mesma idade.</p>
-                  <p><strong>Desvios:</strong> Valores abaixo do percentil 3 ou acima do percentil 97 merecem investigação adicional.</p>
+                  <p><strong>O que é?</strong> O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte mais protuberante do occipital. As linhas coloridas representam os percentis de referência para meninos da mesma idade, sendo P50 a média populacional.</p>
                 </div>
                 <MedicaoLineChart 
                   titulo="Evolução do Perímetro Cefálico" 
@@ -375,7 +369,7 @@ export default function DetalhePaciente() {
                   dataNascimento={paciente.dataNascimento || paciente.data_nascimento}
                   tipoGrafico="perimetro"
                   sexoPaciente={paciente.sexo}
-                  linhaCorTheme="blue"
+                  linhaCorTheme="green"
                   altura={400}
                 />
               </div>
@@ -384,132 +378,112 @@ export default function DetalhePaciente() {
         </CardContent>
       </Card>
       
-      {/* Measurement History - Improved Layout */}
-      <div className="mt-8">
+      {medicoes.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Histórico de Medições</CardTitle>
-            <CardDescription>
-              {medicoes.length > 0 
-                ? `Mostrando ${medicoes.length} registro(s) de medição`
-                : "Nenhuma medição registrada"}
-            </CardDescription>
           </CardHeader>
-          
-          <CardContent className="py-6">
-            {medicoes.length > 0 ? (
-              <div className="space-y-4">
-                {medicoes.map((medicao: any) => {
-                  const { asymmetryType, severityLevel } = getCranialStatus(
-                    medicao.indice_craniano || medicao.indiceCraniano,
-                    medicao.cvai
-                  );
-                  
-                  return (
-                    <div 
-                      key={medicao.id} 
-                      onClick={() => handleMedicaoClick(medicao)}
-                      className="cursor-pointer transition hover:bg-muted/20 rounded-md p-4 border"
-                    >
-                      <div className="flex flex-col md:flex-row justify-between mb-4">
-                        <div>
-                          <h3 className="text-lg font-medium">{formatarData(medicao.data)}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Idade: {formatAge(paciente.dataNascimento || paciente.data_nascimento, medicao.data)}
-                          </p>
-                        </div>
-                        <StatusBadge 
-                          status={severityLevel} 
-                          asymmetryType={asymmetryType}
-                          showAsymmetryType={true}
-                          className="mt-2 md:mt-0"
-                        />
-                      </div>
-                      
-                      <MedicaoDetails 
-                        medicao={medicao}
-                        pacienteNascimento={paciente.dataNascimento || paciente.data_nascimento}
-                      />
-                      
-                      <div className="flex justify-end mt-3">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/pacientes/${id}/relatorios/${medicao.id}`);
-                          }}
-                        >
-                          Ver Relatório
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Nenhuma medição registrada.</p>
-                <Button 
-                  className="mt-4 bg-turquesa hover:bg-turquesa/90" 
-                  onClick={() => navigate(`/pacientes/${id}/nova-medicao`)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Registrar Primeira Medição
-                </Button>
-              </div>
-            )}
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-border">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Data</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Idade</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Comp.</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Larg.</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Diag. D</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Diag. E</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Dif. Diag.</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">CVAI</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">IC</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">PC</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {medicoes.map((medicao) => {
+                    const { asymmetryType, severityLevel } = getCranialStatus(medicao.indiceCraniano || medicao.indice_craniano, medicao.cvai);
+                    return (
+                      <tr key={medicao.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => handleMedicaoClick(medicao)}>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{formatarData(medicao.data)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{formatAge(paciente.dataNascimento || paciente.data_nascimento, medicao.data)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.comprimento_maximo} mm</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.largura_maxima} mm</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diagonal_direita} mm</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diagonal_esquerda} mm</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diferenca_diagonais} mm</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.cvai ? `${medicao.cvai.toFixed(1)}%` : '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.indice_craniano ? `${medicao.indice_craniano.toFixed(1)}%` : '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.perimetro_cefalico ? `${medicao.perimetro_cefalico} mm` : '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                          <StatusBadge asymmetryType={asymmetryType} severityLevel={severityLevel} />
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                          <Button variant="link" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/pacientes/${id}/medicao/${medicao.id}/editar`); }}>Editar</Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
-      </div>
-      
-      {/* Dialogs */}
+      )}
+
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Editar Paciente</DialogTitle>
           </DialogHeader>
-          <EditarPacienteForm 
-            paciente={paciente} 
-            onSalvar={() => {
-              setIsEditDialogOpen(false);
-              // Reload patient data after saving
-              window.location.reload();
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Detalhes da Medição</DialogTitle>
-          </DialogHeader>
-          {selectedMedicao && (
-            <div className="mt-4">
-              <MedicaoDetails 
-                medicao={selectedMedicao}
-                pacienteNascimento={paciente.dataNascimento || paciente.data_nascimento}
-                compact={false}
-              />
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
-                  Fechar
-                </Button>
-                <Button 
-                  className="bg-turquesa hover:bg-turquesa/90"
-                  onClick={() => {
-                    setIsDetailDialogOpen(false);
-                    navigate(`/pacientes/${id}/relatorios/${selectedMedicao.id}`);
-                  }}
-                >
-                  Ver Relatório Completo
-                </Button>
-              </div>
-            </div>
+          {paciente && (
+            <EditarPacienteForm 
+              paciente={paciente} 
+              onSuccess={() => {
+                setIsEditDialogOpen(false);
+                // Refetch data to update UI
+                if (id) {
+                  setLoading(true);
+                  async function refetch() {
+                    const { data: pacienteData, error } = await supabase
+                      .from('pacientes')
+                      .select('*')
+                      .eq('id', id)
+                      .single();
+                    if (error) {
+                      toast.error('Erro ao recarregar dados do paciente.');
+                    } else {
+                      setPaciente(pacienteData);
+                    }
+                    setLoading(false);
+                  }
+                  refetch();
+                }
+              }}
+            />
           )}
         </DialogContent>
       </Dialog>
+      
+      {selectedMedicao && (
+        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Detalhes da Medição</DialogTitle>
+              <CardDescription>
+                {formatarData(selectedMedicao.data)} • {formatAge(paciente.dataNascimento || paciente.data_nascimento, selectedMedicao.data)}
+              </CardDescription>
+            </DialogHeader>
+            <MedicaoDetails 
+              medicao={selectedMedicao} 
+              pacienteNascimento={paciente.dataNascimento || paciente.data_nascimento} 
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
+
