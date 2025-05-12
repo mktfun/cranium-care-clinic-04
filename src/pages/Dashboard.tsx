@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -235,7 +234,8 @@ export default function Dashboard() {
     idadeEmMeses: paciente.idadeEmMeses,
     ultimaMedicao: paciente.ultimaMedicao ? {
       data: paciente.ultimaMedicao.data,
-      status: paciente.ultimaMedicao.status
+      status: paciente.ultimaMedicao.status,
+      asymmetryType: paciente.ultimaMedicao.asymmetryType
     } : undefined
   }));
   

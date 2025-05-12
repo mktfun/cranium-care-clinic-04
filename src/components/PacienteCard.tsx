@@ -12,7 +12,7 @@ interface PacienteCardProps {
     nome: string;
     dataNascimento: string;
     idadeEmMeses: number;
-    ultimaMedicao: {
+    ultimaMedicao?: {
       data: string;
       status: "normal" | "leve" | "moderada" | "severa";
       asymmetryType?: string;
@@ -21,15 +21,30 @@ interface PacienteCardProps {
 }
 
 export function PacienteCard({ paciente }: PacienteCardProps) {
-  // Calcula dias desde a última medição
-  const dataUltimaMedicao = new Date(paciente.ultimaMedicao.data);
-  const hoje = new Date();
-  const diferencaDias = Math.floor((hoje.getTime() - dataUltimaMedicao.getTime()) / (1000 * 60 * 60 * 24));
+  // Safely calculate days since last measurement, handling undefined ultimaMedicao
+  const calcularDiferencaDias = () => {
+    if (!paciente.ultimaMedicao?.data) {
+      return null;
+    }
+    
+    const dataUltimaMedicao = new Date(paciente.ultimaMedicao.data);
+    const hoje = new Date();
+    return Math.floor((hoje.getTime() - dataUltimaMedicao.getTime()) / (1000 * 60 * 60 * 24));
+  };
   
-  // Formata data para formato brasileiro
-  const formatarData = (dataString: string) => {
-    const data = new Date(dataString);
-    return data.toLocaleDateString('pt-BR');
+  const diferencaDias = calcularDiferencaDias();
+  
+  // Format date for Brazilian format, with null handling
+  const formatarData = (dataString?: string) => {
+    if (!dataString) return "N/A";
+    
+    try {
+      const data = new Date(dataString);
+      return data.toLocaleDateString('pt-BR');
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return "Data inválida";
+    }
   };
   
   // Calculate and format current age
@@ -40,10 +55,16 @@ export function PacienteCard({ paciente }: PacienteCardProps) {
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg">{paciente.nome}</CardTitle>
-          <StatusBadge 
-            status={paciente.ultimaMedicao.status} 
-            asymmetryType={paciente.ultimaMedicao.asymmetryType as any}
-          />
+          {paciente.ultimaMedicao ? (
+            <StatusBadge 
+              status={paciente.ultimaMedicao.status} 
+              asymmetryType={paciente.ultimaMedicao.asymmetryType as any}
+            />
+          ) : (
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+              Sem medição
+            </span>
+          )}
         </div>
         <div className="text-sm text-muted-foreground">
           {idadeAtual} • Nasc.: {formatarData(paciente.dataNascimento)}
@@ -53,8 +74,8 @@ export function PacienteCard({ paciente }: PacienteCardProps) {
         <div className="flex items-center mt-1">
           <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            Última medição: {formatarData(paciente.ultimaMedicao.data)}
-            {diferencaDias > 30 && (
+            Última medição: {paciente.ultimaMedicao ? formatarData(paciente.ultimaMedicao.data) : "Nunca"}
+            {diferencaDias && diferencaDias > 30 && (
               <span className="ml-2 text-destructive">({diferencaDias} dias atrás)</span>
             )}
           </span>
