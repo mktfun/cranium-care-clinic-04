@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { 
@@ -178,7 +177,7 @@ export default function Pacientes() {
 
   // Handle navigation to registro page
   const handleAddPaciente = () => {
-    navigate("/registro");
+    navigate("/pacientes/registro");
   };
   
   // Handle delete patient

@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from '@/components/ui/sonner';
@@ -6,6 +7,7 @@ import Login from "@/pages/Login";
 import Registro from "@/pages/Registro";
 import Dashboard from "@/pages/Dashboard";
 import Pacientes from "@/pages/Pacientes";
+import RegistroPaciente from "@/pages/RegistroPaciente";
 import DetalhePaciente from "@/pages/DetalhePaciente";
 import NovaMedicao from "@/pages/NovaMedicao";
 import RelatorioMedicao from "@/pages/RelatorioMedicao";
@@ -30,6 +32,7 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/pacientes" element={<Pacientes />} />
+            <Route path="/pacientes/registro" element={<RegistroPaciente />} />
             <Route path="/pacientes/:id" element={<DetalhePaciente />} />
             <Route path="/pacientes/:id/nova-medicao" element={<NovaMedicao />} />
             <Route path="/pacientes/:id/relatorio" element={<RelatorioMedicao />} />
