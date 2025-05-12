@@ -26,7 +26,7 @@ export default function DetalhePaciente() {
   const [selectedMedicao, setSelectedMedicao] = useState<any>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [activeChartTab, setActiveChartTab] = useState("indiceCraniano");
-  const [chartsExpanded, setChartsExpanded] = useState(true);
+  const [chartsExpanded, setChartsExpanded] = useState(false);
   
   useEffect(() => {
     async function fetchData() {
