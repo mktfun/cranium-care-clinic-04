@@ -321,8 +321,12 @@ export default function Pacientes() {
                 const dataNascimento = paciente.dataNascimento || paciente.data_nascimento;
                 const ultimaMedicao = obterUltimaMedicao(paciente.id);
                 
+                // Fix: Handle both snake_case and camelCase property names for cranial index
                 const { asymmetryType } = ultimaMedicao ? 
-                  getCranialStatus(ultimaMedicao.indiceCraniano || ultimaMedicao.indice_craniano, ultimaMedicao.cvai) : 
+                  getCranialStatus(
+                    ultimaMedicao.indiceCraniano || ultimaMedicao.indice_craniano || 0, 
+                    ultimaMedicao.cvai || 0
+                  ) : 
                   { asymmetryType: "Normal" as AsymmetryType };
                 
                 return (
