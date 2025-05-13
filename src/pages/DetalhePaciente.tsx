@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
 import { PatientTasks } from "@/components/PatientTasks";
 import { MedicaoDetails } from "@/components/MedicaoDetails";
@@ -161,7 +161,7 @@ export default function DetalhePaciente() {
           {paciente && (
             <EditarPacienteForm 
               paciente={paciente} 
-              onSuccess={() => {
+              onSuccessCallback={() => {
                 setIsEditDialogOpen(false);
                 // Refetch data to update UI
                 if (id) {
