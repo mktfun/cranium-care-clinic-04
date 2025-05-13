@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -396,6 +397,70 @@ export default function DetalhePaciente() {
           </CardContent>
         </Card>
       )}
+      
+      {medicoes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Histórico de Medições</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-border">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Data</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Idade</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Comp.</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Larg.</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Diag. D</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Diag. E</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Dif. Diag.</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">CVAI</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">IC</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">PC</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {medicoes.map((medicao) => {
+                    const { asymmetryType, severityLevel } = getCranialStatus(medicao.indice_craniano, medicao.cvai);
+                    return (
+                      <tr key={medicao.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => handleMedicaoClick(medicao)}>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{formatarData(medicao.data)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{formatAge(paciente.data_nascimento, medicao.data)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.comprimento_maximo} mm</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.largura_maxima} mm</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diagonal_direita || medicao.diagonal_d} mm</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diagonal_esquerda || medicao.diagonal_e} mm</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diferenca_diagonais} mm</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.cvai ? `${medicao.cvai.toFixed(1)}%` : '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.indice_craniano ? `${medicao.indice_craniano.toFixed(1)}%` : '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.perimetro_cefalico ? `${medicao.perimetro_cefalico} mm` : '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                          <StatusBadge asymmetryType={asymmetryType} severityLevel={severityLevel} />
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              navigate(`/pacientes/${id}/medicao/${medicao.id}/editar`); 
+                            }}
+                          >
+                            Editar
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -445,129 +510,3 @@ export default function DetalhePaciente() {
     </div>
   );
 }
-g>O que é?</strong> O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte mais protuberante do occipital. As linhas coloridas representam os percentis de referência para meninos da mesma idade, sendo P50 a média populacional.</p>
-                </div>
-                <MedicaoLineChart 
-                  titulo="Evolução do Perímetro Cefálico" 
-                  medicoes={medicoes}
-                  dataNascimento={paciente.dataNascimento || paciente.data_nascimento}
-                  tipoGrafico="perimetro"
-                  sexoPaciente={paciente.sexo}
-                  linhaCorTheme="green"
-                  altura={400}
-                />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-      
-      {medicoes.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Histórico de Medições</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-border">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Data</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Idade</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Comp.</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Larg.</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Diag. D</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Diag. E</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Dif. Diag.</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">CVAI</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">IC</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">PC</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {medicoes.map((medicao) => {
-                    const { asymmetryType, severityLevel } = getCranialStatus(medicao.indiceCraniano || medicao.indice_craniano, medicao.cvai);
-                    return (
-                      <tr key={medicao.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => handleMedicaoClick(medicao)}>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{formatarData(medicao.data)}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{formatAge(paciente.dataNascimento || paciente.data_nascimento, medicao.data)}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.comprimento_maximo} mm</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.largura_maxima} mm</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diagonal_direita} mm</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diagonal_esquerda} mm</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diferenca_diagonais} mm</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.cvai ? `${medicao.cvai.toFixed(1)}%` : '-'}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.indice_craniano ? `${medicao.indice_craniano.toFixed(1)}%` : '-'}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.perimetro_cefalico ? `${medicao.perimetro_cefalico} mm` : '-'}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">
-                          <StatusBadge asymmetryType={asymmetryType} severityLevel={severityLevel} />
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">
-                          <Button variant="link" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/pacientes/${id}/medicao/${medicao.id}/editar`); }}>Editar</Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Editar Paciente</DialogTitle>
-          </DialogHeader>
-          {paciente && (
-            <EditarPacienteForm 
-              paciente={paciente} 
-              onSuccess={() => {
-                setIsEditDialogOpen(false);
-                // Refetch data to update UI
-                if (id) {
-                  setLoading(true);
-                  async function refetch() {
-                    const { data: pacienteData, error } = await supabase
-                      .from('pacientes')
-                      .select('*')
-                      .eq('id', id)
-                      .single();
-                    if (error) {
-                      toast.error('Erro ao recarregar dados do paciente.');
-                    } else {
-                      setPaciente(pacienteData);
-                    }
-                    setLoading(false);
-                  }
-                  refetch();
-                }
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-      
-      {selectedMedicao && (
-        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Detalhes da Medição</DialogTitle>
-              <CardDescription>
-                {formatarData(selectedMedicao.data)} • {formatAge(paciente.dataNascimento || paciente.data_nascimento, selectedMedicao.data)}
-              </CardDescription>
-            </DialogHeader>
-            <MedicaoDetails 
-              medicao={selectedMedicao} 
-              pacienteNascimento={paciente.dataNascimento || paciente.data_nascimento} 
-            />
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
-  );
-}
-
