@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Edit3, Plus } from "lucide-react";
+import { Edit3, Plus, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface PatientHeaderProps {
@@ -36,6 +36,16 @@ export function PatientHeader({
           <Edit3 className="h-4 w-4" />
           <span>Editar</span>
         </Button>
+        
+        <Button 
+          variant="outline"
+          className="flex items-center gap-2"
+          onClick={() => navigate(`/pacientes/${paciente.id}/prontuario`)}
+        >
+          <FileText className="h-4 w-4" />
+          <span>Prontuário</span>
+        </Button>
+        
         <Button 
           className="flex items-center gap-2 bg-turquesa hover:bg-turquesa/90"
           onClick={() => navigate(`/pacientes/${paciente.id}/nova-medicao`)}

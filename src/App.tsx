@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from '@/components/ui/sonner';
@@ -19,7 +20,8 @@ import Layout from "@/pages/Layout";
 import Index from "@/pages/Index";
 import Tarefas from "@/pages/Tarefas";
 import { NotificacoesPage } from "@/pages/NotificacoesPage";
-import MedicaoPorFotoPage from "@/pages/MedicaoPorFotoPage"; // Importar a nova página de medição por foto
+import MedicaoPorFotoPage from "@/pages/MedicaoPorFotoPage";
+import ProntuarioMedico from "@/pages/ProntuarioMedico"; // Importar a nova página de prontuário
 
 function App() {
   return (
@@ -36,10 +38,10 @@ function App() {
             <Route path="/pacientes/registro" element={<RegistroPaciente />} />
             <Route path="/pacientes/:id" element={<DetalhePaciente />} />
             <Route path="/pacientes/:id/nova-medicao" element={<NovaMedicao />} />
-            {/* Adicionar a rota para a nova página de medição por foto */}
             <Route path="/pacientes/:id/medicao-por-foto" element={<MedicaoPorFotoPage />} /> 
             <Route path="/pacientes/:id/relatorio" element={<RelatorioMedicao />} />
             <Route path="/pacientes/:id/relatorios/:medicaoId" element={<RelatorioVisualizar />} />
+            <Route path="/pacientes/:id/prontuario" element={<ProntuarioMedico />} />
             <Route path="/historico" element={<Historico />} />
             <Route path="/relatorios" element={<Relatorios />} />
             <Route path="/tarefas" element={<Tarefas />} />
@@ -57,4 +59,3 @@ function App() {
 }
 
 export default App;
-
