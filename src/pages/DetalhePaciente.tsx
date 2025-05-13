@@ -161,7 +161,7 @@ export default function DetalhePaciente() {
           {paciente && (
             <EditarPacienteForm 
               paciente={paciente} 
-              onSuccessCallback={() => {
+              onSalvar={() => {
                 setIsEditDialogOpen(false);
                 // Refetch data to update UI
                 if (id) {
