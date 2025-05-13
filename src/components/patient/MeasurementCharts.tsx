@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +15,28 @@ interface MeasurementChartsProps {
 export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: MeasurementChartsProps) {
   const [activeChartTab, setActiveChartTab] = useState("indiceCraniano");
   const [chartsExpanded, setChartsExpanded] = useState(true);
+  const [normalizedMedicoes, setNormalizedMedicoes] = useState<any[]>([]);
+
+  // Normalize medicoes data to handle both snake_case and camelCase properties
+  useEffect(() => {
+    if (medicoes.length > 0) {
+      const normalized = medicoes.map(m => ({
+        id: m.id,
+        data: m.data,
+        comprimento: m.comprimento,
+        largura: m.largura,
+        diagonal_d: m.diagonal_d || m.diagonalD,
+        diagonal_e: m.diagonal_e || m.diagonalE,
+        diferenca_diagonais: m.diferenca_diagonais || m.diferencaDiagonais,
+        indice_craniano: m.indice_craniano || m.indiceCraniano,
+        cvai: m.cvai,
+        perimetro_cefalico: m.perimetro_cefalico || m.perimetroCefalico,
+      }));
+      setNormalizedMedicoes(normalized);
+    } else {
+      setNormalizedMedicoes([]);
+    }
+  }, [medicoes]);
 
   const toggleChartsExpanded = () => {
     setChartsExpanded(!chartsExpanded);
@@ -65,7 +87,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
               </div>
               <MedicaoLineChart 
                 titulo="Evolução do Índice Craniano" 
-                medicoes={medicoes}
+                medicoes={normalizedMedicoes}
                 dataNascimento={dataNascimento}
                 tipoGrafico="indiceCraniano"
                 sexoPaciente={sexoPaciente}
@@ -84,7 +106,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
               </div>
               <MedicaoLineChart 
                 titulo="Evolução da Plagiocefalia (CVAI)" 
-                medicoes={medicoes}
+                medicoes={normalizedMedicoes}
                 dataNascimento={dataNascimento}
                 tipoGrafico="cvai"
                 sexoPaciente={sexoPaciente}
@@ -103,7 +125,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
               </div>
               <MedicaoLineChart 
                 titulo="Evolução das Diagonais" 
-                medicoes={medicoes}
+                medicoes={normalizedMedicoes}
                 dataNascimento={dataNascimento}
                 tipoGrafico="diagonais"
                 sexoPaciente={sexoPaciente}
@@ -120,7 +142,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
               </div>
               <MedicaoLineChart 
                 titulo="Evolução do Perímetro Cefálico" 
-                medicoes={medicoes}
+                medicoes={normalizedMedicoes}
                 dataNascimento={dataNascimento}
                 tipoGrafico="perimetro"
                 sexoPaciente={sexoPaciente}

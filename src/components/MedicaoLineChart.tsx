@@ -2,12 +2,15 @@
 import { useEffect, useState } from "react";
 import {
   LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
+  ReferenceArea
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -62,13 +65,34 @@ export function MedicaoLineChart({
       return;
     }
 
-    // Process data points from measurements
-    const processedData = processChartData(medicoes, dataNascimento);
+    try {
+      // Normalize data to handle both snake_case and camelCase properties
+      const normalizedMedicoes = medicoes.map(m => ({
+        id: m.id,
+        data: m.data,
+        comprimento: m.comprimento,
+        largura: m.largura,
+        diagonal_d: m.diagonal_d || m.diagonalD,
+        diagonal_e: m.diagonal_e || m.diagonalE,
+        diferenca_diagonais: m.diferenca_diagonais || m.diferencaDiagonais,
+        indice_craniano: m.indice_craniano || m.indiceCraniano,
+        cvai: m.cvai,
+        perimetro_cefalico: m.perimetro_cefalico || m.perimetroCefalico,
+      }));
 
-    // Add reference data based on chart type
-    const chartDataWithReference = addReferenceData(processedData, tipoGrafico, sexoPaciente);
-    setChartData(chartDataWithReference);
-    setLoading(false);
+      // Process data points from measurements
+      const processedData = processChartData(normalizedMedicoes, dataNascimento);
+
+      // Add reference data based on chart type
+      const chartDataWithReference = addReferenceData(processedData, tipoGrafico, sexoPaciente);
+      
+      console.log("Chart data prepared:", chartDataWithReference);
+      setChartData(chartDataWithReference);
+    } catch (error) {
+      console.error("Error processing chart data:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [medicoes, dataNascimento, tipoGrafico, sexoPaciente]);
 
   const renderYAxis = () => {
@@ -131,12 +155,12 @@ export function MedicaoLineChart({
   };
 
   if (loading) {
-    return <Skeleton className={cn(`w-full`, `h-[${altura}px]`)} />;
+    return <Skeleton className={`w-full h-[${altura}px]`} />;
   }
 
   if (medicoes.length === 0) {
     return (
-      <div className={cn(`flex items-center justify-center w-full`, `h-[${altura}px]`, "border rounded-md bg-muted/30")}>
+      <div className={`flex items-center justify-center w-full h-[${altura}px] border rounded-md bg-muted/30`}>
         <p className="text-muted-foreground">Nenhuma medição disponível</p>
       </div>
     );

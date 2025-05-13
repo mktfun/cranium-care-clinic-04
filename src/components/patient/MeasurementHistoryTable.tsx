@@ -54,33 +54,51 @@ export function MeasurementHistoryTable({
             </thead>
             <tbody className="divide-y divide-border">
               {medicoes.map((medicao) => {
+                // Normalize data to handle both snake_case and camelCase properties
+                const normalizedMedicao = {
+                  id: medicao.id,
+                  data: medicao.data,
+                  comprimento: medicao.comprimento,
+                  largura: medicao.largura,
+                  diagonalD: medicao.diagonal_d || medicao.diagonalD,
+                  diagonalE: medicao.diagonal_e || medicao.diagonalE,
+                  diferencaDiagonais: medicao.diferenca_diagonais || medicao.diferencaDiagonais,
+                  indiceCraniano: medicao.indice_craniano || medicao.indiceCraniano,
+                  cvai: medicao.cvai,
+                  perimetroCefalico: medicao.perimetro_cefalico || medicao.perimetroCefalico
+                };
+                
                 const { asymmetryType, severityLevel } = getCranialStatus(
-                  medicao.indice_craniano || medicao.indiceCraniano, 
-                  medicao.cvai
+                  normalizedMedicao.indiceCraniano, 
+                  normalizedMedicao.cvai
                 );
                 
                 return (
                   <tr key={medicao.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => onMedicaoClick(medicao)}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{formatarData(medicao.data)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{formatAge(pacienteDOB, medicao.data)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.comprimento} mm</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.largura} mm</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diagonal_d || medicao.diagonalD} mm</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diagonal_e || medicao.diagonalE} mm</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diferenca_diagonais || medicao.diferencaDiagonais} mm</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.cvai ? `${medicao.cvai.toFixed(1)}%` : '-'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{formatarData(normalizedMedicao.data)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{formatAge(pacienteDOB, normalizedMedicao.data)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.comprimento} mm</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.largura} mm</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.diagonalD} mm</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.diagonalE} mm</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.diferencaDiagonais} mm</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.cvai ? `${normalizedMedicao.cvai.toFixed(1)}%` : '-'}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      {(medicao.indice_craniano || medicao.indiceCraniano) 
-                        ? `${(medicao.indice_craniano || medicao.indiceCraniano).toFixed(1)}%` 
+                      {normalizedMedicao.indiceCraniano 
+                        ? `${normalizedMedicao.indiceCraniano.toFixed(1)}%` 
                         : '-'}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      {(medicao.perimetro_cefalico || medicao.perimetroCefalico) 
-                        ? `${medicao.perimetro_cefalico || medicao.perimetroCefalico} mm` 
+                      {normalizedMedicao.perimetroCefalico 
+                        ? `${normalizedMedicao.perimetroCefalico} mm` 
                         : '-'}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      <StatusBadge status={severityLevel} asymmetryType={asymmetryType} />
+                      <StatusBadge 
+                        status={severityLevel} 
+                        asymmetryType={asymmetryType}
+                        showAsymmetryType={true} 
+                      />
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                       <Button 

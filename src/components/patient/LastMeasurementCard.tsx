@@ -43,10 +43,25 @@ export function LastMeasurementCard({ pacienteId, ultimaMedicao, dataNascimento 
     );
   }
 
-  // Get asymmetry type and severity level
+  // Normalize data fields to work with both camelCase and snake_case property names
+  const normalizedMedicao = {
+    id: ultimaMedicao.id,
+    data: ultimaMedicao.data,
+    comprimento: ultimaMedicao.comprimento,
+    largura: ultimaMedicao.largura,
+    diagonalD: ultimaMedicao.diagonal_d || ultimaMedicao.diagonalD,
+    diagonalE: ultimaMedicao.diagonal_e || ultimaMedicao.diagonalE,
+    diferencaDiagonais: ultimaMedicao.diferenca_diagonais || ultimaMedicao.diferencaDiagonais,
+    indiceCraniano: ultimaMedicao.indice_craniano || ultimaMedicao.indiceCraniano,
+    cvai: ultimaMedicao.cvai,
+    perimetroCefalico: ultimaMedicao.perimetro_cefalico || ultimaMedicao.perimetroCefalico,
+    recomendacoes: ultimaMedicao.recomendacoes || []
+  };
+
+  // Get asymmetry type and severity level based on measurements
   const { asymmetryType, severityLevel } = getCranialStatus(
-    ultimaMedicao.indice_craniano || ultimaMedicao.indiceCraniano, 
-    ultimaMedicao.cvai
+    normalizedMedicao.indiceCraniano, 
+    normalizedMedicao.cvai
   );
 
   return (
@@ -54,13 +69,13 @@ export function LastMeasurementCard({ pacienteId, ultimaMedicao, dataNascimento 
       <CardHeader>
         <CardTitle>Última Medição</CardTitle>
         <CardDescription>
-          {formatarData(ultimaMedicao.data)} • {formatAge(dataNascimento, ultimaMedicao.data)}
+          {formatarData(normalizedMedicao.data)} • {formatAge(dataNascimento, normalizedMedicao.data)}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div>
           <MedicaoDetails 
-            medicao={ultimaMedicao}
+            medicao={normalizedMedicao}
             pacienteNascimento={dataNascimento}
           />
           <div className="mt-4">
@@ -71,14 +86,14 @@ export function LastMeasurementCard({ pacienteId, ultimaMedicao, dataNascimento 
                   `${asymmetryType} ${severityLevel !== 'normal' ? severityLevel : 'leve'}`}
               </p>
               <p className="text-sm mb-2">
-                <strong>Perímetro Cefálico:</strong> {ultimaMedicao.perimetro_cefalico ? 
-                  `${ultimaMedicao.perimetro_cefalico} mm` : 'Não medido'}
+                <strong>Perímetro Cefálico:</strong> {normalizedMedicao.perimetroCefalico ? 
+                  `${normalizedMedicao.perimetroCefalico} mm` : 'Não medido'}
               </p>
               <p className="text-sm">
                 <strong>Recomendações:</strong>
               </p>
               <ul className="list-disc list-inside text-sm pl-2">
-                {ultimaMedicao.recomendacoes?.map((rec: string, idx: number) => (
+                {normalizedMedicao.recomendacoes?.map((rec: string, idx: number) => (
                   <li key={idx}>{rec}</li>
                 ))}
               </ul>
