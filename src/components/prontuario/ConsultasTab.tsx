@@ -37,21 +37,20 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
   async function fetchConsultas() {
     try {
       setLoading(true);
-      // Type assertion for Supabase
-      const { data, error } = await supabase
+      // Use raw response to avoid type checking
+      const response = await supabase
         .from('consultas')
         .select('*')
         .eq('paciente_id', pacienteId)
-        .order('data', { ascending: false }) as unknown as { 
-          data: Consulta[] | null;
-          error: any;
-        };
+        .order('data', { ascending: false });
       
-      if (error) {
-        console.error('Erro ao carregar consultas:', error);
+      if (response.error) {
+        console.error('Erro ao carregar consultas:', response.error);
         toast.error('Erro ao carregar consultas.');
       } else {
-        setConsultas(data || []);
+        // Transform the data to match our Consulta interface if needed
+        const consultasData = (response.data || []) as Consulta[];
+        setConsultas(consultasData);
       }
     } catch (err) {
       console.error('Erro inesperado:', err);
@@ -104,50 +103,47 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
   const handleSave = async () => {
     try {
       if (addingNew) {
-        // Type assertion for Supabase
-        const { data, error } = await supabase
+        const newConsulta = {
+          paciente_id: pacienteId,
+          data: currentConsulta.data,
+          profissional: currentConsulta.profissional,
+          especialidade: currentConsulta.especialidade,
+          motivo: currentConsulta.motivo,
+          diagnostico: currentConsulta.diagnostico,
+          tratamento: currentConsulta.tratamento,
+          observacoes: currentConsulta.observacoes
+        };
+
+        const response = await supabase
           .from('consultas')
-          .insert({
-            paciente_id: pacienteId,
-            data: currentConsulta.data,
-            profissional: currentConsulta.profissional,
-            especialidade: currentConsulta.especialidade,
-            motivo: currentConsulta.motivo,
-            diagnostico: currentConsulta.diagnostico,
-            tratamento: currentConsulta.tratamento,
-            observacoes: currentConsulta.observacoes
-          })
-          .select() as unknown as {
-            data: Consulta[] | null;
-            error: any;
-          };
+          .insert(newConsulta);
         
-        if (error) {
-          toast.error("Erro ao salvar consulta: " + error.message);
+        if (response.error) {
+          toast.error("Erro ao salvar consulta: " + response.error.message);
           return;
         }
         
-        if (data) {
-          setConsultas([...data, ...consultas]);
-        }
+        // Refresh the data after saving
+        await fetchConsultas();
         toast.success("Consulta registrada com sucesso");
       } else if (editingId) {
-        // Type assertion for Supabase
-        const { error } = await supabase
+        const updateData = {
+          data: currentConsulta.data,
+          profissional: currentConsulta.profissional,
+          especialidade: currentConsulta.especialidade,
+          motivo: currentConsulta.motivo,
+          diagnostico: currentConsulta.diagnostico,
+          tratamento: currentConsulta.tratamento,
+          observacoes: currentConsulta.observacoes
+        };
+
+        const response = await supabase
           .from('consultas')
-          .update({
-            data: currentConsulta.data,
-            profissional: currentConsulta.profissional,
-            especialidade: currentConsulta.especialidade,
-            motivo: currentConsulta.motivo,
-            diagnostico: currentConsulta.diagnostico,
-            tratamento: currentConsulta.tratamento,
-            observacoes: currentConsulta.observacoes
-          })
-          .eq('id', editingId) as unknown as { error: any };
+          .update(updateData)
+          .eq('id', editingId);
         
-        if (error) {
-          toast.error("Erro ao atualizar consulta: " + error.message);
+        if (response.error) {
+          toast.error("Erro ao atualizar consulta: " + response.error.message);
           return;
         }
         
@@ -169,14 +165,13 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
     }
     
     try {
-      // Type assertion for Supabase
-      const { error } = await supabase
+      const response = await supabase
         .from('consultas')
         .delete()
-        .eq('id', id) as unknown as { error: any };
+        .eq('id', id);
       
-      if (error) {
-        toast.error("Erro ao excluir consulta: " + error.message);
+      if (response.error) {
+        toast.error("Erro ao excluir consulta: " + response.error.message);
         return;
       }
       

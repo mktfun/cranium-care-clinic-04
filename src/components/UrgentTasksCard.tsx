@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,18 +9,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { Task } from "@/types";
 
-interface Task {
-  id: string;
-  paciente_id: string;
-  paciente_nome?: string;
-  title: string;
-  description?: string;
-  due_date: string;
-  status: "pendente" | "concluida" | "cancelada";
-  priority: "baixa" | "media" | "alta" | "urgente";
-  tipo?: string;
-}
-
 export function UrgentTasksCard() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -29,31 +18,35 @@ export function UrgentTasksCard() {
     async function fetchUrgentTasks() {
       setLoading(true);
       try {
-        // Since we can't modify the Supabase types file, we use type assertion here
-        const { data, error } = await supabase
+        // Use type assertion to bypass type checking for Supabase tables
+        const response = await supabase
           .from('tarefas')
           .select('*, pacientes:paciente_id(nome)')
           .in('priority', ['urgente', 'alta'])
           .eq('status', 'pendente')
           .order('due_date', { ascending: true })
-          .limit(5) as unknown as {
-            data: Array<Partial<Task> & { pacientes: { nome: string } }>;
-            error: any;
-          };
-          
-        if (error) {
-          console.error("Error fetching urgent tasks:", error);
+          .limit(5);
+        
+        if (response.error) {
+          console.error("Error fetching urgent tasks:", response.error);
           toast.error("Erro ao carregar tarefas urgentes");
           return;
         }
         
-        // Formatar os dados para incluir o nome do paciente diretamente no objeto de tarefa
-        const formattedTasks = data?.map(task => ({
-          ...task,
-          paciente_nome: task.pacientes?.nome
+        // Transform the data to match our Task interface
+        const formattedTasks = (response.data || []).map(task => ({
+          id: task.id,
+          paciente_id: task.paciente_id,
+          paciente_nome: task.pacientes?.nome,
+          title: task.title,
+          description: task.description,
+          due_date: task.due_date,
+          status: task.status,
+          priority: task.priority,
+          tipo: task.tipo
         })) as Task[];
         
-        setTasks(formattedTasks || []);
+        setTasks(formattedTasks);
       } catch (err) {
         console.error("Unexpected error fetching urgent tasks:", err);
         toast.error("Erro inesperado ao carregar tarefas");
@@ -111,14 +104,13 @@ export function UrgentTasksCard() {
   
   const handleMarkComplete = async (taskId: string) => {
     try {
-      // Type assertion for Supabase
-      const { error } = await supabase
+      const response = await supabase
         .from('tarefas')
         .update({ status: 'concluida' })
-        .eq('id', taskId) as unknown as { error: any };
+        .eq('id', taskId);
         
-      if (error) {
-        console.error("Error completing task:", error);
+      if (response.error) {
+        console.error("Error completing task:", response.error);
         toast.error("Erro ao concluir tarefa");
         return;
       }
@@ -134,14 +126,13 @@ export function UrgentTasksCard() {
   
   const handleMarkCancelled = async (taskId: string) => {
     try {
-      // Type assertion for Supabase
-      const { error } = await supabase
+      const response = await supabase
         .from('tarefas')
         .update({ status: 'cancelada' })
-        .eq('id', taskId) as unknown as { error: any };
+        .eq('id', taskId);
         
-      if (error) {
-        console.error("Error cancelling task:", error);
+      if (response.error) {
+        console.error("Error cancelling task:", response.error);
         toast.error("Erro ao cancelar tarefa");
         return;
       }

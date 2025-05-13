@@ -41,17 +41,35 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
         }
         
         // Buscar medições
-        const { data: medicoesData, error: medicoesError } = await supabase
+        const response = await supabase
           .from('medicoes')
           .select('*')
           .eq('paciente_id', pacienteId)
           .order('data', { ascending: false });
         
-        if (medicoesError) {
-          console.error('Erro ao carregar medições:', medicoesError);
+        if (response.error) {
+          console.error('Erro ao carregar medições:', response.error);
           toast.error('Erro ao carregar medições.');
         } else {
-          setMedicoes(medicoesData || []);
+          // Map the database fields to our Medicao interface
+          const medicoesData = (response.data || []).map(item => ({
+            id: item.id,
+            paciente_id: item.paciente_id,
+            data: item.data,
+            comprimento_maximo: item.comprimento || 0,
+            largura_maxima: item.largura || 0,
+            diagonal_direita: item.diagonal_d,
+            diagonal_esquerda: item.diagonal_e,
+            diferenca_diagonais: item.diferenca_diagonais || 0,
+            cvai: item.cvai,
+            indice_craniano: item.indice_craniano,
+            perimetro_cefalico: item.perimetro_cefalico,
+            observacoes: item.observacoes,
+            created_at: item.created_at,
+            updated_at: item.updated_at
+          }));
+          
+          setMedicoes(medicoesData);
         }
       } catch (err) {
         console.error('Erro inesperado:', err);
