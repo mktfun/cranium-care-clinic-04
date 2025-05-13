@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,7 @@ interface PacienteProps {
   data_nascimento?: string;
   idadeEmMeses: number;
   sexo: "M" | "F";
-  responsaveis: ResponsavelType[];
+  responsaveis: ResponsavelType[] | ResponsavelType | null | Json;
   medicoes: any[];
 }
 
@@ -34,7 +33,25 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
   const [nome, setNome] = useState(paciente.nome);
   const [dataNascimento, setDataNascimento] = useState((paciente.dataNascimento || paciente.data_nascimento || '').split('T')[0]);
   const [sexo, setSexo] = useState(paciente.sexo);
-  const [responsaveis, setResponsaveis] = useState<ResponsavelType[]>([...paciente.responsaveis]);
+
+  // Ensure responsaveis is always an array by checking different possible types
+  let initialResponsaveis: ResponsavelType[] = [];
+  
+  if (paciente.responsaveis) {
+    if (Array.isArray(paciente.responsaveis)) {
+      initialResponsaveis = [...paciente.responsaveis];
+    } else if (typeof paciente.responsaveis === 'object') {
+      // If it's a single object, convert to array
+      initialResponsaveis = [paciente.responsaveis as ResponsavelType];
+    }
+  }
+  
+  // If we still have an empty array, add a default empty responsavel
+  if (initialResponsaveis.length === 0) {
+    initialResponsaveis = [{ nome: '', telefone: '', email: '' }];
+  }
+  
+  const [responsaveis, setResponsaveis] = useState<ResponsavelType[]>(initialResponsaveis);
   const [isLoading, setIsLoading] = useState(false);
   
   const handleResponsavelChange = (index: number, field: keyof ResponsavelType, value: string) => {

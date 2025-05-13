@@ -3,6 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Calendar } from "lucide-react";
 import { formatAge } from "@/lib/age-utils";
+import { ensureArray } from "@/lib/utils";
 
 interface PatientInfoCardProps {
   sexo: string;
@@ -19,8 +20,8 @@ export function PatientInfoCard({
   medicationsCount, 
   responsaveis 
 }: PatientInfoCardProps) {
-  // Ensure responsaveis is an array
-  const responsaveisArray = Array.isArray(responsaveis) ? responsaveis : (responsaveis ? [responsaveis] : []);
+  // Use our new utility function to ensure responsaveis is an array
+  const responsaveisArray = ensureArray(responsaveis);
 
   return (
     <Card>
