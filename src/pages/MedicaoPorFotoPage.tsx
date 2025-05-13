@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/lib/supabaseClient"; 
-import { v4 as uuidv4 } from 'uuid';
+import { supabase } from "@/integrations/supabase/client"; // Replace import "@/lib/supabaseClient" with the correct import path
+import { v4 as uuidv4 } from "uuid"; // Add uuid import 
 import { useParams } from 'react-router-dom'; // To get patient ID from URL
 
 // Tipos de dados
@@ -630,4 +630,3 @@ const MedicaoPorFotoPage: React.FC = () => {
 };
 
 export default MedicaoPorFotoPage;
-
