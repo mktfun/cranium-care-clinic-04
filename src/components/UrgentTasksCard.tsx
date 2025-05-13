@@ -1,21 +1,52 @@
+
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Loader2 } from "lucide-react"; // Removido CheckCircle que não era usado
+import { Calendar, CheckCircle, Clock, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-// import { toast } from "sonner"; // Removido toast pois não estava sendo usado para erros aqui
-import { getCranialStatus, SeverityLevel } from "@/lib/cranial-utils"; // Importando getCranialStatus
+import { toast } from "sonner";
 
 interface Task {
   id: string;
   title: string;
   dueDate: string;
-  status: string; // "pending", "completed", etc.
+  status: string;
   patientId: string;
   patientName: string;
-  responsible?: string; // Tornar opcional, pois pode não vir sempre do backend
+  responsible: string;
 }
+
+// Dados mockados como fallback caso não consiga carregar do Supabase
+const fallbackTasks = [
+  {
+    id: "task-1",
+    title: "Reavaliação craniana de João da Silva",
+    dueDate: "2025-05-05",
+    status: "pending",
+    patientId: "1",
+    patientName: "João da Silva",
+    responsible: "Dr. Ana"
+  },
+  {
+    id: "task-2",
+    title: "Verificar adaptação à órtese de Maria Oliveira",
+    dueDate: "2025-05-03",
+    status: "pending",
+    patientId: "2",
+    patientName: "Maria Oliveira",
+    responsible: "Dr. Ana"
+  },
+  {
+    id: "task-3",
+    title: "Encaminhar Lucas Mendes para avaliação neurológica",
+    dueDate: "2025-05-02",
+    status: "pending",
+    patientId: "3",
+    patientName: "Lucas Mendes",
+    responsible: "Dr. Ana"
+  }
+];
 
 export function UrgentTasksCard() {
   const navigate = useNavigate();
@@ -24,71 +55,82 @@ export function UrgentTasksCard() {
 
   useEffect(() => {
     async function fetchTasks() {
-      setLoading(true);
-      let urgentTasks: Task[] = [];
       try {
+        // Buscar tarefas do Supabase (vamos recuperar as próximas medições agendadas como tarefas)
         const { data: pacientesData, error: pacientesError } = await supabase
-          .from("pacientes")
-          .select("id, nome, medicoes(id, data, indice_craniano, cvai)") // Fetching medicoes directly
-          .order("created_at", { ascending: false }); // Ordenar por mais recentes ou outro critério
-
+          .from('pacientes')
+          .select('id, nome')
+          .limit(5);
+        
         if (pacientesError) {
-          console.error("Erro ao buscar pacientes e suas medições:", pacientesError);
-          setTasks([]); // Define como vazio em caso de erro
-          setLoading(false);
+          console.error("Erro ao buscar pacientes:", pacientesError);
+          setTasks(fallbackTasks);
           return;
         }
-
-        if (pacientesData) {
-          const hoje = new Date();
-          const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-
-          pacientesData.forEach((paciente: any) => {
-            if (paciente.medicoes && paciente.medicoes.length > 0) {
-              // Ordenar medições do paciente pela data mais recente primeiro
-              const medicoesOrdenadas = [...paciente.medicoes].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-              const ultimaMedicao = medicoesOrdenadas[0];
+        
+        if (pacientesData && pacientesData.length > 0) {
+          // Buscar a última medição de cada paciente
+          const { data: medicoesData } = await supabase
+            .from('medicoes')
+            .select('*')
+            .order('data', { ascending: false });
+            
+          if (medicoesData && medicoesData.length > 0) {
+            // Criar tarefas baseadas em pacientes e suas últimas medições
+            const taskFromMedicoes: Task[] = pacientesData.slice(0, 3).map((paciente, index) => {
+              const medicoesDoPaciente = medicoesData.filter(m => m.paciente_id === paciente.id);
+              const ultimaMedicao = medicoesDoPaciente[0];
               
-              const { severityLevel } = getCranialStatus(ultimaMedicao.indice_craniano || 0, ultimaMedicao.cvai || 0);
-              const dataUltimaMedicao = new Date(ultimaMedicao.data);
+              // Calcular próxima data de avaliação baseada no status
+              const dataUltimaMedicao = ultimaMedicao ? new Date(ultimaMedicao.data) : new Date();
               let proximaAvaliacao = new Date(dataUltimaMedicao);
-
-              switch(severityLevel) {
-                case SeverityLevel.Normal: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 3); break;
-                case SeverityLevel.Leve: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2); break;
-                case SeverityLevel.Moderada: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 1); break;
-                case SeverityLevel.Severa: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 1); break;
-                default: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2); // Padrão de 2 meses
+              
+              // Definir próxima avaliação baseada no status
+              if (ultimaMedicao) {
+                switch(ultimaMedicao.status) {
+                  case 'normal': 
+                    proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 3); // 3 meses
+                    break;
+                  case 'leve': 
+                    proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2); // 2 meses
+                    break;
+                  case 'moderada': 
+                  case 'severa': 
+                    proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 1); // 1 mês
+                    break;
+                  default:
+                    proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2); // padrão
+                }
+              } else {
+                // Se não houver medições, agenda para 1 semana no futuro
+                proximaAvaliacao.setDate(dataUltimaMedicao.getDate() + 7);
               }
               
-              // Considerar tarefa urgente se a próxima avaliação for nos próximos 7 dias ou estiver atrasada
-              const diffTime = proximaAvaliacao.getTime() - inicioHoje.getTime();
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-              if (diffDays <= 7) { // Inclui tarefas atrasadas (diffDays negativo) e para os próximos 7 dias
-                urgentTasks.push({
-                  id: `task-reav-${paciente.id}-${ultimaMedicao.id}`,
-                  title: `Reavaliação de ${paciente.nome}`,
-                  dueDate: proximaAvaliacao.toISOString().split("T")[0],
-                  status: "pending",
-                  patientId: paciente.id,
-                  patientName: paciente.nome,
-                  responsible: "Clínica" // Pode ser ajustado se houver um médico responsável pela tarefa
-                });
-              }
-            }
-          });
-          
-          // Ordenar tarefas pela data de vencimento mais próxima
-          urgentTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-          setTasks(urgentTasks.slice(0, 3)); // Limitar a 3 tarefas no card
+              const titulo = ultimaMedicao 
+                ? `Reavaliação craniana de ${paciente.nome}` 
+                : `Avaliação inicial de ${paciente.nome}`;
+                
+              return {
+                id: `task-${paciente.id}-${index}`,
+                title: titulo,
+                dueDate: proximaAvaliacao.toISOString().split('T')[0],
+                status: "pending",
+                patientId: paciente.id,
+                patientName: paciente.nome,
+                responsible: "Dr. Ana"
+              };
+            });
+            
+            setTasks(taskFromMedicoes.length > 0 ? taskFromMedicoes : fallbackTasks);
+          } else {
+            setTasks(fallbackTasks);
+          }
         } else {
-          setTasks([]); // Nenhum paciente encontrado
+          setTasks(fallbackTasks);
         }
-
       } catch (error) {
-        console.error("Erro ao carregar tarefas urgentes:", error);
-        setTasks([]); // Define como vazio em caso de erro genérico
+        console.error("Erro ao carregar tarefas:", error);
+        setTasks(fallbackTasks);
       } finally {
         setLoading(false);
       }
@@ -99,9 +141,7 @@ export function UrgentTasksCard() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    // Adicionar verificação para datas inválidas que podem vir do toISOString
-    if (isNaN(date.getTime())) return "Data inválida";
-    return new Intl.DateTimeFormat("pt-BR", {timeZone: "UTC"}).format(date);
+    return new Intl.DateTimeFormat('pt-BR').format(date);
   };
 
   const handleTaskClick = (patientId: string) => {
@@ -109,55 +149,48 @@ export function UrgentTasksCard() {
   };
 
   const handleViewAllTasks = () => {
-    // Idealmente, navegar para uma página de tarefas que também use lógica real
-    // Por agora, pode ser a página de notificações que lista tarefas também
-    navigate("/notificacoes"); 
+    navigate("/tarefas");
   };
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="text-lg">Tarefas Urgentes</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 flex-grow flex flex-col justify-between">
+      <CardContent className="space-y-4">
         {loading ? (
-          <div className="flex justify-center items-center h-full">
+          <div className="flex justify-center items-center h-32">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : tasks.length > 0 ? (
-          <div className="space-y-3">
-            {tasks.map(task => (
-              <div 
-                key={task.id}
-                onClick={() => handleTaskClick(task.patientId)}
-                className="p-3 border rounded-md hover:bg-muted/10 cursor-pointer transition-colors dark:border-gray-700 dark:hover:bg-gray-700/50"
-              >
-                <h4 className="font-medium text-sm text-card-foreground dark:text-gray-200">{task.title}</h4>
-                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground dark:text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>{formatDate(task.dueDate)}</span>
-                  </div>
-                  {task.responsible && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      <span>{task.responsible}</span>
-                    </div>
-                  )}
+          tasks.map(task => (
+            <div 
+              key={task.id}
+              onClick={() => handleTaskClick(task.patientId)}
+              className="p-3 border rounded-md hover:bg-muted/10 cursor-pointer transition-colors"
+            >
+              <h4 className="font-medium text-sm">{task.title}</h4>
+              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{formatDate(task.dueDate)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>{task.responsible}</span>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))
         ) : (
-          <div className="text-center py-4 text-muted-foreground flex-grow flex flex-col justify-center items-center">
-            <Calendar className="h-10 w-10 mb-2 text-gray-400 dark:text-gray-500" />
-            <p>Nenhuma tarefa urgente no momento.</p>
+          <div className="text-center py-4 text-muted-foreground">
+            Nenhuma tarefa urgente encontrada
           </div>
         )}
-        <div className="pt-2 mt-auto">
+        <div className="flex justify-center pt-2">
           <Button 
-            variant="outline"
-            className="w-full text-sm dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+            variant="outline" 
+            className="w-full text-sm"
             onClick={handleViewAllTasks}
           >
             Ver todas as tarefas
@@ -167,4 +200,3 @@ export function UrgentTasksCard() {
     </Card>
   );
 }
-

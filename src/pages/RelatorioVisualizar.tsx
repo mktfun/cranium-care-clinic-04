@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react"; // Adicionar useRef
+
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { formatAge } from "@/lib/age-utils";
@@ -22,13 +23,13 @@ export default function RelatorioVisualizar() {
   const [medicoes, setMedicoes] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [modoConsolidado, setModoConsolidado] = useState(false);
-  const relatorioRef = useRef<HTMLDivElement>(null); // Criar a ref
   
   useEffect(() => {
     async function fetchPacienteData() {
       try {
         setCarregando(true);
         
+        // Verificar se o usuário está autenticado
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           toast.error("Sessão expirada. Faça login novamente.");
@@ -36,10 +37,11 @@ export default function RelatorioVisualizar() {
           return;
         }
         
+        // Buscar dados do paciente no Supabase
         const { data: pacienteData, error: pacienteError } = await supabase
-          .from("pacientes")
-          .select("*")
-          .eq("id", id)
+          .from('pacientes')
+          .select('*')
+          .eq('id', id)
           .single();
         
         if (pacienteError || !pacienteData) {
@@ -48,11 +50,12 @@ export default function RelatorioVisualizar() {
           return;
         }
         
+        // Buscar medições do paciente no Supabase
         const { data: medicoesData, error: medicoesError } = await supabase
-          .from("medicoes")
-          .select("*")
-          .eq("paciente_id", id)
-          .order("data", { ascending: false });
+          .from('medicoes')
+          .select('*')
+          .eq('paciente_id', id)
+          .order('data', { ascending: false });
         
         if (medicoesError) {
           toast.error("Erro ao carregar medições: " + medicoesError.message);
@@ -73,7 +76,6 @@ export default function RelatorioVisualizar() {
   
   if (carregando) {
     return (
-      // ... (código de carregamento existente)
       <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Skeleton className="h-10 w-64" />
@@ -92,7 +94,6 @@ export default function RelatorioVisualizar() {
   
   if (!paciente) {
     return (
-      // ... (código de paciente não encontrado existente)
       <div className="flex flex-col items-center justify-center h-full py-12">
         <p className="text-lg mb-4">Paciente não encontrado</p>
         <button 
@@ -115,7 +116,6 @@ export default function RelatorioVisualizar() {
   
   if (!medicao && !modoConsolidado && medicoes.length === 0) {
     return (
-      // ... (código de nenhuma medição encontrada existente)
       <div className="flex flex-col items-center justify-center h-full py-12">
         <p className="text-lg mb-4">Nenhuma medição encontrada para este paciente</p>
         <button 
@@ -130,11 +130,13 @@ export default function RelatorioVisualizar() {
   
   const formatarData = (dataString: string) => {
     const data = new Date(dataString);
-    return data.toLocaleDateString("pt-BR");
+    return data.toLocaleDateString('pt-BR');
   };
   
+  // Calcular idade atual do paciente
   const idadeAtual = formatAge(paciente.data_nascimento);
   
+  // Obter o status de assimetria para a última medição
   const { asymmetryType, severityLevel } = medicao
     ? getCranialStatus(medicao.indice_craniano, medicao.cvai)
     : { asymmetryType: "Normal" as AsymmetryType, severityLevel: "normal" as SeverityLevel };
@@ -148,8 +150,7 @@ export default function RelatorioVisualizar() {
   };
 
   return (
-    // Adicionar a ref e um ID ao div principal do relatório
-    <div ref={relatorioRef} id="relatorio-para-exportar" className="space-y-6 animate-fade-in max-w-4xl mx-auto print:mx-0 bg-white p-4 print:p-0">
+    <div className="space-y-6 animate-fade-in max-w-4xl mx-auto print:mx-0">
       <RelatorioHeader 
         pacienteNome={paciente.nome}
         idadeAtual={idadeAtual}
@@ -157,10 +158,8 @@ export default function RelatorioVisualizar() {
         modoConsolidado={modoConsolidado}
         onModoChange={handleToggleModo}
         onVoltar={handleVoltar}
-        relatorioElementId="relatorio-para-exportar" // Passar o ID para o header
       />
       
-      {/* ... (restante do conteúdo do relatório como estava) */}
       <div className="grid gap-6 md:grid-cols-2">
         <PacienteDadosCard 
           nome={paciente.nome}
@@ -206,6 +205,7 @@ export default function RelatorioVisualizar() {
         />
       ) : null}
       
+      {/* Gráficos de Evolução com descrições melhoradas */}
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-6">
           <Card>
@@ -262,7 +262,7 @@ export default function RelatorioVisualizar() {
               <CardDescription>
                 O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte 
                 mais protuberante do occipital. As linhas coloridas representam os percentis de referência 
-                para {paciente.sexo === "M" ? "meninos" : "meninas"} da mesma idade,
+                para {paciente.sexo === 'M' ? 'meninos' : 'meninas'} da mesma idade,
                 sendo P50 a média populacional.
               </CardDescription>
             </CardHeader>
@@ -308,4 +308,3 @@ export default function RelatorioVisualizar() {
     </div>
   );
 }
-

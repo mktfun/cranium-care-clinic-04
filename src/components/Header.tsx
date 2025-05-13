@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Bell, ChevronDown, Menu, Settings, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
-import { getCranialStatus, SeverityLevel } from "@/lib/cranial-utils"; // Supondo que getCranialStatus retorne SeverityLevel
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -29,17 +27,12 @@ interface HeaderProps {
   title?: string;
 }
 
-// Interface de Notificação expandida
-export interface RealNotificacao {
-  id: string; // UUID da notificação ou combinação de tipo+referenciaId
+interface Notificacao {
+  id: number;
   title: string;
   message: string;
-  timestamp: Date;
+  time: string;
   read: boolean;
-  type: 'novo_paciente' | 'nova_medicao' | 'tarefa_hoje' | 'tarefa_atrasada' | 'info' | 'lembrete' | 'alerta';
-  link?: string;
-  urgencia?: 'baixa' | 'media' | 'alta';
-  referenciaId?: string; // ID do paciente, medição, tarefa
 }
 
 interface Usuario {
@@ -49,225 +42,132 @@ interface Usuario {
   clinica_nome?: string;
 }
 
-const NOTIFICACOES_LIDAS_STORAGE_KEY = "craniumCareNotificacoesLidas";
-const ULTIMA_VERIFICACAO_STORAGE_KEY = "craniumCareUltimaVerificacaoNotificacoes";
-
 export function Header({ toggleSidebar, sidebarCollapsed, className, title }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [notificacoes, setNotificacoes] = useState<RealNotificacao[]>([]);
+  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [clinicaNome, setClinicaNome] = useState("CraniumCare");
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [carregandoUsuario, setCarregandoUsuario] = useState(true);
-
-  const getNotificacoesLidas = (): string[] => {
-    const lidas = localStorage.getItem(NOTIFICACOES_LIDAS_STORAGE_KEY);
-    return lidas ? JSON.parse(lidas) : [];
-  };
-
-  const marcarNotificacaoComoLidaStorage = (id: string) => {
-    const lidas = getNotificacoesLidas();
-    if (!lidas.includes(id)) {
-      localStorage.setItem(NOTIFICACOES_LIDAS_STORAGE_KEY, JSON.stringify([...lidas, id]));
-    }
-  };
   
-  const marcarTodasComoLidasStorage = (notifs: RealNotificacao[]) => {
-    const todasIds = notifs.map(n => n.id);
-    localStorage.setItem(NOTIFICACOES_LIDAS_STORAGE_KEY, JSON.stringify(todasIds));
-  };
-
-  const carregarNotificacoesReais = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-
-    let todasAsNotificacoes: RealNotificacao[] = [];
-    const agora = new Date();
-    const ultimaVerificacaoString = localStorage.getItem(ULTIMA_VERIFICACAO_STORAGE_KEY);
-    const ultimaVerificacao = ultimaVerificacaoString ? new Date(ultimaVerificacaoString) : new Date(agora.getTime() - 24 * 60 * 60 * 1000 * 7); // Padrão: últimos 7 dias
-
-    // 1. Novos Pacientes
-    try {
-      const { data: novosPacientes, error: errPacientes } = await supabase
-        .from("pacientes")
-        .select("id, nome, created_at")
-        .gt("created_at", ultimaVerificacao.toISOString())
-        .order("created_at", { ascending: false });
-
-      if (errPacientes) console.error("Erro ao buscar novos pacientes:", errPacientes);
-      else if (novosPacientes) {
-        novosPacientes.forEach(p => {
-          todasAsNotificacoes.push({
-            id: `paciente-${p.id}`,
-            title: "Novo Paciente Registrado",
-            message: `O paciente ${p.nome} foi registrado no sistema.`,
-            timestamp: new Date(p.created_at),
-            read: false, // Será atualizado abaixo
-            type: "novo_paciente",
-            link: `/pacientes/${p.id}`,
-            urgencia: "media",
-            referenciaId: p.id,
-          });
-        });
-      }
-    } catch (e) { console.error("Catch novos pacientes:", e); }
-
-    // 2. Novas Medições
-    try {
-      const { data: novasMedicoes, error: errMedicoes } = await supabase
-        .from("medicoes")
-        .select("id, paciente_id, data, pacientes (nome)") // Join para pegar nome do paciente
-        .gt("data", ultimaVerificacao.toISOString())
-        .order("data", { ascending: false });
-      
-      if (errMedicoes) console.error("Erro ao buscar novas medições:", errMedicoes);
-      else if (novasMedicoes) {
-        novasMedicoes.forEach((m: any) => {
-          const nomePaciente = m.pacientes?.nome || "Paciente";
-          todasAsNotificacoes.push({
-            id: `medicao-${m.id}`,
-            title: "Nova Medição Registrada",
-            message: `Nova medição para ${nomePaciente} em ${new Date(m.data).toLocaleDateString("pt-BR")}.`,
-            timestamp: new Date(m.data),
-            read: false,
-            type: "nova_medicao",
-            link: `/pacientes/${m.paciente_id}/medicoes/${m.id}`,
-            urgencia: "media",
-            referenciaId: m.id,
-          });
-        });
-      }
-    } catch (e) { console.error("Catch novas medições:", e); }
-
-    // 3. Tarefas (derivadas de medições para reavaliação)
-    try {
-        const { data: pacientesComMedicoes, error: errPacMed } = await supabase
-            .from('pacientes')
-            .select(`
-                id, nome,
-                medicoes (id, data, indice_craniano, cvai)
-            `)
-            .order('data', { foreignTable: 'medicoes', ascending: false });
-
-        if (errPacMed) console.error("Erro ao buscar pacientes para tarefas:", errPacMed);
-        else if (pacientesComMedicoes) {
-            const hoje = new Date();
-            const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-            const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59);
-
-            pacientesComMedicoes.forEach((pac: any) => {
-                if (pac.medicoes && pac.medicoes.length > 0) {
-                    const ultimaMedicao = pac.medicoes[0]; // Já está ordenado
-                    const { severityLevel } = getCranialStatus(ultimaMedicao.indice_craniano || 0, ultimaMedicao.cvai || 0);
-                    
-                    const dataUltimaMedicao = new Date(ultimaMedicao.data);
-                    let proximaAvaliacao = new Date(dataUltimaMedicao);
-
-                    switch(severityLevel) {
-                        case 'normal': proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 3); break;
-                        case 'leve': proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2); break;
-                        case 'moderada': case 'severa': proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 1); break;
-                        default: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2);
-                    }
-
-                    if (proximaAvaliacao >= inicioHoje && proximaAvaliacao <= fimHoje) {
-                        todasAsNotificacoes.push({
-                            id: `tarefa-hoje-${pac.id}-${ultimaMedicao.id}`,
-                            title: "Tarefa para Hoje",
-                            message: `Reavaliação de ${pac.nome} agendada para hoje.`,
-                            timestamp: proximaAvaliacao,
-                            read: false,
-                            type: "tarefa_hoje",
-                            link: `/pacientes/${pac.id}`,
-                            urgencia: "alta",
-                            referenciaId: pac.id,
-                        });
-                    } else if (proximaAvaliacao < inicioHoje) {
-                         // Considerar apenas tarefas atrasadas nos últimos X dias para não poluir
-                        const diasAtraso = (inicioHoje.getTime() - proximaAvaliacao.getTime()) / (1000 * 3600 * 24);
-                        if (diasAtraso <= 7) { // Ex: tarefas atrasadas até 7 dias
-                            todasAsNotificacoes.push({
-                                id: `tarefa-atrasada-${pac.id}-${ultimaMedicao.id}`,
-                                title: "Tarefa Atrasada",
-                                message: `Reavaliação de ${pac.nome} está atrasada.`,
-                                timestamp: proximaAvaliacao,
-                                read: false,
-                                type: "tarefa_atrasada",
-                                link: `/pacientes/${pac.id}`,
-                                urgencia: "alta",
-                                referenciaId: pac.id,
-                            });
-                        }
-                    }
-                }
-            });
-        }
-    } catch (e) { console.error("Catch tarefas:", e); }
-
-    // Ordenar e aplicar estado "lida"
-    todasAsNotificacoes.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    const notificacoesLidasIds = getNotificacoesLidas();
-    const notificacoesFinais = todasAsNotificacoes.map(n => ({ ...n, read: notificacoesLidasIds.includes(n.id) }));
-
-    setNotificacoes(notificacoesFinais);
-    setNotificacoesNaoLidas(notificacoesFinais.filter(n => !n.read).length);
-    localStorage.setItem(ULTIMA_VERIFICACAO_STORAGE_KEY, agora.toISOString());
-
-  }, []);
-
+  // Carregar o usuário autenticado
   useEffect(() => {
     async function carregarUsuario() {
       try {
         setCarregandoUsuario(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) return;
         
-        const { data: usuarioData } = await supabase
+        // Obter sessão atual
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          return;
+        }
+        
+        // Carregar dados do usuário
+        const { data: usuarioData, error } = await supabase
           .from('usuarios')
-          .select('nome, email, avatar_url, clinica_nome')
+          .select('*')
           .eq('id', session.user.id)
           .single();
           
+        if (error) {
+          console.error("Erro ao carregar dados do usuário:", error);
+          return;
+        }
+        
         if (usuarioData) {
-          setUsuario(usuarioData);
+          setUsuario({
+            nome: usuarioData.nome || 'Usuário',
+            email: usuarioData.email || '',
+            avatar_url: usuarioData.avatar_url,
+            clinica_nome: usuarioData.clinica_nome
+          });
+          
+          // Atualizar nome da clínica
           if (usuarioData.clinica_nome) {
             setClinicaNome(usuarioData.clinica_nome);
             localStorage.setItem('clinicaNome', usuarioData.clinica_nome);
           }
         }
+        
       } catch (err) {
         console.error("Erro ao carregar usuário:", err);
       } finally {
         setCarregandoUsuario(false);
       }
     }
+    
     carregarUsuario();
-    carregarNotificacoesReais(); // Carregar notificações reais
-  }, [carregarNotificacoesReais]);
-
+    
+    // Carregar notificações
+    carregarNotificacoes();
+  }, []);
+  
+  // Carregar o nome da clínica do localStorage
   useEffect(() => {
     const savedClinicaNome = localStorage.getItem('clinicaNome');
-    if (savedClinicaNome) setClinicaNome(savedClinicaNome);
-  }, [location.pathname]);
+    if (savedClinicaNome) {
+      setClinicaNome(savedClinicaNome);
+    }
+  }, [location.pathname]); // Recarrega quando muda a rota
 
-  const marcarComoLida = (id: string) => {
-    marcarNotificacaoComoLidaStorage(id);
-    const notificacoesAtualizadas = notificacoes.map(n => (n.id === id ? { ...n, read: true } : n));
+  // Carregar notificações
+  const carregarNotificacoes = async () => {
+    // Aqui seria implementada a busca de notificações reais do banco
+    // Por enquanto, usamos dados de exemplo
+    
+    const notificacoesExemplo = [
+      { 
+        id: 1, 
+        title: "Nova medição registrada", 
+        message: "A medição de João Silva foi registrada com sucesso.", 
+        time: "Há 2 horas",
+        read: false
+      },
+      { 
+        id: 2, 
+        title: "Lembrete de acompanhamento", 
+        message: "Maria Oliveira precisa de reavaliação hoje.", 
+        time: "Há 5 horas",
+        read: false
+      },
+    ];
+    
+    setNotificacoes(notificacoesExemplo);
+    setNotificacoesNaoLidas(notificacoesExemplo.filter(n => !n.read).length);
+  };
+  
+  // Marcar notificação como lida
+  const marcarComoLida = (id: number) => {
+    const notificacoesAtualizadas = notificacoes.map(notificacao => {
+      if (notificacao.id === id) {
+        return { ...notificacao, read: true };
+      }
+      return notificacao;
+    });
+    
     setNotificacoes(notificacoesAtualizadas);
     setNotificacoesNaoLidas(notificacoesAtualizadas.filter(n => !n.read).length);
   };
   
-  const marcarTodasComoLidasAction = () => {
-    marcarTodasComoLidasStorage(notificacoes);
-    const notificacoesAtualizadas = notificacoes.map(n => ({ ...n, read: true }));
+  // Marcar todas como lidas
+  const marcarTodasComoLidas = () => {
+    const notificacoesAtualizadas = notificacoes.map(notificacao => ({
+      ...notificacao,
+      read: true
+    }));
+    
     setNotificacoes(notificacoesAtualizadas);
     setNotificacoesNaoLidas(0);
   };
   
+  // Get current page name
   const getCurrentPageName = () => {
     const path = location.pathname;
+    
+    // Map routes to readable names
     const routeNames: Record<string, string> = {
       "/dashboard": `Dashboard – ${clinicaNome}`,
       "/pacientes": "Pacientes",
@@ -278,20 +178,44 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
       "/tarefas": "Tarefas",
       "/notificacoes": "Notificações",
     };
-    if (path.startsWith("/pacientes/") && path.includes("/nova-medicao")) return "Nova Medição";
-    if (path.startsWith("/pacientes/") && path.includes("/relatorio")) return "Relatório de Medição";
-    if (path.startsWith("/pacientes/") && path.split('/').length === 3 && path.split('/')[2] !== 'registro') return "Detalhe do Paciente";
+    
+    // Check for dynamic routes
+    if (path.startsWith("/pacientes/") && path.includes("/nova-medicao")) {
+      return "Nova Medição";
+    }
+    
+    if (path.startsWith("/pacientes/") && path.includes("/relatorio")) {
+      return "Relatório de Medição";
+    }
+    
+    if (path.startsWith("/pacientes/") && !path.includes("/")) {
+      return "Detalhe do Paciente";
+    }
+    
     return routeNames[path] || title || "";
   };
-
+  
+  // Simulate loading when route changes
   useEffect(() => {
     setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 600);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 600);
+    
     return () => clearTimeout(timer);
   }, [location.pathname]);
   
-  const obterIniciais = (nome: string) => nome.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  // Iniciais para o avatar
+  const obterIniciais = (nome: string) => {
+    return nome
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
+  // Logout
   const fazerLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -299,11 +223,6 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }
-  };
-
-  // Formata o tempo da notificação (ex: Há 2 horas, Ontem)
-  const formatarTempoNotificacao = (timestamp: Date): string => {
-    return formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: ptBR });
   };
 
   return (
@@ -345,7 +264,7 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
           </nav>
         </div>
         <div className="flex items-center gap-2">
-          <Popover onOpenChange={(open) => { if (open) carregarNotificacoesReais(); }}> {/* Recarregar ao abrir */}
+          <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
@@ -364,7 +283,7 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
                     variant="ghost" 
                     className="text-xs" 
                     size="sm"
-                    onClick={marcarTodasComoLidasAction}
+                    onClick={marcarTodasComoLidas}
                   >
                     Marcar todas como lidas
                   </Button>
@@ -376,17 +295,14 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
                     <div 
                       key={notificacao.id} 
                       className={cn(
-                        "border-b p-3 cursor-pointer hover:bg-muted/50 dark:hover:bg-gray-700/50 transition-colors duration-150",
-                        !notificacao.read && "bg-blue-50 dark:bg-blue-900/30 font-medium"
+                        "border-b p-3 cursor-pointer hover:bg-muted",
+                        !notificacao.read && "bg-muted/50"
                       )}
-                      onClick={() => {
-                        marcarComoLida(notificacao.id);
-                        if (notificacao.link) navigate(notificacao.link);
-                      }}
+                      onClick={() => marcarComoLida(notificacao.id)}
                     >
-                      <div className={cn("font-semibold", !notificacao.read && "text-blue-700 dark:text-blue-400")}>{notificacao.title}</div>
+                      <div className="font-medium">{notificacao.title}</div>
                       <div className="text-sm text-muted-foreground mt-1">{notificacao.message}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{formatarTempoNotificacao(notificacao.timestamp)}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{notificacao.time}</div>
                     </div>
                   ))
                 ) : (
@@ -447,4 +363,3 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
     </header>
   );
 }
-

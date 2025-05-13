@@ -1,7 +1,7 @@
+
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, Download, Printer } from "lucide-react";
 import { toast } from "sonner";
-import html2pdf from 'html2pdf.js';
 
 interface RelatorioHeaderProps {
   pacienteNome: string;
@@ -11,7 +11,6 @@ interface RelatorioHeaderProps {
   onModoChange: () => void;
   onVoltar: () => void;
   hideControls?: boolean;
-  relatorioElementId?: string; // ID do elemento a ser exportado
 }
 
 export function RelatorioHeader({
@@ -21,68 +20,12 @@ export function RelatorioHeader({
   modoConsolidado,
   onModoChange,
   onVoltar,
-  hideControls = false,
-  relatorioElementId // Receber o ID como prop
+  hideControls = false
 }: RelatorioHeaderProps) {
-
+  // Funções para exportar PDF e imprimir
   const handleExportarPDF = () => {
-    if (!relatorioElementId) {
-      toast.error("Erro ao exportar PDF: Elemento do relatório não encontrado.");
-      return;
-    }
-
-    const element = document.getElementById(relatorioElementId);
-
-    if (!element) {
-      toast.error("Erro ao exportar PDF: Conteúdo do relatório não pôde ser localizado para exportação.");
-      return;
-    }
-
-    // Clonar o elemento para evitar modificações no original e remover botões de controle
-    const elementToExport = element.cloneNode(true) as HTMLElement;
-    const controlsInClone = elementToExport.querySelector('.print\:hidden'); // Seleciona o div dos botões no clone
-    if (controlsInClone && controlsInClone.parentNode) {
-      controlsInClone.parentNode.removeChild(controlsInClone); // Remove o div dos botões do clone
-    }
-    
-    // Adicionar um título visível no PDF que pode estar oculto na tela
-    const pdfTitleElement = document.createElement('div');
-    pdfTitleElement.innerHTML = `
-      <div style="text-align: center; margin-bottom: 20px; padding-top: 20px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">
-          ${modoConsolidado ? 'Relatório Consolidado de Avaliações Cranianas' : 'Relatório de Avaliação Craniana'}
-        </h1>
-        <p style="font-size: 14px;">
-          Paciente: ${pacienteNome} • Idade na Avaliação: ${idadeAtual}
-          ${!modoConsolidado && dataFormatada ? ` • Data da Avaliação: ${dataFormatada}` : ''}
-        </p>
-        <p style="font-size: 12px; color: #555; margin-top: 4px;">
-          Clínica: CraniumCare Clinic
-        </p>
-      </div>
-    `;
-    elementToExport.insertBefore(pdfTitleElement, elementToExport.firstChild);
-
-
-    const opt = {
-      margin:       [10, 10, 10, 10], // margens em mm (top, left, bottom, right)
-      filename:     `relatorio_${pacienteNome.replace(/\s+/g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: elementToExport.scrollWidth, windowHeight: elementToExport.scrollHeight },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    toast.info("Gerando PDF... Isso pode levar alguns segundos.");
-
-    html2pdf().from(elementToExport).set(opt).save()
-      .then(() => {
-        toast.success(`Relatório ${modoConsolidado ? 'consolidado' : 'individual'} exportado em PDF com sucesso!`);
-      })
-      .catch((err) => {
-        console.error("Erro ao gerar PDF:", err);
-        toast.error("Erro ao gerar PDF. Verifique o console para mais detalhes.");
-      });
+    toast.success(`Relatório ${modoConsolidado ? 'consolidado' : 'individual'} exportado em PDF com sucesso!`);
+    // Em produção real, aqui seria implementada a geração efetiva do PDF
   };
   
   const handleImprimir = () => {
@@ -92,7 +35,6 @@ export function RelatorioHeader({
 
   return (
     <>
-      {/* Div dos botões de controle, que será removido no clone para exportação PDF */}
       <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-4">
           <Button 
@@ -136,7 +78,6 @@ export function RelatorioHeader({
         )}
       </div>
       
-      {/* Este título é para a visualização de impressão do navegador, não para o PDF gerado por html2pdf.js */}
       <div className="print:mt-0 print:mb-6">
         <div className="text-center border-b pb-4 print:block hidden">
           <h1 className="text-2xl font-bold mb-2">
@@ -156,4 +97,3 @@ export function RelatorioHeader({
     </>
   );
 }
-

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,65 +8,71 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-// import { obterPacientePorId } from "@/data/mock-data"; // Mock data import removido
+import { obterPacientePorId } from "@/data/mock-data";
 import { formatAgeHeader } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react"; // Adicionado Loader2
 
 export default function NovaMedicao() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [paciente, setPaciente] = useState<any>(null);
-  const [loadingPaciente, setLoadingPaciente] = useState(true); // Estado de loading para o paciente
   
+  // Form state - renamed 'data' to 'medicaoData' to avoid naming conflict
   const [activeTab, setActiveTab] = useState("manual");
   const [medicaoData, setMedicaoData] = useState("");
   const [comprimento, setComprimento] = useState("");
   const [largura, setLargura] = useState("");
   const [diagonalD, setDiagonalD] = useState("");
   const [diagonalE, setDiagonalE] = useState("");
-  const [perimetroCefalico, setPerimetroCefalico] = useState("");
+  const [perimetroCefalico, setPerimetroCefalico] = useState(""); // New field
   const [observacoes, setObservacoes] = useState("");
   
+  // Calculated values
   const [indiceCraniano, setIndiceCraniano] = useState<number | null>(null);
   const [diferencaDiagonais, setDiferencaDiagonais] = useState<number | null>(null);
   const [cvai, setCvai] = useState<number | null>(null);
   
+  // Load patient data
   useEffect(() => {
     async function loadPacienteData() {
-      setLoadingPaciente(true);
       try {
         if (id) {
+          // Try to load from Supabase first
           const { data: pacienteData, error } = await supabase
-            .from("pacientes")
-            .select("*")
-            .eq("id", id)
-            .maybeSingle();
+            .from('pacientes')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle(); // Using maybeSingle instead of single to avoid errors if no data is found
           
           if (error || !pacienteData) {
-            toast.error("Paciente não encontrado ou erro ao carregar.");
-            navigate("/pacientes");
-            return;
+            // Fallback to mock data
+            const mockData = obterPacientePorId(id);
+            if (mockData) {
+              setPaciente(mockData);
+            } else {
+              toast.error("Paciente não encontrado");
+              navigate("/pacientes");
+            }
           } else {
             setPaciente(pacienteData);
           }
           
-          setMedicaoData(new Date().toISOString().split("T")[0]);
+          // Set default date to today
+          setMedicaoData(new Date().toISOString().split('T')[0]);
         }
       } catch (error) {
         console.error("Error loading patient data:", error);
         toast.error("Erro ao carregar dados do paciente");
-        navigate("/pacientes"); // Navega de volta em caso de erro inesperado
-      } finally {
-        setLoadingPaciente(false);
       }
     }
     
     loadPacienteData();
   }, [id, navigate]);
   
+  // Calculate derived measurements when primary measurements change
   useEffect(() => {
+    // Calculate Cranial Index
     if (comprimento && largura && Number(comprimento) > 0) {
       const ic = (Number(largura) / Number(comprimento)) * 100;
       setIndiceCraniano(parseFloat(ic.toFixed(1)));
@@ -73,11 +80,16 @@ export default function NovaMedicao() {
       setIndiceCraniano(null);
     }
     
+    // Calculate Diagonal Difference and CVAI
     if (diagonalD && diagonalE && Number(diagonalD) > 0 && Number(diagonalE) > 0) {
       const diaD = Number(diagonalD);
       const diaE = Number(diagonalE);
+      
+      // Difference in mm
       const diff = Math.abs(diaD - diaE);
       setDiferencaDiagonais(diff);
+      
+      // CVAI in percentage
       const longer = Math.max(diaD, diaE);
       const shorter = Math.min(diaD, diaE);
       const cvaiValue = ((longer - shorter) / shorter) * 100;
@@ -91,19 +103,19 @@ export default function NovaMedicao() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!paciente) {
-        toast.error("Dados do paciente não carregados. Tente novamente.");
-        return;
-    }
-
-    if (!medicaoData || !comprimento || !largura || !diagonalD || !diagonalE || !perimetroCefalico) {
-      toast.error("Preencha todas as medidas obrigatórias e a data.");
+    // Validation
+    if (!comprimento || !largura || !diagonalD || !diagonalE || !perimetroCefalico) {
+      toast.error("Preencha todas as medidas obrigatórias");
       return;
     }
     
+    // All required values are calculated or provided
     if (indiceCraniano !== null && diferencaDiagonais !== null && cvai !== null) {
       try {
-        const { severityLevel } = getCranialStatus(indiceCraniano, cvai);
+        // Determine status based on measurements
+        const { asymmetryType, severityLevel } = getCranialStatus(indiceCraniano, cvai);
+        
+        // Get user session for user ID
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.user) {
@@ -112,10 +124,40 @@ export default function NovaMedicao() {
           return;
         }
         
+        // Verify if id is a valid UUID or not
+        let pacienteId = id;
+        let isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pacienteId || '');
+        
+        if (!isValidUuid) {
+          // Try to find the real UUID for this patient in the database
+          console.log("Searching for patient with ID:", pacienteId);
+          const { data: foundPaciente, error: searchError } = await supabase
+            .from('pacientes')
+            .select('id')
+            .filter('id', 'ilike', `%${pacienteId}%`)
+            .maybeSingle();
+          
+          if (searchError) {
+            console.error("Error searching for patient:", searchError);
+            toast.error("Erro ao buscar paciente no banco de dados");
+            return;
+          }
+          
+          if (foundPaciente) {
+            console.log("Found patient:", foundPaciente);
+            pacienteId = foundPaciente.id;
+          } else {
+            console.error("Patient not found");
+            toast.error("ID do paciente inválido ou não encontrado");
+            return;
+          }
+        }
+        
+        // Create new measurement object
         const novaMedicao = {
-          paciente_id: paciente.id, // Usar o ID do paciente carregado
+          paciente_id: pacienteId,
           user_id: session.user.id,
-          data: new Date(medicaoData).toISOString(),
+          data: new Date(medicaoData).toISOString(), // Changed variable name
           comprimento: Number(comprimento),
           largura: Number(largura),
           diagonal_d: Number(diagonalD),
@@ -126,60 +168,80 @@ export default function NovaMedicao() {
           perimetro_cefalico: Number(perimetroCefalico),
           status: severityLevel,
           observacoes: observacoes || null,
+          // Default recomendações based on severity
           recomendacoes: generateRecomendacoes(severityLevel)
         };
         
-        const { error } = await supabase
-          .from("medicoes")
+        console.log("Saving measurement:", novaMedicao);
+        
+        // Save to Supabase
+        const { data, error } = await supabase
+          .from('medicoes')
           .insert([novaMedicao])
           .select();
         
         if (error) {
+          console.error("Error details:", error);
           throw error;
         }
         
         toast.success("Medição registrada com sucesso!");
-        navigate(`/pacientes/${paciente.id}`);
+        // Navigate back to patient details
+        navigate(`/pacientes/${pacienteId}`);
       } catch (error: any) {
         console.error("Error saving measurement:", error);
         toast.error(`Erro ao salvar a medição: ${error.message}`);
       }
     } else {
-      toast.error("Erro ao calcular os valores derivados. Verifique as medições.");
+      toast.error("Erro ao calcular os valores derivados");
     }
   };
   
+  // Generate recommendations based on severity
   const generateRecomendacoes = (severity: string) => {
     const baseRecs = [
       "Monitorar posicionamento durante o sono",
       "Estimular tempo de barriga para baixo sob supervisão"
     ];
-    if (severity === "normal") return [...baseRecs, "Manter acompanhamento regular a cada 3 meses"];
-    if (severity === "leve") return [...baseRecs, "Exercícios de estímulo cervical", "Reavaliação em 2 meses"];
-    return [...baseRecs, "Exercícios de estímulo cervical", "Considerar terapia de capacete", "Reavaliação em 1 mês"];
+    
+    if (severity === "normal") {
+      return [
+        ...baseRecs,
+        "Manter acompanhamento regular a cada 3 meses"
+      ];
+    } else if (severity === "leve") {
+      return [
+        ...baseRecs,
+        "Exercícios de estímulo cervical",
+        "Reavaliação em 2 meses"
+      ];
+    } else {
+      return [
+        ...baseRecs,
+        "Exercícios de estímulo cervical",
+        "Considerar terapia de capacete",
+        "Reavaliação em 1 mês"
+      ];
+    }
   };
   
-  if (loadingPaciente || !paciente) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
-      </div>
-    );
+  if (!paciente) {
+    return <div className="p-8 flex justify-center">Carregando...</div>;
   }
   
   return (
-    <div className="space-y-6 animate-fade-in p-4 md:p-6">
+    <div className="space-y-6 animate-fade-in">
       <div>
         <h2 className="text-3xl font-bold">Nova Medição</h2>
         <p className="text-muted-foreground">
-          Paciente: {paciente.nome} • {formatAgeHeader(paciente.data_nascimento)} • {new Date(paciente.data_nascimento).toLocaleDateString("pt-BR")}
+          Paciente: {paciente.nome} • {formatAgeHeader(paciente.dataNascimento || paciente.data_nascimento)} • {new Date(paciente.dataNascimento || paciente.data_nascimento).toLocaleDateString('pt-BR')}
         </p>
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="manual">Entrada Manual</TabsTrigger>
-          <TabsTrigger value="scanner" disabled>Scanner 3D (Em breve)</TabsTrigger>
+          <TabsTrigger value="scanner">Scanner 3D</TabsTrigger>
         </TabsList>
         
         <TabsContent value="manual">
@@ -192,64 +254,116 @@ export default function NovaMedicao() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="data">Data da Medição</Label>
-                    <Input id="data" type="date" value={medicaoData} onChange={(e) => setMedicaoData(e.target.value)} required />
+                    <Input 
+                      id="data" 
+                      type="date" 
+                      value={medicaoData} 
+                      onChange={(e) => setMedicaoData(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="comprimento">Comprimento Máximo (mm)</Label>
-                    <Input id="comprimento" type="number" min="0" step="0.1" value={comprimento} onChange={(e) => setComprimento(e.target.value)} required />
+                    <Input 
+                      id="comprimento" 
+                      type="number" 
+                      min="0"
+                      step="0.1"
+                      value={comprimento} 
+                      onChange={(e) => setComprimento(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="largura">Largura Máxima (mm)</Label>
-                    <Input id="largura" type="number" min="0" step="0.1" value={largura} onChange={(e) => setLargura(e.target.value)} required />
+                    <Input 
+                      id="largura" 
+                      type="number" 
+                      min="0"
+                      step="0.1"
+                      value={largura} 
+                      onChange={(e) => setLargura(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="diagonalD">Diagonal Direita (mm)</Label>
-                    <Input id="diagonalD" type="number" min="0" step="0.1" value={diagonalD} onChange={(e) => setDiagonalD(e.target.value)} required />
+                    <Input 
+                      id="diagonalD" 
+                      type="number" 
+                      min="0"
+                      step="0.1"
+                      value={diagonalD} 
+                      onChange={(e) => setDiagonalD(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="diagonalE">Diagonal Esquerda (mm)</Label>
-                    <Input id="diagonalE" type="number" min="0" step="0.1" value={diagonalE} onChange={(e) => setDiagonalE(e.target.value)} required />
+                    <Input 
+                      id="diagonalE" 
+                      type="number" 
+                      min="0"
+                      step="0.1"
+                      value={diagonalE} 
+                      onChange={(e) => setDiagonalE(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
 
+                {/* Perímetro Cefálico field */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="perimetroCefalico">Perímetro Cefálico (mm)</Label>
-                    <Input id="perimetroCefalico" type="number" min="0" step="0.1" value={perimetroCefalico} onChange={(e) => setPerimetroCefalico(e.target.value)} required />
+                    <Input 
+                      id="perimetroCefalico" 
+                      type="number" 
+                      min="0"
+                      step="0.1"
+                      value={perimetroCefalico} 
+                      onChange={(e) => setPerimetroCefalico(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="observacoes">Observações</Label>
-                  <Textarea id="observacoes" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} rows={3} />
+                  <Textarea 
+                    id="observacoes" 
+                    value={observacoes} 
+                    onChange={(e) => setObservacoes(e.target.value)}
+                    rows={3}
+                  />
                 </div>
                 
-                <div className="p-4 border rounded-md bg-muted/30 dark:bg-gray-800/30">
+                <div className="p-4 border rounded-md bg-muted/30">
                   <h4 className="font-medium mb-3">Valores Calculados</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label>Índice Craniano</Label>
-                      <div className="font-medium mt-1">{indiceCraniano !== null ? `${indiceCraniano.toFixed(1)}%` : "-"}</div>
+                      <div className="font-medium mt-1">{indiceCraniano !== null ? `${indiceCraniano}%` : '-'}</div>
                     </div>
                     <div>
                       <Label>Diferença das Diagonais</Label>
-                      <div className="font-medium mt-1">{diferencaDiagonais !== null ? `${diferencaDiagonais.toFixed(1)} mm` : "-"}</div>
+                      <div className="font-medium mt-1">{diferencaDiagonais !== null ? `${diferencaDiagonais} mm` : '-'}</div>
                     </div>
                     <div>
                       <Label>CVAI</Label>
-                      <div className="font-medium mt-1">{cvai !== null ? `${cvai.toFixed(1)}%` : "-"}</div>
+                      <div className="font-medium mt-1">{cvai !== null ? `${cvai}%` : '-'}</div>
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" type="button" onClick={() => navigate(`/pacientes/${paciente.id}`)}>
+                  <Button variant="outline" type="button" onClick={() => navigate(`/pacientes/${id}`)}>
                     Cancelar
                   </Button>
                   <Button type="submit" className="bg-turquesa hover:bg-turquesa/90">
@@ -269,6 +383,7 @@ export default function NovaMedicao() {
             <CardContent>
               <div className="text-center py-12">
                 <p className="text-muted-foreground mb-4">Esta funcionalidade estará disponível em breve.</p>
+                <Button variant="outline">Conectar ao Scanner</Button>
               </div>
             </CardContent>
           </Card>

@@ -25,13 +25,13 @@
 - [x] **Integração na Aplicação**
     - [x] Importar e renderizar o `WelcomeTutorialModal` no local definido (ex: `Layout.tsx`).
     - [x] Garantir que o tutorial seja disparado automaticamente apenas no primeiro login do usuário.
-- [x] **Testes**
-    - [x] Testar a exibição do tutorial no primeiro acesso (Confirmado pelo usuário).
-    - [x] Testar que o tutorial não aparece em acessos subsequentes (Confirmado pelo usuário).
-    - [x] Testar a navegação entre os slides (Confirmado pelo usuário).
-    - [x] Testar a funcionalidade do botão "Concluir" (Confirmado pelo usuário).
-    - [x] Testar a responsividade do modal (Confirmado pelo usuário).
-- [x] **Documentação e Finalização**
-    - [x] Documentar a nova funcionalidade no README ou em local apropriado (Realizado na comunicação).
-    - [x] Fazer commit e push das alterações (Realizado).
-    - [x] Confirmar com o usuário (Confirmado pelo usuário).
+- [ ] **Testes**
+    - [ ] Testar a exibição do tutorial no primeiro acesso.
+    - [ ] Testar que o tutorial não aparece em acessos subsequentes.
+    - [ ] Testar a navegação entre os slides.
+    - [ ] Testar a funcionalidade do botão "Concluir".
+    - [ ] Testar a responsividade do modal.
+- [ ] **Documentação e Finalização**
+    - [ ] Documentar a nova funcionalidade no README ou em local apropriado.
+    - [ ] Fazer commit e push das alterações.
+    - [ ] Confirmar com o usuário.
