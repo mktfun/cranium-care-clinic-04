@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,19 +7,20 @@ import { Separator } from "@/components/ui/separator";
 import { 
   Plus, Pencil, Save, Trash2, X, Calendar, FileText 
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
+import { Consulta } from "@/types";
 
 interface ConsultasTabProps {
   pacienteId: string;
 }
 
 export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
-  const [consultas, setConsultas] = useState<any[]>([]);
+  const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [addingNew, setAddingNew] = useState(false);
-  const [currentConsulta, setCurrentConsulta] = useState({
+  const [currentConsulta, setCurrentConsulta] = useState<Partial<Consulta>>({
     data: new Date().toISOString().split('T')[0],
     profissional: "",
     especialidade: "",
@@ -37,11 +37,15 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
   async function fetchConsultas() {
     try {
       setLoading(true);
+      // Type assertion for Supabase
       const { data, error } = await supabase
         .from('consultas')
         .select('*')
         .eq('paciente_id', pacienteId)
-        .order('data', { ascending: false });
+        .order('data', { ascending: false }) as unknown as { 
+          data: Consulta[] | null;
+          error: any;
+        };
       
       if (error) {
         console.error('Erro ao carregar consultas:', error);
@@ -64,7 +68,7 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
     });
   };
 
-  const handleEdit = (consulta: any) => {
+  const handleEdit = (consulta: Consulta) => {
     setEditingId(consulta.id);
     setCurrentConsulta({
       data: consulta.data ? consulta.data.split('T')[0] : new Date().toISOString().split('T')[0],
@@ -100,6 +104,7 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
   const handleSave = async () => {
     try {
       if (addingNew) {
+        // Type assertion for Supabase
         const { data, error } = await supabase
           .from('consultas')
           .insert({
@@ -112,7 +117,10 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
             tratamento: currentConsulta.tratamento,
             observacoes: currentConsulta.observacoes
           })
-          .select();
+          .select() as unknown as {
+            data: Consulta[] | null;
+            error: any;
+          };
         
         if (error) {
           toast.error("Erro ao salvar consulta: " + error.message);
@@ -124,6 +132,7 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
         }
         toast.success("Consulta registrada com sucesso");
       } else if (editingId) {
+        // Type assertion for Supabase
         const { error } = await supabase
           .from('consultas')
           .update({
@@ -135,7 +144,7 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
             tratamento: currentConsulta.tratamento,
             observacoes: currentConsulta.observacoes
           })
-          .eq('id', editingId);
+          .eq('id', editingId) as unknown as { error: any };
         
         if (error) {
           toast.error("Erro ao atualizar consulta: " + error.message);
@@ -160,10 +169,11 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
     }
     
     try {
+      // Type assertion for Supabase
       const { error } = await supabase
         .from('consultas')
         .delete()
-        .eq('id', id);
+        .eq('id', id) as unknown as { error: any };
       
       if (error) {
         toast.error("Erro ao excluir consulta: " + error.message);

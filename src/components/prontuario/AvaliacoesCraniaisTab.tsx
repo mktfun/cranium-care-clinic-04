@@ -7,15 +7,16 @@ import { getCranialStatus } from "@/lib/cranial-utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Eye, FileBarChart2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
+import { Medicao } from "@/types";
 
 interface AvaliacoesCraniaisTabProps {
   pacienteId: string;
 }
 
 export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps) {
-  const [medicoes, setMedicoes] = useState<any[]>([]);
+  const [medicoes, setMedicoes] = useState<Medicao[]>([]);
   const [paciente, setPaciente] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -114,8 +115,8 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
                   <tbody className="divide-y divide-border">
                     {medicoes.map((medicao) => {
                       const { asymmetryType, severityLevel } = getCranialStatus(
-                        medicao.indice_craniano, 
-                        medicao.cvai
+                        medicao.indice_craniano || 0, 
+                        medicao.cvai || 0
                       );
                       return (
                         <tr key={medicao.id} className="hover:bg-muted/50">

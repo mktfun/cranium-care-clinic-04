@@ -1,8 +1,6 @@
 
 import { Badge } from "@/components/ui/badge";
-
-export type AsymmetryType = "Normal" | "Plagiocefalia" | "Braquicefalia" | "Dolicocefalia" | "Misto";
-export type SeverityLevel = "normal" | "leve" | "moderada" | "severa";
+import { AsymmetryType, SeverityLevel } from "@/types";
 
 export interface StatusBadgeProps {
   status?: SeverityLevel;

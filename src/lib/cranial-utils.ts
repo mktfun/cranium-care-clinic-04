@@ -1,14 +1,5 @@
 
-// Types of cranial asymmetry
-export type AsymmetryType = 
-  | "Braquicefalia" 
-  | "Dolicocefalia" 
-  | "Plagiocefalia" 
-  | "Assimetria Mista" 
-  | "Normal";
-
-// Severity levels
-export type SeverityLevel = "normal" | "leve" | "moderada" | "severa";
+import { AsymmetryType, SeverityLevel } from "@/types";
 
 // Function to determine asymmetry type based on measurements
 export function determineAsymmetryType(
@@ -20,9 +11,9 @@ export function determineAsymmetryType(
   const hasPlagi = cvai >= 3.5;
   
   if (hasBrachy && hasPlagi) {
-    return "Assimetria Mista";
+    return "Misto";
   } else if (hasDolich && hasPlagi) {
-    return "Assimetria Mista";
+    return "Misto";
   } else if (hasBrachy) {
     return "Braquicefalia";
   } else if (hasDolich) {
@@ -58,7 +49,7 @@ export function determineSeverityLevel(
   }
   
   // For Plagiocefalia
-  if (asymmetryType === "Plagiocefalia" || asymmetryType === "Assimetria Mista") {
+  if (asymmetryType === "Plagiocefalia" || asymmetryType === "Misto") {
     if (cvai >= 8.5) return "severa";
     if (cvai >= 6.25) return "moderada";
     return "leve";
