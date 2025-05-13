@@ -5,7 +5,7 @@ import { AsymmetryType, SeverityLevel } from "@/lib/cranial-utils";
 
 interface StatusBadgeProps {
   status: SeverityLevel;
-  asymmetryType?: AsymmetryType | string; // Allow both AsymmetryType and string
+  asymmetryType?: AsymmetryType | string; // Using the AsymmetryType from cranial-utils
   className?: string;
   showAsymmetryType?: boolean;
 }
