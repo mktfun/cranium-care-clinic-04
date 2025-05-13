@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 
 interface MeasurementChartsProps {
@@ -15,28 +15,6 @@ interface MeasurementChartsProps {
 export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: MeasurementChartsProps) {
   const [activeChartTab, setActiveChartTab] = useState("indiceCraniano");
   const [chartsExpanded, setChartsExpanded] = useState(true);
-  const [normalizedMedicoes, setNormalizedMedicoes] = useState<any[]>([]);
-
-  // Normalize medicoes data to handle both snake_case and camelCase properties
-  useEffect(() => {
-    if (medicoes.length > 0) {
-      const normalized = medicoes.map(m => ({
-        id: m.id,
-        data: m.data,
-        comprimento: m.comprimento,
-        largura: m.largura,
-        diagonal_d: m.diagonal_d || m.diagonalD,
-        diagonal_e: m.diagonal_e || m.diagonalE,
-        diferenca_diagonais: m.diferenca_diagonais || m.diferencaDiagonais,
-        indice_craniano: m.indice_craniano || m.indiceCraniano,
-        cvai: m.cvai,
-        perimetro_cefalico: m.perimetro_cefalico || m.perimetroCefalico,
-      }));
-      setNormalizedMedicoes(normalized);
-    } else {
-      setNormalizedMedicoes([]);
-    }
-  }, [medicoes]);
 
   const toggleChartsExpanded = () => {
     setChartsExpanded(!chartsExpanded);
@@ -69,89 +47,93 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
         </CardDescription>
       </CardHeader>
       
-      <CardContent className={chartsExpanded ? "" : "h-[400px] overflow-hidden"}>
-        <Tabs defaultValue={activeChartTab} value={activeChartTab} onValueChange={setActiveChartTab} className="w-full">
-          <TabsList className="mb-4 flex flex-wrap">
-            <TabsTrigger value="indiceCraniano">Índice Craniano</TabsTrigger>
-            <TabsTrigger value="cvai">Plagiocefalia (CVAI)</TabsTrigger>
-            <TabsTrigger value="diagonais">Diagonais</TabsTrigger>
-            <TabsTrigger value="perimetro">Perímetro Cefálico</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="indiceCraniano" className="mt-0">
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                <p><strong>O que é?</strong> O Índice Craniano mede a proporção entre largura e comprimento do crânio.</p>
-                <p><strong>Como interpretar:</strong> Valores entre 76% e 80% são considerados normais (zona verde no gráfico).</p>
-                <p><strong>Desvios:</strong> Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% indicam tendência à dolicocefalia.</p>
+      <CardContent className={chartsExpanded ? "transition-all duration-300 ease-in-out" : "h-0 overflow-hidden transition-all duration-300 ease-in-out"}>
+        {chartsExpanded && (
+          <Tabs defaultValue={activeChartTab} value={activeChartTab} onValueChange={setActiveChartTab} className="w-full">
+            <TabsList className="mb-4 flex flex-wrap">
+              <TabsTrigger value="indiceCraniano">Índice Craniano</TabsTrigger>
+              <TabsTrigger value="cvai">Plagiocefalia (CVAI)</TabsTrigger>
+              <TabsTrigger value="diagonais">Diagonais</TabsTrigger>
+              <TabsTrigger value="perimetro">Perímetro Cefálico</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="indiceCraniano" className="mt-0">
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/20 dark:bg-gray-800/30">
+                  <p><strong>O que é?</strong> O Índice Craniano mede a proporção entre largura e comprimento do crânio.</p>
+                  <p><strong>Como interpretar:</strong> Valores entre 76% e 80% são considerados normais (zona verde no gráfico).</p>
+                  <p><strong>Desvios:</strong> Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% indicam tendência à dolicocefalia.</p>
+                </div>
+                <MedicaoLineChart 
+                  titulo="Evolução do Índice Craniano" 
+                  medicoes={medicoes}
+                  dataNascimento={dataNascimento}
+                  tipoGrafico="indiceCraniano"
+                  sexoPaciente={sexoPaciente}
+                  linhaCorTheme="rose"
+                  altura={400}
+                />
               </div>
-              <MedicaoLineChart 
-                titulo="Evolução do Índice Craniano" 
-                medicoes={normalizedMedicoes}
-                dataNascimento={dataNascimento}
-                tipoGrafico="indiceCraniano"
-                sexoPaciente={sexoPaciente}
-                linhaCorTheme="rose"
-                altura={400}
-              />
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="cvai" className="mt-0">
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                <p><strong>O que é?</strong> O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana.</p>
-                <p><strong>Como interpretar:</strong> Valores abaixo de 3.5% são considerados normais (zona verde no gráfico).</p>
-                <p><strong>Desvios:</strong> Valores entre 3.5% e 6.25% indicam plagiocefalia leve, entre 6.25% e 8.5% moderada, e acima de 8.5% severa.</p>
+            </TabsContent>
+            
+            <TabsContent value="cvai" className="mt-0">
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/20 dark:bg-gray-800/30">
+                  <p><strong>O que é?</strong> O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana.</p>
+                  <p><strong>Como interpretar:</strong> Valores abaixo de 3.5% são considerados normais (zona verde no gráfico).</p>
+                  <p><strong>Desvios:</strong> Valores entre 3.5% e 6.25% indicam plagiocefalia leve, entre 6.25% e 8.5% moderada, e acima de 8.5% severa.</p>
+                </div>
+                <MedicaoLineChart 
+                  titulo="Evolução da Plagiocefalia (CVAI)" 
+                  medicoes={medicoes}
+                  dataNascimento={dataNascimento}
+                  tipoGrafico="cvai"
+                  sexoPaciente={sexoPaciente}
+                  linhaCorTheme="amber"
+                  altura={400}
+                />
               </div>
-              <MedicaoLineChart 
-                titulo="Evolução da Plagiocefalia (CVAI)" 
-                medicoes={normalizedMedicoes}
-                dataNascimento={dataNascimento}
-                tipoGrafico="cvai"
-                sexoPaciente={sexoPaciente}
-                linhaCorTheme="amber"
-                altura={400}
-              />
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="diagonais" className="mt-0">
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                <p><strong>O que é?</strong> Este gráfico mostra a evolução da diferença entre as diagonais cranianas (assimetria).</p>
-                <p><strong>Como interpretar:</strong> A diferença ideal deve ser menor que 3mm (zona verde no gráfico).</p>
-                <p><strong>Evolução:</strong> Uma redução desta diferença ao longo do tratamento indica melhora na simetria craniana.</p>
+            </TabsContent>
+            
+            <TabsContent value="diagonais" className="mt-0">
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/20 dark:bg-gray-800/30">
+                  <p><strong>O que é?</strong> Este gráfico mostra a evolução da diferença entre as diagonais cranianas (assimetria).</p>
+                  <p><strong>Como interpretar:</strong> A diferença ideal deve ser menor que 3mm (zona verde no gráfico).</p>
+                  <p><strong>Evolução:</strong> Uma redução desta diferença ao longo do tratamento indica melhora na simetria craniana.</p>
+                </div>
+                <MedicaoLineChart 
+                  titulo="Evolução das Diagonais" 
+                  medicoes={medicoes}
+                  dataNascimento={dataNascimento}
+                  tipoGrafico="diagonais"
+                  sexoPaciente={sexoPaciente}
+                  linhaCorTheme="purple"
+                  altura={400}
+                />
               </div>
-              <MedicaoLineChart 
-                titulo="Evolução das Diagonais" 
-                medicoes={normalizedMedicoes}
-                dataNascimento={dataNascimento}
-                tipoGrafico="diagonais"
-                sexoPaciente={sexoPaciente}
-                linhaCorTheme="purple"
-                altura={400}
-              />
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="perimetro" className="mt-0">
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                <p><strong>O que é?</strong> O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte mais protuberante do occipital. As linhas coloridas representam os percentis de referência para meninos da mesma idade, sendo P50 a média populacional.</p>
+            </TabsContent>
+            
+            <TabsContent value="perimetro" className="mt-0">
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/20 dark:bg-gray-800/30">
+                  <p><strong>O que é?</strong> O Perímetro Cefálico (PC) é a medida da circunferência da cabeça.</p>
+                  <p><strong>Como interpretar:</strong> Acompanha-se o crescimento através de curvas de referência (OMS ou específicas), observando se o PC está dentro dos percentis esperados para a idade e sexo.</p>
+                  <p><strong>Desvios:</strong> Valores muito abaixo (microcefalia) ou muito acima (macrocefalia) do esperado podem indicar condições que necessitam investigação.</p>
+                </div>
+                <MedicaoLineChart 
+                  titulo="Evolução do Perímetro Cefálico"
+                  medicoes={medicoes}
+                  dataNascimento={dataNascimento}
+                  tipoGrafico="perimetro"
+                  sexoPaciente={sexoPaciente}
+                  linhaCorTheme="green"
+                  altura={400}
+                />
               </div>
-              <MedicaoLineChart 
-                titulo="Evolução do Perímetro Cefálico" 
-                medicoes={normalizedMedicoes}
-                dataNascimento={dataNascimento}
-                tipoGrafico="perimetro"
-                sexoPaciente={sexoPaciente}
-                linhaCorTheme="green"
-                altura={400}
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        )}
       </CardContent>
     </Card>
   );

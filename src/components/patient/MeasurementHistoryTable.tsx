@@ -1,32 +1,31 @@
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge } from "@/components/StatusBadge";
 import { formatAge } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
-import { StatusBadge } from "@/components/StatusBadge";
+import { useNavigate } from "react-router-dom";
 
 interface MeasurementHistoryTableProps {
   medicoes: any[];
-  pacienteDOB: string;
+  pacienteId: string;
+  pacienteDataNascimento: string;
+  formatarData: (dataString: string) => string;
   onMedicaoClick: (medicao: any) => void;
-  onEditClick: (medicacao: any, event: React.MouseEvent) => void;
 }
 
 export function MeasurementHistoryTable({ 
   medicoes, 
-  pacienteDOB, 
-  onMedicaoClick, 
-  onEditClick 
+  pacienteId, 
+  pacienteDataNascimento, 
+  formatarData,
+  onMedicaoClick
 }: MeasurementHistoryTableProps) {
+  const navigate = useNavigate();
+
   if (medicoes.length === 0) {
     return null;
   }
-
-  const formatarData = (dataString: string) => {
-    const data = new Date(dataString);
-    return data.toLocaleDateString('pt-BR');
-  };
 
   return (
     <Card>
@@ -54,57 +53,30 @@ export function MeasurementHistoryTable({
             </thead>
             <tbody className="divide-y divide-border">
               {medicoes.map((medicao) => {
-                // Normalize data to handle both snake_case and camelCase properties
-                const normalizedMedicao = {
-                  id: medicao.id,
-                  data: medicao.data,
-                  comprimento: medicao.comprimento,
-                  largura: medicao.largura,
-                  diagonalD: medicao.diagonal_d || medicao.diagonalD,
-                  diagonalE: medicao.diagonal_e || medicao.diagonalE,
-                  diferencaDiagonais: medicao.diferenca_diagonais || medicao.diferencaDiagonais,
-                  indiceCraniano: medicao.indice_craniano || medicao.indiceCraniano,
-                  cvai: medicao.cvai,
-                  perimetroCefalico: medicao.perimetro_cefalico || medicao.perimetroCefalico
-                };
-                
-                const { asymmetryType, severityLevel } = getCranialStatus(
-                  normalizedMedicao.indiceCraniano, 
-                  normalizedMedicao.cvai
-                );
-                
+                const { asymmetryType, severityLevel } = getCranialStatus(medicao.indice_craniano, medicao.cvai);
                 return (
                   <tr key={medicao.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => onMedicaoClick(medicao)}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{formatarData(normalizedMedicao.data)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{formatAge(pacienteDOB, normalizedMedicao.data)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.comprimento} mm</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.largura} mm</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.diagonalD} mm</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.diagonalE} mm</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.diferencaDiagonais} mm</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{normalizedMedicao.cvai ? `${normalizedMedicao.cvai.toFixed(1)}%` : '-'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{formatarData(medicao.data)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{formatAge(pacienteDataNascimento, medicao.data)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.comprimento_maximo} mm</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.largura_maxima} mm</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diagonal_direita || medicao.diagonal_d} mm</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diagonal_esquerda || medicao.diagonal_e} mm</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.diferenca_diagonais} mm</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.cvai ? `${medicao.cvai.toFixed(1)}%` : '-'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.indice_craniano ? `${medicao.indice_craniano.toFixed(1)}%` : '-'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">{medicao.perimetro_cefalico ? `${medicao.perimetro_cefalico} mm` : '-'}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      {normalizedMedicao.indiceCraniano 
-                        ? `${normalizedMedicao.indiceCraniano.toFixed(1)}%` 
-                        : '-'}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      {normalizedMedicao.perimetroCefalico 
-                        ? `${normalizedMedicao.perimetroCefalico} mm` 
-                        : '-'}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      <StatusBadge 
-                        status={severityLevel} 
-                        asymmetryType={asymmetryType}
-                        showAsymmetryType={true} 
-                      />
+                      <StatusBadge status={severityLevel} asymmetryType={asymmetryType} />
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                       <Button 
                         variant="link" 
                         size="sm" 
-                        onClick={(e) => onEditClick(medicao, e)}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          navigate(`/pacientes/${pacienteId}/medicao/${medicao.id}/editar`); 
+                        }}
                       >
                         Editar
                       </Button>

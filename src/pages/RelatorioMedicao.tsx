@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -12,303 +11,347 @@ import {
 import { Button } from "@/components/ui/button";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { StatusBadge } from "@/components/StatusBadge";
-import { ChevronLeft, Download, ArrowRight } from "lucide-react";
-import { obterPacientePorId } from "@/data/mock-data";
+import { ChevronLeft, Download, ArrowRight, Loader2 } from "lucide-react"; // Adicionado Loader2
+// import { obterPacientePorId } from "@/data/mock-data"; // Mock data import removido
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatAge } from "@/lib/age-utils";
 import { getCranialStatus, SeverityLevel, AsymmetryType } from "@/lib/cranial-utils";
 
+// Definindo interfaces para os dados, se não existirem globalmente
+interface Paciente {
+  id: string;
+  nome: string;
+  data_nascimento: string; // Mantido como string, pois é assim que vem do Supabase
+  sexo: "M" | "F";
+  // Adicionar outros campos conforme necessário
+}
+
+interface Medicao {
+  id: string;
+  paciente_id: string;
+  data: string; // Mantido como string
+  comprimento: number;
+  largura: number;
+  diagonal_d: number;
+  diagonal_e: number;
+  perimetro_cefalico?: number; // Opcional, pois pode não estar em todas as medições antigas
+  indice_craniano: number;
+  diferenca_diagonais: number;
+  cvai: number;
+  status: SeverityLevel;
+  recomendacoes?: string[];
+  // Adicionar outros campos conforme necessário
+}
+
+interface Usuario {
+  nome?: string;
+  clinica_nome?: string;
+}
+
 export default function RelatorioMedicao() {
-  const { id } = useParams<{ id: string }>();
+  const { id: pacienteId, medicaoId } = useParams<{ id: string; medicaoId?: string }>(); // id é pacienteId
   const navigate = useNavigate();
-  const [paciente, setPaciente] = useState<any>(null);
-  const [medicao, setMedicao] = useState<any>(null);
+  const [paciente, setPaciente] = useState<Paciente | null>(null);
+  const [medicaoEspecifica, setMedicaoEspecifica] = useState<Medicao | null>(null);
+  const [todasMedicoes, setTodasMedicoes] = useState<Medicao[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [clinicaNome, setClinicaNome] = useState<string>("CraniumCare");
-  const [profissionalNome, setProfissionalNome] = useState<string>("Dr. Exemplo");
+  const [clinicaNome, setClinicaNome] = useState<string>("Clínica Padrão");
+  const [profissionalNome, setProfissionalNome] = useState<string>("Profissional Padrão");
   
   useEffect(() => {
-    // Carregar dados do paciente, medição e usuário logado
     async function fetchData() {
       try {
         setCarregando(true);
-        
-        // Obter a sessão do usuário logado
+        if (!pacienteId) {
+          toast.error("ID do paciente não fornecido.");
+          navigate("/pacientes");
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          // Fallback para dados mockados se não estiver logado
-          const pacienteDados = obterPacientePorId(id || "");
-          setPaciente(pacienteDados);
-          
-          // Supor que a medição mais recente seja a última medição adicionada
-          if (pacienteDados?.medicoes?.length > 0) {
-            const medicaoRecente = [...pacienteDados.medicoes].sort((a, b) => 
-              new Date(b.data).getTime() - new Date(a.data).getTime()
-            )[0];
-            setMedicao(medicaoRecente);
-          }
+        if (!session?.user) {
+          toast.error("Sessão não encontrada. Faça login novamente.");
+          navigate("/login");
+          return;
+        }
+
+        // Obter dados do paciente
+        const { data: pacienteData, error: pacienteError } = await supabase
+          .from("pacientes")
+          .select("*")
+          .eq("id", pacienteId)
+          .single();
+
+        if (pacienteError || !pacienteData) {
+          toast.error("Paciente não encontrado ou erro ao carregar.");
+          navigate("/pacientes");
+          return;
+        }
+        setPaciente(pacienteData as Paciente);
+
+        // Obter todas as medições do paciente para os gráficos
+        const { data: todasMedicoesData, error: todasMedicoesError } = await supabase
+          .from("medicoes")
+          .select("*")
+          .eq("paciente_id", pacienteId)
+          .order("data", { ascending: true });
+
+        if (todasMedicoesError) {
+          toast.error("Erro ao carregar histórico de medições.");
+          // Continuar mesmo com erro, gráficos podem ficar vazios
         } else {
-          // Obter dados do paciente do Supabase
-          const { data: pacienteData } = await supabase
-            .from('pacientes')
-            .select('*')
-            .eq('id', id)
+          setTodasMedicoes(todasMedicoesData as Medicao[] || []);
+        }
+
+        // Obter a medição específica para o relatório (a mais recente se medicaoId não for fornecido)
+        let medicaoAlvo: Medicao | null = null;
+        if (medicaoId) {
+          const { data: medicaoDataEspecifica, error: medicaoEspecificaError } = await supabase
+            .from("medicoes")
+            .select("*")
+            .eq("id", medicaoId)
+            .eq("paciente_id", pacienteId) // Garante que a medição pertence ao paciente
             .single();
-          
-          if (pacienteData) {
-            setPaciente(pacienteData);
-            
-            // Obter última medição do paciente
-            const { data: medicoesData } = await supabase
-              .from('medicoes')
-              .select('*')
-              .eq('paciente_id', id)
-              .order('data', { ascending: false })
-              .limit(1);
-            
-            if (medicoesData && medicoesData.length > 0) {
-              setMedicao(medicoesData[0]);
-            }
+          if (medicaoEspecificaError || !medicaoDataEspecifica) {
+            toast.warning("Medição específica não encontrada, usando a mais recente.");
           } else {
-            // Fallback para dados mockados
-            const pacienteDados = obterPacientePorId(id || "");
-            setPaciente(pacienteDados);
-            
-            if (pacienteDados?.medicoes?.length > 0) {
-              const medicaoRecente = [...pacienteDados.medicoes].sort((a, b) => 
-                new Date(b.data).getTime() - new Date(a.data).getTime()
-              )[0];
-              setMedicao(medicaoRecente);
-            }
-          }
-          
-          // Obter dados do usuário logado
-          const { data: userData } = await supabase
-            .from('usuarios')
-            .select('nome, clinica_nome')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (userData) {
-            setProfissionalNome(userData.nome || "Dr. Exemplo");
-            setClinicaNome(userData.clinica_nome || "CraniumCare");
+            medicaoAlvo = medicaoDataEspecifica as Medicao;
           }
         }
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
+        
+        // Se não houver medicaoId ou a específica não for encontrada, pegar a mais recente de todasMedicoesData
+        if (!medicaoAlvo && todasMedicoesData && todasMedicoesData.length > 0) {
+          medicaoAlvo = [...todasMedicoesData].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())[0] as Medicao;
+        }
+
+        if (!medicaoAlvo) {
+          toast.error("Nenhuma medição encontrada para este paciente.");
+          // Não navegar para permitir que o usuário adicione uma nova medição se desejar
+          // Ou, dependendo do fluxo desejado, pode-se navegar para DetalhePaciente
+        }
+        setMedicaoEspecifica(medicaoAlvo);
+        
+        // Obter dados do usuário logado (profissional)
+        const { data: userData, error: userError } = await supabase
+          .from("usuarios") // Supondo que a tabela de usuários/profissionais se chama 'usuarios'
+          .select("nome, clinica_nome")
+          .eq("id", session.user.id)
+          .single();
+        
+        if (userError) {
+          toast.warn("Não foi possível carregar dados do profissional. Usando valores padrão.");
+        } else if (userData) {
+          setProfissionalNome(userData.nome || "Profissional Padrão");
+          setClinicaNome(userData.clinica_nome || "Clínica Padrão");
+        }
+
+      } catch (error: any) {
+        console.error("Erro ao carregar dados do relatório:", error);
+        toast.error(`Erro ao carregar dados: ${error.message}`);
+        navigate(`/pacientes/${pacienteId}`); // Volta para detalhes do paciente em caso de erro grave
       } finally {
         setCarregando(false);
       }
     }
     
     fetchData();
-  }, [id]);
+  }, [pacienteId, medicaoId, navigate]);
   
-  // Função para obter todas as medições do paciente
-  const obterMedicoes = async () => {
-    try {
-      // Tentativa de obter medições do Supabase
-      const { data: medicoesData } = await supabase
-        .from('medicoes')
-        .select('*')
-        .eq('paciente_id', id)
-        .order('data', { ascending: true });
-      
-      if (medicoesData && medicoesData.length > 0) {
-        return medicoesData;
-      }
-      
-      // Fallback para dados mockados
-      const pacienteDados = obterPacientePorId(id || "");
-      return pacienteDados?.medicoes || [];
-    } catch (error) {
-      console.error("Erro ao obter medições:", error);
-      return [];
-    }
-  };
-  
-  if (!paciente && !carregando) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-lg mb-4">Paciente não encontrado</p>
-        <Button onClick={() => navigate("/pacientes")}>Voltar para Lista</Button>
-      </div>
-    );
-  }
-  
-  const formatarData = (dataString: string) => {
-    const data = new Date(dataString);
-    return data.toLocaleDateString('pt-BR');
-  };
-  
-  const handleExportarPDF = () => {
-    toast.success("Relatório exportado em PDF com sucesso!");
-  };
-  
-  const handleVoltar = () => {
-    navigate(`/pacientes/${id}`);
-  };
-
   if (carregando) {
     return (
-      <div className="flex flex-col items-center justify-center h-[50vh]">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
-          <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-            Carregando...
-          </span>
-        </div>
+      <div className="flex flex-col items-center justify-center h-[80vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
         <p className="mt-4 text-muted-foreground">Gerando relatório...</p>
       </div>
     );
   }
   
-  // Obter o status de assimetria - cast the result to the proper types
-  const { asymmetryType, severityLevel } = medicao
-    ? getCranialStatus(medicao.indice_craniano, medicao.cvai)
-    : { asymmetryType: "Normal" as AsymmetryType, severityLevel: "normal" as SeverityLevel };
+  if (!paciente) { // Se o paciente não foi carregado após o loading, algo deu muito errado
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+        <p className="text-lg mb-4 text-destructive">Não foi possível carregar os dados do paciente.</p>
+        <Button onClick={() => navigate("/pacientes")} variant="outline">Voltar para Lista de Pacientes</Button>
+      </div>
+    );
+  }
+
+  if (!medicaoEspecifica) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+         <h2 className="text-2xl font-bold mb-2">Relatório de Avaliação</h2>
+         <p className="text-muted-foreground mb-1">Paciente: {paciente.nome}</p>
+        <p className="text-lg mb-4 text-orange-600">Nenhuma medição encontrada para gerar o relatório.</p>
+        <div className="flex gap-2">
+            <Button onClick={() => navigate(`/pacientes/${pacienteId}`)} variant="outline">
+                <ChevronLeft className="h-4 w-4 mr-2" /> Voltar ao Paciente
+            </Button>
+            <Button onClick={() => navigate(`/pacientes/${pacienteId}/nova-medicao`)} className="bg-turquesa hover:bg-turquesa/90">
+                Adicionar Nova Medição <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+        </div>
+      </div>
+    );
+  }
+  
+  const formatarData = (dataString: string) => {
+    if (!dataString) return "N/A";
+    const data = new Date(dataString);
+    if (isNaN(data.getTime())) return "Data inválida";
+    return data.toLocaleDateString("pt-BR", { timeZone: "UTC" }); // UTC para consistência
+  };
+  
+  const handleExportarPDF = () => {
+    // A lógica de exportação de PDF real precisa ser implementada aqui.
+    // Pode usar bibliotecas como jsPDF e html2canvas, ou ReportLab no backend.
+    // Por enquanto, apenas um toast de sucesso.
+    toast.info("Funcionalidade de exportar PDF ainda em desenvolvimento.");
+    // window.print(); // Uma alternativa simples para impressão direta
+  };
+  
+  const handleVoltar = () => {
+    navigate(`/pacientes/${pacienteId}`);
+  };
     
-  // Idade do paciente na medição
-  const idadeNaMedicao = medicao 
-    ? formatAge(paciente.dataNascimento || paciente.data_nascimento, medicao.data)
-    : "";
+  const { asymmetryType, severityLevel } = getCranialStatus(medicaoEspecifica.indice_craniano, medicaoEspecifica.cvai);
+  const idadeNaMedicao = formatAge(paciente.data_nascimento, medicaoEspecifica.data);
   
   return (
-    <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-fade-in max-w-4xl mx-auto p-4 md:p-6 print:p-0">
+      <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={handleVoltar}
+            aria-label="Voltar aos detalhes do paciente"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div>
             <h2 className="text-3xl font-bold">Relatório de Avaliação</h2>
             <div className="text-muted-foreground mt-1">
-              Paciente: {paciente?.nome} • {medicao ? formatarData(medicao.data) : ""}
+              Paciente: {paciente.nome} • {formatarData(medicaoEspecifica.data)}
             </div>
           </div>
         </div>
         <Button 
           variant="outline" 
-          className="bg-white" 
           onClick={handleExportarPDF}
         >
           <Download className="h-4 w-4 mr-2" /> Exportar PDF
         </Button>
       </div>
+
+      {/* Cabeçalho para impressão */}
+      <div className="hidden print:block mb-8">
+        <h1 className="text-2xl font-bold text-center">Relatório de Avaliação Craniana</h1>
+        <p className="text-sm text-center text-gray-600">{clinicaNome}</p>
+      </div>
       
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Dados da Avaliação</CardTitle>
-            <CardDescription>Medições realizadas em {medicao ? formatarData(medicao.data) : ""}</CardDescription>
+      <div className="grid gap-6 md:grid-cols-2 print:grid-cols-2">
+        <Card className="print:shadow-none print:border-gray-300">
+          <CardHeader className="print:pb-2">
+            <CardTitle className="print:text-lg">Dados da Avaliação</CardTitle>
+            <CardDescription className="print:text-sm">Medições realizadas em {formatarData(medicaoEspecifica.data)}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <CardContent className="space-y-4 print:text-sm print:space-y-2">
+            <div className="grid grid-cols-2 gap-4 print:gap-2">
               <div>
-                <p className="text-sm text-muted-foreground">Comprimento</p>
-                <p className="text-lg font-medium">{medicao?.comprimento} mm</p>
+                <p className="text-sm text-muted-foreground print:text-xs">Comprimento</p>
+                <p className="text-lg font-medium print:text-base">{medicaoEspecifica.comprimento?.toFixed(1)} mm</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Largura</p>
-                <p className="text-lg font-medium">{medicao?.largura} mm</p>
+                <p className="text-sm text-muted-foreground print:text-xs">Largura</p>
+                <p className="text-lg font-medium print:text-base">{medicaoEspecifica.largura?.toFixed(1)} mm</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Diagonal D</p>
-                <p className="text-lg font-medium">{medicao?.diagonalD || medicao?.diagonal_d} mm</p>
+                <p className="text-sm text-muted-foreground print:text-xs">Diagonal Direita</p>
+                <p className="text-lg font-medium print:text-base">{medicaoEspecifica.diagonal_d?.toFixed(1)} mm</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Diagonal E</p>
-                <p className="text-lg font-medium">{medicao?.diagonalE || medicao?.diagonal_e} mm</p>
+                <p className="text-sm text-muted-foreground print:text-xs">Diagonal Esquerda</p>
+                <p className="text-lg font-medium print:text-base">{medicaoEspecifica.diagonal_e?.toFixed(1)} mm</p>
               </div>
             </div>
-            <hr />
-            <div className="grid grid-cols-2 gap-4">
+            <hr className="print:my-2"/>
+            <div className="grid grid-cols-2 gap-4 print:gap-2">
               <div>
-                <p className="text-sm text-muted-foreground">Diferença Diagonais</p>
-                <p className="text-lg font-medium">{medicao?.diferencaDiagonais || medicao?.diferenca_diagonais} mm</p>
+                <p className="text-sm text-muted-foreground print:text-xs">Diferença Diagonais</p>
+                <p className="text-lg font-medium print:text-base">{medicaoEspecifica.diferenca_diagonais?.toFixed(1)} mm</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Índice Craniano</p>
-                <p className="text-lg font-medium">{medicao?.indiceCraniano || medicao?.indice_craniano}%</p>
+                <p className="text-sm text-muted-foreground print:text-xs">Índice Craniano</p>
+                <p className="text-lg font-medium print:text-base">{medicaoEspecifica.indice_craniano?.toFixed(1)}%</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">CVAI</p>
-                <p className="text-lg font-medium">{medicao?.cvai}%</p>
+                <p className="text-sm text-muted-foreground print:text-xs">CVAI</p>
+                <p className="text-lg font-medium print:text-base">{medicaoEspecifica.cvai?.toFixed(1)}%</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Status</p>
-                <StatusBadge status={severityLevel} asymmetryType={asymmetryType} className="mt-1" />
+                <p className="text-sm text-muted-foreground print:text-xs">Status</p>
+                <StatusBadge status={severityLevel} asymmetryType={asymmetryType} className="mt-1 print:text-xs" />
               </div>
-              {(medicao?.perimetroCefalico || medicao?.perimetro_cefalico) && (
+              {medicaoEspecifica.perimetro_cefalico && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Perímetro Cefálico</p>
-                  <p className="text-lg font-medium">{medicao?.perimetroCefalico || medicao?.perimetro_cefalico} mm</p>
+                  <p className="text-sm text-muted-foreground print:text-xs">Perímetro Cefálico</p>
+                  <p className="text-lg font-medium print:text-base">{medicaoEspecifica.perimetro_cefalico?.toFixed(1)} mm</p>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Recomendações Clínicas</CardTitle>
-            <CardDescription>Baseadas no protocolo de Atlanta</CardDescription>
+        <Card className="print:shadow-none print:border-gray-300">
+          <CardHeader className="print:pb-2">
+            <CardTitle className="print:text-lg">Recomendações Clínicas</CardTitle>
+            <CardDescription className="print:text-sm">Baseadas no protocolo de Atlanta</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="print:text-sm">
+            <div className="space-y-4 print:space-y-2">
               <div>
-                <p className="text-sm text-muted-foreground">Diagnóstico</p>
-                <p className="font-medium">
+                <p className="text-sm text-muted-foreground print:text-xs">Diagnóstico</p>
+                <p className="font-medium print:text-base">
                   {asymmetryType === "Normal" ? "Desenvolvimento craniano normal" : `${asymmetryType} ${severityLevel}`}
                 </p>
               </div>
               
               <div>
-                <p className="text-sm text-muted-foreground">Recomendações</p>
-                <ul className="list-disc pl-5 space-y-1 mt-1">
-                  {medicao?.recomendacoes ? (
-                    medicao.recomendacoes.map((rec: string, idx: number) => (
+                <p className="text-sm text-muted-foreground print:text-xs">Recomendações</p>
+                <ul className="list-disc pl-5 space-y-1 mt-1 print:pl-4 print:space-y-0.5">
+                  {medicaoEspecifica.recomendacoes && medicaoEspecifica.recomendacoes.length > 0 ? (
+                    medicaoEspecifica.recomendacoes.map((rec: string, idx: number) => (
                       <li key={idx}>{rec}</li>
                     ))
                   ) : (
-                    <>
-                      <li>Manter acompanhamento regular</li>
-                      <li>Estimular mudanças de posição durante o sono</li>
-                      <li>Realizar exercícios de fortalecimento cervical</li>
-                    </>
+                    <li>Nenhuma recomendação específica registrada.</li>
                   )}
                 </ul>
               </div>
               
               <div>
-                <p className="text-sm text-muted-foreground">Próxima avaliação</p>
-                <p className="font-medium">
-                  {severityLevel === "normal" ? "3 meses" : 
-                   severityLevel === "leve" ? "2 meses" :
-                   "1 mês"}
+                <p className="text-sm text-muted-foreground print:text-xs">Próxima avaliação sugerida</p>
+                <p className="font-medium print:text-base">
+                  {severityLevel === "normal" ? "Em 3 meses" : 
+                   severityLevel === "leve" ? "Em 2 meses" :
+                   "Em 1 mês"}
                 </p>
               </div>
               
-              <div className="pt-2">
-                <p className="text-sm text-muted-foreground">Idade na avaliação</p>
-                <p className="font-medium">{idadeNaMedicao}</p>
+              <div className="pt-2 print:pt-1">
+                <p className="text-sm text-muted-foreground print:text-xs">Idade na avaliação</p>
+                <p className="font-medium print:text-base">{idadeNaMedicao}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
       
-      {/* Gráficos de Evolução */}
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Evolução do Índice Craniano</CardTitle>
-            <CardDescription>
+      <div className="space-y-6 print:mt-6">
+        <Card className="print:shadow-none print:border-gray-300 print:break-inside-avoid">
+          <CardHeader className="print:pb-2">
+            <CardTitle className="print:text-lg">Evolução do Índice Craniano</CardTitle>
+            <CardDescription className="print:text-xs">
               O Índice Craniano mede a proporção entre largura e comprimento do crânio. 
               Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% 
               indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade.
@@ -317,19 +360,19 @@ export default function RelatorioMedicao() {
           <CardContent>
             <MedicaoLineChart 
               titulo="" 
-              altura={350}
-              medicoes={paciente?.medicoes || []}
-              dataNascimento={paciente?.dataNascimento || paciente?.data_nascimento}
+              altura={300} // Reduzido para impressão
+              medicoes={todasMedicoes}
+              dataNascimento={paciente.data_nascimento}
               tipoGrafico="indiceCraniano"
               linhaCorTheme="rose"
             />
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Evolução da Plagiocefalia (CVAI)</CardTitle>
-            <CardDescription>
+        <Card className="print:shadow-none print:border-gray-300 print:break-inside-avoid">
+          <CardHeader className="print:pb-2">
+            <CardTitle className="print:text-lg">Evolução da Plagiocefalia (CVAI)</CardTitle>
+            <CardDescription className="print:text-xs">
               O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana.
               Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa.
               A área verde representa a faixa de normalidade.
@@ -338,53 +381,51 @@ export default function RelatorioMedicao() {
           <CardContent>
             <MedicaoLineChart 
               titulo="" 
-              altura={350}
-              medicoes={paciente?.medicoes || []}
-              dataNascimento={paciente?.dataNascimento || paciente?.data_nascimento}
+              altura={300} // Reduzido para impressão
+              medicoes={todasMedicoes}
+              dataNascimento={paciente.data_nascimento}
               tipoGrafico="cvai"
               linhaCorTheme="amber"
             />
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
-            <CardDescription>
-              O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte 
-              mais protuberante do occipital. As linhas coloridas representam os percentis de referência 
-              para {(paciente?.sexo === 'M' ? 'meninos' : 'meninas')} da mesma idade,
+        <Card className="print:shadow-none print:border-gray-300 print:break-inside-avoid">
+          <CardHeader className="print:pb-2">
+            <CardTitle className="print:text-lg">Evolução do Perímetro Cefálico</CardTitle>
+            <CardDescription className="print:text-xs">
+              O perímetro cefálico é o contorno da cabeça. As linhas coloridas representam os percentis de referência 
+              para {(paciente.sexo === "M" ? "meninos" : "meninas")} da mesma idade,
               sendo P50 a média populacional.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <MedicaoLineChart 
               titulo="" 
-              altura={350}
-              medicoes={paciente?.medicoes || []}
-              dataNascimento={paciente?.dataNascimento || paciente?.data_nascimento}
+              altura={300} // Reduzido para impressão
+              medicoes={todasMedicoes}
+              dataNascimento={paciente.data_nascimento}
               tipoGrafico="perimetro"
-              sexoPaciente={paciente?.sexo}
+              sexoPaciente={paciente.sexo}
               linhaCorTheme="blue"
             />
           </CardContent>
         </Card>
       </div>
       
-      <div className="flex justify-between">
+      <div className="flex justify-between print:hidden">
         <Button variant="outline" onClick={handleVoltar}>
           <ChevronLeft className="h-4 w-4 mr-2" /> Voltar ao Paciente
         </Button>
-        <Button onClick={() => navigate(`/pacientes/${id}/nova-medicao`)} className="bg-turquesa hover:bg-turquesa/90">
+        <Button onClick={() => navigate(`/pacientes/${pacienteId}/nova-medicao`)} className="bg-turquesa hover:bg-turquesa/90">
           Nova Medição <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </div>
       
-      {/* Rodapé do relatório - visível apenas na impressão */}
-      <div className="hidden print:block text-center border-t pt-4 text-xs text-muted-foreground mt-8">
-        <p>Este relatório foi gerado pelo sistema CraniumCare em {new Date().toLocaleDateString('pt-BR')}</p>
+      <div className="hidden print:block text-center border-t pt-4 text-xs text-gray-500 mt-8">
+        <p>Este relatório foi gerado pelo sistema CraniumCare em {new Date().toLocaleDateString("pt-BR")} às {new Date().toLocaleTimeString("pt-BR")}</p>
         <p>Profissional responsável: {profissionalNome} • Clínica: {clinicaNome}</p>
-        <p>Uso exclusivamente clínico</p>
+        <p>Documento para uso clínico. Confidencial.</p>
       </div>
     </div>
   );

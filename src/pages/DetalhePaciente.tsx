@@ -1,14 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
-import { PatientTasks } from "@/components/PatientTasks";
 import { MedicaoDetails } from "@/components/MedicaoDetails";
+import { PatientTasks } from "@/components/PatientTasks";
+import { formatAgeHeader } from "@/lib/age-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-// Import the newly created components
 import { PatientHeader } from "@/components/patient/PatientHeader";
 import { LastMeasurementCard } from "@/components/patient/LastMeasurementCard";
 import { PatientInfoCard } from "@/components/patient/PatientInfoCard";
@@ -30,50 +31,52 @@ export default function DetalhePaciente() {
       if (id) {
         setLoading(true);
         try {
-          let patientId = id;
-          let isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patientId);
-          
-          if (!isValidUuid) {
-            const { data: matchedPatient } = await supabase
-              .from('pacientes')
-              .select('id')
-              .filter('id', 'ilike', `%${patientId}%`)
-              .maybeSingle();
-              
-            if (matchedPatient) {
-              patientId = matchedPatient.id;
-            }
-          }
-          
-          const { data: pacienteData, error } = await supabase
+          // O ID pode ser um UUID ou um nome parcial, a lógica de busca no Supabase já trata isso.
+          const { data: pacienteData, error: pacienteError } = await supabase
             .from('pacientes')
             .select('*')
-            .eq('id', patientId)
+            .eq('id', id)
             .maybeSingle();
           
-          if (error || !pacienteData) {
-            toast.error("Paciente não encontrado");
-            navigate("/pacientes");
+          if (pacienteError) {
+            console.error('Error fetching patient data:', pacienteError);
+            toast.error('Erro ao carregar dados do paciente.');
+            setPaciente(null); // Define como null se houver erro
+            setMedicoes([]);
+            setLoading(false);
             return;
-          } else {
-            setPaciente(pacienteData);
+          }
+
+          if (!pacienteData) {
+            toast.error('Paciente não encontrado.');
+            setPaciente(null); // Define como null se não encontrado
+            setMedicoes([]);
+            setLoading(false);
+            // Opcional: redirecionar para página de pacientes ou 404
+            // navigate("/pacientes"); 
+            return;
+          }
+          
+          setPaciente(pacienteData);
+          
+          const { data: medicoesData, error: medicoesError } = await supabase
+            .from('medicoes')
+            .select('*')
+            .eq('paciente_id', pacienteData.id) // Usar o ID real do pacienteData
+            .order('data', { ascending: false });
             
-            const { data: medicoesData, error: medicoesError } = await supabase
-              .from('medicoes')
-              .select('*')
-              .eq('paciente_id', patientId)
-              .order('data', { ascending: false });
-              
-            if (medicoesError) {
-              console.error('Error fetching medicoes:', medicoesError);
-              toast.error('Erro ao carregar medições.');
-            } else {
-              setMedicoes(medicoesData || []);
-            }
+          if (medicoesError) {
+            console.error('Error fetching medicoes:', medicoesError);
+            toast.error('Erro ao carregar medições.');
+            setMedicoes([]); // Define como vazio se houver erro nas medições
+          } else {
+            setMedicoes(medicoesData || []);
           }
         } catch (err) {
-          console.error('Error fetching patient data:', err);
-          toast.error('Erro ao carregar dados do paciente.');
+          console.error('Unexpected error fetching patient data:', err);
+          toast.error('Erro inesperado ao carregar dados do paciente.');
+          setPaciente(null);
+          setMedicoes([]);
         } finally {
           setLoading(false);
         }
@@ -81,122 +84,125 @@ export default function DetalhePaciente() {
     }
     
     fetchData();
-  }, [id, navigate]);
+  }, [id, navigate]); // Adicionado navigate às dependências
   
   if (loading) {
-    return <div className="p-8 flex justify-center">Carregando...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
+      </div>
+    );
   }
   
   if (!paciente) {
-    return <div className="p-8 flex justify-center">Paciente não encontrado</div>;
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-2xl font-semibold mb-4">Paciente não encontrado</h2>
+        <p className="text-muted-foreground mb-6">O paciente que você está procurando não foi encontrado no sistema.</p>
+        <Button onClick={() => navigate("/pacientes")}>Voltar para Pacientes</Button>
+      </div>
+    );
   }
   
   const ultimaMedicao = medicoes.length > 0 ? medicoes[0] : null;
+  
+  const formatarData = (dataString: string) => {
+    if (!dataString) return "N/A";
+    const data = new Date(dataString);
+    // Adicionar verificação para datas inválidas
+    if (isNaN(data.getTime())) return "Data inválida";
+    return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); // Especificar UTC para consistência
+  };
+  
+  const idadeAtual = formatAgeHeader(paciente.data_nascimento);
   
   const handleMedicaoClick = (medicao: any) => {
     setSelectedMedicao(medicao);
     setIsDetailDialogOpen(true);
   };
 
-  const handleEditMedicao = (medicao: any, e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigate(`/pacientes/${id}/medicao/${medicao.id}/editar`);
+  const handleEditFormSuccess = async () => {
+    setIsEditDialogOpen(false);
+    // Re-fetch data to show updated info
+    if (id) {
+      setLoading(true);
+      const { data: updatedPaciente, error } = await supabase
+        .from('pacientes')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (updatedPaciente && !error) setPaciente(updatedPaciente);
+      setLoading(false);
+    }
   };
-
-  // Get patient data and normalize field names
-  const dataNascimento = paciente.dataNascimento || paciente.data_nascimento;
-  const sexo = paciente.sexo || 'M';
-  const responsaveis = paciente.responsaveis || [];
   
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in p-4 md:p-6">
       <PatientHeader 
-        id={id || ""} 
-        nome={paciente.nome} 
-        dataNascimento={dataNascimento} 
-        onEditClick={() => setIsEditDialogOpen(true)} 
+        paciente={paciente}
+        idadeAtual={idadeAtual}
+        formatarData={formatarData}
+        dataNascimento={paciente.data_nascimento}
+        onEditClick={() => setIsEditDialogOpen(true)}
       />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
           <LastMeasurementCard 
-            pacienteId={id || ""} 
-            ultimaMedicao={ultimaMedicao} 
-            dataNascimento={dataNascimento} 
+            paciente={paciente}
+            ultimaMedicao={ultimaMedicao}
+            formatarData={formatarData}
           />
         </div>
         
         <div className="space-y-6">
           <PatientInfoCard 
-            sexo={sexo}
-            dataNascimento={dataNascimento}
-            ultimaMedicaoData={ultimaMedicao?.data}
-            medicationsCount={medicoes.length}
-            responsaveis={responsaveis}
+            paciente={paciente}
+            ultimaMedicao={ultimaMedicao}
+            medicoesCount={medicoes.length}
           />
           
-          <PatientTasks patientId={id || ""} />
+          <PatientTasks patientId={paciente.id || ""} />
         </div>
       </div>
       
       <MeasurementCharts 
-        medicoes={medicoes} 
-        dataNascimento={dataNascimento} 
-        sexoPaciente={sexo} 
+        medicoes={medicoes}
+        dataNascimento={paciente.data_nascimento}
+        sexoPaciente={paciente.sexo}
       />
       
       <MeasurementHistoryTable 
-        medicoes={medicoes} 
-        pacienteDOB={dataNascimento} 
+        medicoes={medicoes}
+        pacienteId={paciente.id}
+        pacienteDataNascimento={paciente.data_nascimento}
+        formatarData={formatarData}
         onMedicaoClick={handleMedicaoClick}
-        onEditClick={handleEditMedicao}
       />
 
-      {/* Dialog for editing patient information */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Editar Paciente</DialogTitle>
+            <DialogTitle>Editar Dados do Paciente</DialogTitle>
           </DialogHeader>
           {paciente && (
             <EditarPacienteForm 
               paciente={paciente} 
-              onSalvar={() => {
-                setIsEditDialogOpen(false);
-                // Refetch data to update UI
-                if (id) {
-                  setLoading(true);
-                  async function refetch() {
-                    const { data: pacienteData, error } = await supabase
-                      .from('pacientes')
-                      .select('*')
-                      .eq('id', id)
-                      .maybeSingle();
-                    if (error) {
-                      toast.error('Erro ao recarregar dados do paciente.');
-                    } else if (pacienteData) {
-                      setPaciente(pacienteData);
-                    }
-                    setLoading(false);
-                  }
-                  refetch();
-                }
-              }}
+              onSuccess={handleEditFormSuccess}
             />
           )}
         </DialogContent>
       </Dialog>
-      
-      {/* Dialog for measurement details */}
+
       {selectedMedicao && (
         <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Detalhes da Medição</DialogTitle>
+              <DialogTitle>Detalhes da Medição - {formatarData(selectedMedicao.data)}</DialogTitle>
             </DialogHeader>
             <MedicaoDetails 
               medicao={selectedMedicao} 
-              pacienteNascimento={dataNascimento} 
+              pacienteNascimento={paciente.data_nascimento}
             />
           </DialogContent>
         </Dialog>

@@ -7,7 +7,6 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
-import { ensureArray } from "@/lib/utils";
 
 interface ResponsavelType {
   nome: string;
@@ -22,7 +21,7 @@ interface PacienteProps {
   data_nascimento?: string;
   idadeEmMeses: number;
   sexo: "M" | "F";
-  responsaveis: ResponsavelType[] | ResponsavelType | null | Json;
+  responsaveis: ResponsavelType[];
   medicoes: any[];
 }
 
@@ -35,39 +34,7 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
   const [nome, setNome] = useState(paciente.nome);
   const [dataNascimento, setDataNascimento] = useState((paciente.dataNascimento || paciente.data_nascimento || '').split('T')[0]);
   const [sexo, setSexo] = useState(paciente.sexo);
-
-  // Process responsaveis data safely
-  const processResponsaveisData = () => {
-    let result: ResponsavelType[] = [];
-    
-    if (paciente.responsaveis) {
-      if (Array.isArray(paciente.responsaveis)) {
-        // Handle array case - validate each item
-        result = paciente.responsaveis.map(resp => ({
-          nome: typeof resp?.nome === 'string' ? resp.nome : '',
-          telefone: typeof resp?.telefone === 'string' ? resp.telefone : '',
-          email: typeof resp?.email === 'string' ? resp.email : ''
-        }));
-      } else if (typeof paciente.responsaveis === 'object' && paciente.responsaveis !== null) {
-        // Handle single object case
-        const resp = paciente.responsaveis as any;
-        result = [{
-          nome: typeof resp?.nome === 'string' ? resp.nome : '',
-          telefone: typeof resp?.telefone === 'string' ? resp.telefone : '',
-          email: typeof resp?.email === 'string' ? resp.email : ''
-        }];
-      }
-    }
-    
-    // If we still have an empty array, add a default empty responsavel
-    if (result.length === 0) {
-      result = [{ nome: '', telefone: '', email: '' }];
-    }
-    
-    return result;
-  };
-  
-  const [responsaveis, setResponsaveis] = useState<ResponsavelType[]>(processResponsaveisData());
+  const [responsaveis, setResponsaveis] = useState<ResponsavelType[]>([...paciente.responsaveis]);
   const [isLoading, setIsLoading] = useState(false);
   
   const handleResponsavelChange = (index: number, field: keyof ResponsavelType, value: string) => {
