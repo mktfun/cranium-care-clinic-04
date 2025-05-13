@@ -19,7 +19,7 @@ export function ensureArray<T>(value: T | T[] | null | undefined | Json, default
   }
   
   if (Array.isArray(value)) {
-    return value;
+    return value as T[];
   }
   
   return [value as T];
