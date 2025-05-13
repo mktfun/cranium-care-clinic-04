@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { formatAge } from "@/lib/age-utils";
-import { getCranialStatus } from "@/lib/cranial-utils";
+import { getCranialStatus, SeverityLevel } from "@/lib/cranial-utils";
 
 interface PacienteCardProps {
   paciente: {
@@ -62,7 +62,7 @@ export function PacienteCard({ paciente }: PacienteCardProps) {
   
   // Get asymmetry type and severity level
   let asymmetryType = "Normal";
-  let severityLevel = "normal";
+  let severityLevel: SeverityLevel = "normal";
   
   if (ultimaMedicao) {
     const cranialIndex = ultimaMedicao.indice_craniano || ultimaMedicao.indiceCraniano || 0;

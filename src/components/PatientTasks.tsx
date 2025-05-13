@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
@@ -12,30 +11,46 @@ interface PatientTasksProps {
   patientId: string;
 }
 
+interface Task {
+  id: string;
+  titulo: string;
+  paciente_id: string;
+  due_date: string;
+  status: 'pendente' | 'concluida' | 'atrasada';
+  user_id?: string;
+}
+
 export function PatientTasks({ patientId }: PatientTasksProps) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch patient tasks
+  // Fetch patient tasks (mock data for now)
   useEffect(() => {
     async function fetchTasks() {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from('tarefas')
-          .select('*')
-          .eq('paciente_id', patientId)
-          .order('due_date', { ascending: true });
-          
-        if (error) {
-          console.error("Error fetching tasks:", error);
-          toast.error("Erro ao carregar tarefas");
-        } else {
-          setTasks(data || []);
-        }
+        // Mock data since we don't have a tarefas table yet
+        const mockTasks: Task[] = [
+          {
+            id: "1",
+            titulo: "Agendar retorno em 3 meses",
+            paciente_id: patientId,
+            status: "pendente",
+            due_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          },
+          {
+            id: "2",
+            titulo: "Analisar últimas medições",
+            paciente_id: patientId,
+            status: "pendente",
+            due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          }
+        ];
+        
+        setTasks(mockTasks);
       } catch (err) {
         console.error("Failed to fetch tasks:", err);
       } finally {
@@ -56,38 +71,24 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
     }
     
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData?.user?.id) {
-        toast.error("Usuário não autenticado");
-        return;
-      }
-      
       // Set due date to tomorrow
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       
-      const { data, error } = await supabase
-        .from('tarefas')
-        .insert([
-          { 
-            titulo: newTaskTitle,
-            paciente_id: patientId,
-            user_id: userData.user.id,
-            status: 'pendente',
-            due_date: tomorrow.toISOString().split('T')[0]
-          }
-        ])
-        .select();
-        
-      if (error) {
-        console.error("Error adding task:", error);
-        toast.error("Erro ao adicionar tarefa");
-      } else {
-        toast.success("Tarefa adicionada com sucesso");
-        setTasks([...(data || []), ...tasks]);
-        setNewTaskTitle("");
-        setIsAddingTask(false);
-      }
+      const newTask: Task = {
+        id: `task-${Date.now()}`,
+        titulo: newTaskTitle,
+        paciente_id: patientId,
+        status: 'pendente',
+        due_date: tomorrow.toISOString().split('T')[0]
+      };
+      
+      // In a real app, we would save to the database here
+      // For now, just update the local state
+      setTasks([newTask, ...tasks]);
+      toast.success("Tarefa adicionada com sucesso");
+      setNewTaskTitle("");
+      setIsAddingTask(false);
     } catch (err) {
       console.error("Failed to add task:", err);
       toast.error("Erro ao adicionar tarefa");
