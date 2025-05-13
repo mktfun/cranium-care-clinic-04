@@ -1,24 +1,20 @@
-
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Check, X, Clock, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, Loader2 } from "lucide-react"; // Removido CheckCircle que não era usado
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { SeverityLevel } from "@/components/StatusBadge";
+// import { toast } from "sonner"; // Removido toast pois não estava sendo usado para erros aqui
+import { getCranialStatus, SeverityLevel } from "@/lib/cranial-utils"; // Importando getCranialStatus
 
 interface Task {
   id: string;
-  paciente_id: string;
-  paciente_nome?: string;
   title: string;
-  description?: string;
-  due_date: string;
-  status: "pendente" | "concluida" | "cancelada";
-  priority: "baixa" | "media" | "alta" | "urgente";
-  tipo?: string;
+  dueDate: string;
+  status: string; // "pending", "completed", etc.
+  patientId: string;
+  patientName: string;
+  responsible?: string; // Tornar opcional, pois pode não vir sempre do backend
 }
 
 export function UrgentTasksCard() {
@@ -27,231 +23,148 @@ export function UrgentTasksCard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchUrgentTasks() {
+    async function fetchTasks() {
       setLoading(true);
+      let urgentTasks: Task[] = [];
       try {
-        // Buscar tarefas urgentes ou de alta prioridade que estão pendentes
-        const { data, error } = await supabase
-          .from('tarefas')
-          .select('*, pacientes(nome)')
-          .in('priority', ['urgente', 'alta'])
-          .eq('status', 'pendente')
-          .order('due_date', { ascending: true })
-          .limit(5);
-          
-        if (error) {
-          console.error("Error fetching urgent tasks:", error);
-          toast.error("Erro ao carregar tarefas urgentes");
+        const { data: pacientesData, error: pacientesError } = await supabase
+          .from("pacientes")
+          .select("id, nome, medicoes(id, data, indice_craniano, cvai)") // Fetching medicoes directly
+          .order("created_at", { ascending: false }); // Ordenar por mais recentes ou outro critério
+
+        if (pacientesError) {
+          console.error("Erro ao buscar pacientes e suas medições:", pacientesError);
+          setTasks([]); // Define como vazio em caso de erro
+          setLoading(false);
           return;
         }
-        
-        // Formatar os dados para incluir o nome do paciente diretamente no objeto de tarefa
-        const formattedTasks = data?.map(task => ({
-          ...task,
-          paciente_nome: task.pacientes?.nome
-        })) || [];
-        
-        setTasks(formattedTasks);
-      } catch (err) {
-        console.error("Unexpected error fetching urgent tasks:", err);
-        toast.error("Erro inesperado ao carregar tarefas");
+
+        if (pacientesData) {
+          const hoje = new Date();
+          const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
+          pacientesData.forEach((paciente: any) => {
+            if (paciente.medicoes && paciente.medicoes.length > 0) {
+              // Ordenar medições do paciente pela data mais recente primeiro
+              const medicoesOrdenadas = [...paciente.medicoes].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+              const ultimaMedicao = medicoesOrdenadas[0];
+              
+              const { severityLevel } = getCranialStatus(ultimaMedicao.indice_craniano || 0, ultimaMedicao.cvai || 0);
+              const dataUltimaMedicao = new Date(ultimaMedicao.data);
+              let proximaAvaliacao = new Date(dataUltimaMedicao);
+
+              switch(severityLevel) {
+                case SeverityLevel.Normal: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 3); break;
+                case SeverityLevel.Leve: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2); break;
+                case SeverityLevel.Moderada: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 1); break;
+                case SeverityLevel.Severa: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 1); break;
+                default: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2); // Padrão de 2 meses
+              }
+              
+              // Considerar tarefa urgente se a próxima avaliação for nos próximos 7 dias ou estiver atrasada
+              const diffTime = proximaAvaliacao.getTime() - inicioHoje.getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+              if (diffDays <= 7) { // Inclui tarefas atrasadas (diffDays negativo) e para os próximos 7 dias
+                urgentTasks.push({
+                  id: `task-reav-${paciente.id}-${ultimaMedicao.id}`,
+                  title: `Reavaliação de ${paciente.nome}`,
+                  dueDate: proximaAvaliacao.toISOString().split("T")[0],
+                  status: "pending",
+                  patientId: paciente.id,
+                  patientName: paciente.nome,
+                  responsible: "Clínica" // Pode ser ajustado se houver um médico responsável pela tarefa
+                });
+              }
+            }
+          });
+          
+          // Ordenar tarefas pela data de vencimento mais próxima
+          urgentTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+          setTasks(urgentTasks.slice(0, 3)); // Limitar a 3 tarefas no card
+        } else {
+          setTasks([]); // Nenhum paciente encontrado
+        }
+
+      } catch (error) {
+        console.error("Erro ao carregar tarefas urgentes:", error);
+        setTasks([]); // Define como vazio em caso de erro genérico
       } finally {
         setLoading(false);
       }
     }
     
-    fetchUrgentTasks();
+    fetchTasks();
   }, []);
-  
-  const getPriorityBadgeVariant = (priority: string): {variant: string, label: string} => {
-    switch (priority) {
-      case "urgente":
-        return { variant: "destructive", label: "Urgente" };
-      case "alta":
-        return { variant: "destructive", label: "Alta" };
-      case "media":
-        return { variant: "default", label: "Média" };
-      case "baixa":
-        return { variant: "outline", label: "Baixa" };
-      default:
-        return { variant: "outline", label: "Normal" };
-    }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    // Adicionar verificação para datas inválidas que podem vir do toISOString
+    if (isNaN(date.getTime())) return "Data inválida";
+    return new Intl.DateTimeFormat("pt-BR", {timeZone: "UTC"}).format(date);
   };
-  
-  const getStatusSeverity = (dueDate: string): { level: string, text: string } => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Midnight today
-    const dueDateTime = new Date(dueDate);
-    dueDateTime.setHours(0, 0, 0, 0); // Midnight due date
-    
-    const diffTime = dueDateTime.getTime() - today.getTime();
-    const diffDays = diffTime / (1000 * 60 * 60 * 24);
-    
-    if (diffDays < 0) {
-      return { level: "severa", text: "Atrasada" };
-    } else if (diffDays === 0) {
-      return { level: "moderada", text: "Hoje" };
-    } else if (diffDays <= 2) {
-      return { level: "leve", text: "Em breve" };
-    } else {
-      return { level: "normal", text: "No prazo" };
-    }
+
+  const handleTaskClick = (patientId: string) => {
+    navigate(`/pacientes/${patientId}`);
   };
-  
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('pt-BR');
-    } catch {
-      return "Data inválida";
-    }
-  };
-  
-  const handleMarkComplete = async (taskId: string) => {
-    try {
-      const { error } = await supabase
-        .from('tarefas')
-        .update({ status: 'concluida' })
-        .eq('id', taskId);
-        
-      if (error) {
-        console.error("Error completing task:", error);
-        toast.error("Erro ao concluir tarefa");
-        return;
-      }
-      
-      // Atualizar o estado local para refletir a mudança
-      setTasks(tasks.filter(task => task.id !== taskId));
-      toast.success("Tarefa concluída com sucesso!");
-    } catch (err) {
-      console.error("Unexpected error completing task:", err);
-      toast.error("Erro inesperado ao concluir tarefa");
-    }
-  };
-  
-  const handleMarkCancelled = async (taskId: string) => {
-    try {
-      const { error } = await supabase
-        .from('tarefas')
-        .update({ status: 'cancelada' })
-        .eq('id', taskId);
-        
-      if (error) {
-        console.error("Error cancelling task:", error);
-        toast.error("Erro ao cancelar tarefa");
-        return;
-      }
-      
-      // Atualizar o estado local para refletir a mudança
-      setTasks(tasks.filter(task => task.id !== taskId));
-      toast.success("Tarefa cancelada com sucesso!");
-    } catch (err) {
-      console.error("Unexpected error cancelling task:", err);
-      toast.error("Erro inesperado ao cancelar tarefa");
-    }
+
+  const handleViewAllTasks = () => {
+    // Idealmente, navegar para uma página de tarefas que também use lógica real
+    // Por agora, pode ser a página de notificações que lista tarefas também
+    navigate("/notificacoes"); 
   };
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center">
-          <Clock className="h-5 w-5 mr-2 text-amber-500" />
-          Tarefas Urgentes
-        </CardTitle>
-        <CardDescription>Tarefas que precisam de atenção imediata</CardDescription>
+    <Card className="h-full flex flex-col">
+      <CardHeader>
+        <CardTitle className="text-lg">Tarefas Urgentes</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4 flex-grow flex flex-col justify-between">
         {loading ? (
-          <div className="text-center text-muted-foreground py-6">Carregando tarefas...</div>
-        ) : tasks.length === 0 ? (
-          <div className="text-center text-muted-foreground py-6">
-            Nenhuma tarefa urgente pendente
+          <div className="flex justify-center items-center h-full">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : tasks.length > 0 ? (
+          <div className="space-y-3">
+            {tasks.map(task => (
+              <div 
+                key={task.id}
+                onClick={() => handleTaskClick(task.patientId)}
+                className="p-3 border rounded-md hover:bg-muted/10 cursor-pointer transition-colors dark:border-gray-700 dark:hover:bg-gray-700/50"
+              >
+                <h4 className="font-medium text-sm text-card-foreground dark:text-gray-200">{task.title}</h4>
+                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground dark:text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>{formatDate(task.dueDate)}</span>
+                  </div>
+                  {task.responsible && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>{task.responsible}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="space-y-4">
-            {tasks.map((task) => {
-              const status = getStatusSeverity(task.due_date);
-              const priority = getPriorityBadgeVariant(task.priority);
-              
-              return (
-                <div 
-                  key={task.id} 
-                  className="border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/pacientes/${task.paciente_id}`)}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1 mr-4">
-                      <h4 className="font-medium">{task.title}</h4>
-                      {task.paciente_nome && (
-                        <div className="text-sm text-muted-foreground">
-                          Paciente: {task.paciente_nome}
-                        </div>
-                      )}
-                    </div>
-                    <Badge variant={priority.variant as any}>{priority.label}</Badge>
-                  </div>
-                  
-                  <div className="flex justify-between items-center mt-3">
-                    <div className="flex items-center gap-2">
-                      <Badge 
-                        variant={status.level === "normal" ? "outline" : "secondary"}
-                        className={`${status.level === "severa" ? "bg-red-500 hover:bg-red-500/90 text-white" : ""}`}
-                      >
-                        {status.text}: {formatDate(task.due_date)}
-                      </Badge>
-                      {task.tipo && (
-                        <Badge variant="outline">{task.tipo}</Badge>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-1">
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkComplete(task.id);
-                        }}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkCancelled(task.id);
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-7 w-7"
-                        onClick={() => navigate(`/tarefas/${task.id}`)}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            
-            <div className="text-center pt-2">
-              <Button
-                variant="outline"
-                onClick={() => navigate("/tarefas")}
-              >
-                Ver todas tarefas
-              </Button>
-            </div>
+          <div className="text-center py-4 text-muted-foreground flex-grow flex flex-col justify-center items-center">
+            <Calendar className="h-10 w-10 mb-2 text-gray-400 dark:text-gray-500" />
+            <p>Nenhuma tarefa urgente no momento.</p>
           </div>
         )}
+        <div className="pt-2 mt-auto">
+          <Button 
+            variant="outline"
+            className="w-full text-sm dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+            onClick={handleViewAllTasks}
+          >
+            Ver todas as tarefas
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
 }
+

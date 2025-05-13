@@ -24,14 +24,10 @@ export function MedicaoDetails({
   // Calcular idade exata na data da medição
   const idadeNaMedicao = formatAge(pacienteNascimento, medicao.data);
   
-  // Obter índice craniano e CVAI da medição
-  const indiceCraniano = medicao.indice_craniano || medicao.indiceCraniano || 0;
-  const cvai = medicao.cvai || 0;
-  
   // Obter tipo e severidade da assimetria
   const { asymmetryType, severityLevel } = getCranialStatus(
-    indiceCraniano,
-    cvai
+    medicao.indiceCraniano,
+    medicao.cvai
   );
 
   return (
@@ -65,7 +61,7 @@ export function MedicaoDetails({
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Índice Craniano</div>
-                  <div className="text-lg font-medium">{indiceCraniano}%</div>
+                  <div className="text-lg font-medium">{medicao.indiceCraniano}%</div>
                 </div>
               </div>
               
@@ -73,28 +69,28 @@ export function MedicaoDetails({
               <div className="grid grid-cols-4 gap-4">
                 <div>
                   <div className="text-sm text-muted-foreground">Diagonal D</div>
-                  <div className="text-lg font-medium">{medicao.diagonal_d || medicao.diagonalD} mm</div>
+                  <div className="text-lg font-medium">{medicao.diagonalD} mm</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Diagonal E</div>
-                  <div className="text-lg font-medium">{medicao.diagonal_e || medicao.diagonalE} mm</div>
+                  <div className="text-lg font-medium">{medicao.diagonalE} mm</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Diferença</div>
-                  <div className="text-lg font-medium">{medicao.diferenca_diagonais || medicao.diferencaDiagonais} mm</div>
+                  <div className="text-lg font-medium">{medicao.diferencaDiagonais} mm</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">CVAI</div>
-                  <div className="text-lg font-medium">{cvai}%</div>
+                  <div className="text-lg font-medium">{medicao.cvai}%</div>
                 </div>
               </div>
               
               {/* Perímetro Cefálico (se disponível) */}
-              {(medicao.perimetro_cefalico || medicao.perimetroCefalico) && (
+              {medicao.perimetroCefalico && (
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <div className="text-sm text-muted-foreground">Perímetro Cefálico</div>
-                    <div className="text-lg font-medium">{medicao.perimetro_cefalico || medicao.perimetroCefalico} mm</div>
+                    <div className="text-lg font-medium">{medicao.perimetroCefalico} mm</div>
                   </div>
                 </div>
               )}

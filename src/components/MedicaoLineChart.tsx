@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   LineChart,
@@ -133,7 +134,7 @@ export function MedicaoLineChart({
       return addCvaiReferenceData([...data, ...referencePoints]);
     } else if (tipo === "diagonais") {
       return addDiagonaisReferenceData([...data, ...referencePoints]);
-    } else if (tipo === "perimetro" || tipo === "perimetroCefalico") {
+    } else if (tipo === "perimetro") {
       return addPerimetroReferenceData([...data, ...referencePoints], sexo);
     }
     
@@ -238,7 +239,7 @@ export function MedicaoLineChart({
           tickFormatter={(value) => `${value} mm`}
         />
       );
-    } else if (tipoGrafico === "perimetro" || tipoGrafico === "perimetroCefalico") {
+    } else {
       return (
         <YAxis
           label={{ value: 'Perímetro Cefálico (cm)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
@@ -247,8 +248,6 @@ export function MedicaoLineChart({
         />
       );
     }
-    
-    return <YAxis />;
   };
 
   const renderReferenceAreas = () => {

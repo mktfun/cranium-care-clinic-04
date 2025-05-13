@@ -114,7 +114,7 @@ export default function RelatorioMedicao() {
             .eq("paciente_id", pacienteId) // Garante que a medição pertence ao paciente
             .single();
           if (medicaoEspecificaError || !medicaoDataEspecifica) {
-            toast.warning("Medição específica não encontrada, usando a mais recente.");
+            toast.warn("Medição específica não encontrada, usando a mais recente.");
           } else {
             medicaoAlvo = medicaoDataEspecifica as Medicao;
           }
