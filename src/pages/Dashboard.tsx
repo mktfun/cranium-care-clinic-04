@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -52,6 +53,7 @@ export default function Dashboard() {
   });
   const [carregando, setCarregando] = useState(true);
   const [usuario, setUsuario] = useState<{nome: string} | null>(null);
+  const [alertTrend, setAlertTrend] = useState({ value: 0, isPositive: false });
   
   // Carregar dados reais do banco
   useEffect(() => {
@@ -189,6 +191,82 @@ export default function Dashboard() {
         });
         
         setPacientes(pacientesProcessados);
+
+        // Calcular tendência para pacientes em alerta (severo)
+        // Obter data de um mês atrás
+        const umMesAtras = new Date();
+        umMesAtras.setMonth(umMesAtras.getMonth() - 1);
+        
+        // Filtrar medições do mês atual e do mês passado
+        const medicoesAtuais = medicoesProcessadas.filter(
+          m => new Date(m.data) > umMesAtras
+        );
+        
+        const medicoesMesPassado = medicoesProcessadas.filter(
+          m => {
+            const dataMedicao = new Date(m.data);
+            const doisMesesAtras = new Date(umMesAtras);
+            doisMesesAtras.setMonth(doisMesesAtras.getMonth() - 1);
+            return dataMedicao > doisMesesAtras && dataMedicao <= umMesAtras;
+          }
+        );
+        
+        // Contar pacientes severos em cada período
+        let pacientesAtualmenteSeveros = 0;
+        let pacientesSeverosMesPassado = 0;
+        
+        const pacientesComMedicaoAtual = new Set();
+        const pacientesComMedicaoMesPassado = new Set();
+        
+        // Contar casos severos atuais
+        medicoesAtuais.forEach(medicao => {
+          const { severityLevel } = getCranialStatus(
+            (medicao as any).indice_craniano || 0, 
+            (medicao as any).cvai || 0
+          );
+          
+          if (severityLevel === 'severa' && !pacientesComMedicaoAtual.has(medicao.paciente_id)) {
+            pacientesAtualmenteSeveros++;
+            pacientesComMedicaoAtual.add(medicao.paciente_id);
+          }
+        });
+        
+        // Contar casos severos do mês passado
+        medicoesMesPassado.forEach(medicao => {
+          const { severityLevel } = getCranialStatus(
+            (medicao as any).indice_craniano || 0, 
+            (medicao as any).cvai || 0
+          );
+          
+          if (severityLevel === 'severa' && !pacientesComMedicaoMesPassado.has(medicao.paciente_id)) {
+            pacientesSeverosMesPassado++;
+            pacientesComMedicaoMesPassado.add(medicao.paciente_id);
+          }
+        });
+        
+        // Calcular percentual de variação
+        if (pacientesSeverosMesPassado > 0) {
+          const percentVariacao = Math.round(
+            ((pacientesAtualmenteSeveros - pacientesSeverosMesPassado) / pacientesSeverosMesPassado) * 100
+          );
+          
+          setAlertTrend({
+            value: Math.abs(percentVariacao),
+            isPositive: percentVariacao > 0
+          });
+        } else if (pacientesAtualmenteSeveros > 0) {
+          // Se não tinha casos no mês passado, mas tem agora
+          setAlertTrend({
+            value: 100,
+            isPositive: true
+          });
+        } else {
+          // Sem casos nos dois períodos
+          setAlertTrend({
+            value: 0,
+            isPositive: false
+          });
+        }
         
       } catch (err) {
         console.error("Erro:", err);
@@ -214,13 +292,12 @@ export default function Dashboard() {
 
   const totalPacientes = pacientes.length;
   const medicoesRecentes = medicoes.length;
-  const pacientesComAlerta = statusDistribuicao.moderada + statusDistribuicao.severa;
   
-  // Cálculo de pacientes que precisam de acompanhamento (aqueles com status moderado ou severo)
-  const percentualAcompanhamento = totalPacientes > 0 
-    ? Math.round((pacientesComAlerta / totalPacientes) * 100) 
-    : 0;
-
+  // Pacientes severos (apenas casos severos)
+  const pacientesSeveros = pacientes.filter(
+    p => p.ultimaMedicao?.status === 'severa'
+  ).length;
+  
   // Função para navegar para página de pacientes com filtro
   const navegarParaPacientesComFiltro = (filtroStatus: string) => {
     navigate(`/pacientes?status=${filtroStatus}`);
@@ -304,16 +381,16 @@ export default function Dashboard() {
             icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
           />
         </div>
-        <div onClick={() => navegarParaPacientesComFiltro("alerta")} className="cursor-pointer">
+        <div onClick={() => navegarParaPacientesComFiltro("severa")} className="cursor-pointer">
           <StatsCard 
             title="Pacientes em Alerta"
-            value={pacientesComAlerta}
-            description={`${percentualAcompanhamento}% dos pacientes`}
+            value={pacientesSeveros}
+            description={`Casos severos`}
             icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-            trend={{
-              value: 4,
-              isPositive: false,
-            }}
+            trend={alertTrend.value > 0 ? {
+              value: alertTrend.value,
+              isPositive: !alertTrend.isPositive,
+            } : undefined}
           />
         </div>
       </div>

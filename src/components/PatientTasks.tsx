@@ -4,8 +4,21 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { toast } from "sonner";
-import { Plus, Calendar } from "lucide-react";
+import { Plus, Calendar, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Textarea } from "./ui/textarea";
+import { Label } from "./ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "./ui/dialog";
 
 interface PatientTasksProps {
   patientId: string;
@@ -18,41 +31,52 @@ interface Task {
   due_date: string;
   status: 'pendente' | 'concluida' | 'atrasada';
   user_id?: string;
+  descricao?: string;
 }
 
 export function PatientTasks({ patientId }: PatientTasksProps) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch patient tasks (mock data for now)
+  // Fetch real tasks
   useEffect(() => {
     async function fetchTasks() {
       try {
         setIsLoading(true);
-        // Mock data since we don't have a tarefas table yet
-        const mockTasks: Task[] = [
-          {
-            id: "1",
-            titulo: "Agendar retorno em 3 meses",
-            paciente_id: patientId,
-            status: "pendente",
-            due_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          },
-          {
-            id: "2",
-            titulo: "Analisar últimas medições",
-            paciente_id: patientId,
-            status: "pendente",
-            due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          }
-        ];
         
-        setTasks(mockTasks);
-      } catch (err) {
-        console.error("Failed to fetch tasks:", err);
+        // Get user session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          return;
+        }
+        
+        try {
+          // Check if table exists by querying it
+          const { data, error } = await supabase
+            .from('tarefas')
+            .select('*')
+            .eq('paciente_id', patientId)
+            .order('due_date', { ascending: true });
+            
+          if (error) {
+            console.error("Error fetching tasks:", error);
+            // Table likely doesn't exist, show empty state
+            setTasks([]);
+          } else {
+            // Table exists, set tasks data
+            setTasks(data || []);
+          }
+        } catch (err) {
+          // Handle case where table doesn't exist
+          console.error("Error checking tasks table:", err);
+          setTasks([]);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -62,35 +86,61 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
   }, [patientId]);
   
   // Add new task
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleAddTask = async () => {
     if (!newTaskTitle.trim()) {
       toast.error("O título da tarefa não pode estar vazio");
       return;
     }
     
+    if (!newTaskDueDate) {
+      toast.error("A data de vencimento é obrigatória");
+      return;
+    }
+    
     try {
-      // Set due date to tomorrow
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      // Get user session
+      const { data: { session } } = await supabase.auth.getSession();
       
-      const newTask: Task = {
-        id: `task-${Date.now()}`,
-        titulo: newTaskTitle,
-        paciente_id: patientId,
-        status: 'pendente',
-        due_date: tomorrow.toISOString().split('T')[0]
-      };
+      if (!session?.user) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
       
-      // In a real app, we would save to the database here
-      // For now, just update the local state
-      setTasks([newTask, ...tasks]);
-      toast.success("Tarefa adicionada com sucesso");
-      setNewTaskTitle("");
-      setIsAddingTask(false);
+      // Create task in database if table exists
+      try {
+        const { data, error } = await supabase
+          .from('tarefas')
+          .insert([
+            {
+              titulo: newTaskTitle,
+              descricao: newTaskDescription,
+              paciente_id: patientId,
+              user_id: session.user.id,
+              status: 'pendente',
+              due_date: newTaskDueDate
+            }
+          ])
+          .select();
+          
+        if (error) {
+          // Table may not exist
+          console.error("Error adding task:", error);
+          toast.error("Erro ao adicionar tarefa");
+        } else {
+          // Task added successfully
+          toast.success("Tarefa adicionada com sucesso");
+          setTasks([...(data || []), ...tasks]);
+          setNewTaskTitle("");
+          setNewTaskDescription("");
+          setNewTaskDueDate("");
+          setIsAddingTask(false);
+        }
+      } catch (err) {
+        console.error("Failed to add task:", err);
+        toast.error("Erro ao adicionar tarefa");
+      }
     } catch (err) {
-      console.error("Failed to add task:", err);
+      console.error("Failed to get session:", err);
       toast.error("Erro ao adicionar tarefa");
     }
   };
@@ -100,19 +150,80 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
     return new Date(dateString).toLocaleDateString('pt-BR', options);
   };
 
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>Tarefas</CardTitle>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setIsAddingTask(!isAddingTask)}
-          >
-            <Plus className="h-4 w-4 mr-1" /> 
-            Adicionar
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-1" /> 
+                Adicionar
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Nova Tarefa</DialogTitle>
+                <DialogDescription>
+                  Adicione uma nova tarefa para este paciente.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="title">Título da Tarefa</Label>
+                  <Input
+                    id="title"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    placeholder="Ex: Agendar retorno"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="description">Descrição (opcional)</Label>
+                  <Textarea
+                    id="description"
+                    value={newTaskDescription}
+                    onChange={(e) => setNewTaskDescription(e.target.value)}
+                    placeholder="Detalhes adicionais sobre a tarefa..."
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="dueDate">Data de Vencimento</Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={newTaskDueDate}
+                    onChange={(e) => setNewTaskDueDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    defaultValue={getTomorrowDate()}
+                  />
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancelar
+                  </Button>
+                </DialogClose>
+                <Button type="button" onClick={handleAddTask}>Salvar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
         <CardDescription>
           Tarefas relacionadas a este paciente
@@ -120,40 +231,23 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
       </CardHeader>
       
       <CardContent>
-        {isAddingTask && (
-          <form onSubmit={handleAddTask} className="mb-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Nova tarefa..."
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                className="flex-1"
-              />
-              <Button type="submit">Salvar</Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setIsAddingTask(false);
-                  setNewTaskTitle("");
-                }}
-              >
-                Cancelar
-              </Button>
-            </div>
-          </form>
-        )}
-        
         <div className="space-y-3">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Carregando tarefas...</p>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           ) : tasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma tarefa pendente para este paciente.</p>
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              Nenhuma tarefa pendente para este paciente.
+            </p>
           ) : (
             tasks.map((task) => (
               <div key={task.id} className="border rounded-md p-3 flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium">{task.titulo}</p>
+                  {task.descricao && (
+                    <p className="text-xs text-muted-foreground mt-1">{task.descricao}</p>
+                  )}
                   <div className="flex items-center mt-1">
                     <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">
@@ -176,15 +270,17 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
         </div>
       </CardContent>
       
-      <CardFooter className="pt-0">
-        <Button 
-          variant="link" 
-          className="px-0"
-          onClick={() => navigate(`/tarefas?paciente=${patientId}`)}
-        >
-          Ver todas as tarefas
-        </Button>
-      </CardFooter>
+      {tasks.length > 0 && (
+        <CardFooter className="pt-0">
+          <Button 
+            variant="link" 
+            className="px-0"
+            onClick={() => navigate(`/tarefas?paciente=${patientId}`)}
+          >
+            Ver todas as tarefas
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }

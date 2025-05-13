@@ -28,11 +28,12 @@ interface HeaderProps {
 }
 
 interface Notificacao {
-  id: number;
+  id: string;
   title: string;
   message: string;
-  time: string;
+  created_at: string;
   read: boolean;
+  user_id: string;
 }
 
 interface Usuario {
@@ -51,6 +52,7 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
   const [clinicaNome, setClinicaNome] = useState("CraniumCare");
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [carregandoUsuario, setCarregandoUsuario] = useState(true);
+  const [carregandoNotificacoes, setCarregandoNotificacoes] = useState(true);
   
   // Carregar o usuário autenticado
   useEffect(() => {
@@ -101,7 +103,7 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
     
     carregarUsuario();
     
-    // Carregar notificações
+    // Carregar notificações reais
     carregarNotificacoes();
   }, []);
   
@@ -115,52 +117,118 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
 
   // Carregar notificações
   const carregarNotificacoes = async () => {
-    // Aqui seria implementada a busca de notificações reais do banco
-    // Por enquanto, usamos dados de exemplo
-    
-    const notificacoesExemplo = [
-      { 
-        id: 1, 
-        title: "Nova medição registrada", 
-        message: "A medição de João Silva foi registrada com sucesso.", 
-        time: "Há 2 horas",
-        read: false
-      },
-      { 
-        id: 2, 
-        title: "Lembrete de acompanhamento", 
-        message: "Maria Oliveira precisa de reavaliação hoje.", 
-        time: "Há 5 horas",
-        read: false
-      },
-    ];
-    
-    setNotificacoes(notificacoesExemplo);
-    setNotificacoesNaoLidas(notificacoesExemplo.filter(n => !n.read).length);
+    try {
+      setCarregandoNotificacoes(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        return;
+      }
+      
+      const { data: notificacoesData, error } = await supabase
+        .from('notificacoes')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (error) {
+        console.error("Erro ao carregar notificações:", error);
+        return;
+      }
+      
+      // Handle the case where notificacoes table doesn't exist yet
+      if (notificacoesData) {
+        setNotificacoes(notificacoesData);
+        setNotificacoesNaoLidas(notificacoesData.filter(n => !n.read).length);
+      } else {
+        setNotificacoes([]);
+        setNotificacoesNaoLidas(0);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar notificações:", err);
+    } finally {
+      setCarregandoNotificacoes(false);
+    }
   };
   
   // Marcar notificação como lida
-  const marcarComoLida = (id: number) => {
-    const notificacoesAtualizadas = notificacoes.map(notificacao => {
-      if (notificacao.id === id) {
-        return { ...notificacao, read: true };
+  const marcarComoLida = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notificacoes')
+        .update({ read: true })
+        .eq('id', id);
+        
+      if (error) {
+        console.error("Erro ao marcar notificação como lida:", error);
+        return;
       }
-      return notificacao;
-    });
-    
-    setNotificacoes(notificacoesAtualizadas);
-    setNotificacoesNaoLidas(notificacoesAtualizadas.filter(n => !n.read).length);
+      
+      const notificacoesAtualizadas = notificacoes.map(notificacao => {
+        if (notificacao.id === id) {
+          return { ...notificacao, read: true };
+        }
+        return notificacao;
+      });
+      
+      setNotificacoes(notificacoesAtualizadas);
+      setNotificacoesNaoLidas(notificacoesAtualizadas.filter(n => !n.read).length);
+    } catch (err) {
+      console.error("Erro ao marcar notificação como lida:", err);
+    }
   };
   
   // Marcar todas como lidas
-  const marcarTodasComoLidas = () => {
-    const notificacoesAtualizadas = notificacoes.map(notificacao => ({
-      ...notificacao,
-      read: true
-    }));
+  const marcarTodasComoLidas = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('notificacoes')
+        .update({ read: true })
+        .eq('user_id', session.user.id)
+        .eq('read', false);
+        
+      if (error) {
+        console.error("Erro ao marcar notificações como lidas:", error);
+        return;
+      }
+      
+      const notificacoesAtualizadas = notificacoes.map(notificacao => ({
+        ...notificacao,
+        read: true
+      }));
+      
+      setNotificacoes(notificacoesAtualizadas);
+      setNotificacoesNaoLidas(0);
+    } catch (err) {
+      console.error("Erro ao marcar notificações como lidas:", err);
+    }
+  };
+  
+  // Formatar data relativa (há quanto tempo)
+  const formatarTempoRelativo = (dataString: string) => {
+    const data = new Date(dataString);
+    const agora = new Date();
+    const diferencaMs = agora.getTime() - data.getTime();
     
-    setNotificacoes(notificacoesAtualizadas);
-    setNotificacoesNaoLidas(0);
+    const minutos = Math.floor(diferencaMs / (1000 * 60));
+    const horas = Math.floor(diferencaMs / (1000 * 60 * 60));
+    const dias = Math.floor(diferencaMs / (1000 * 60 * 60 * 24));
+    
+    if (minutos < 60) {
+      return `Há ${minutos} minuto${minutos === 1 ? '' : 's'}`;
+    } else if (horas < 24) {
+      return `Há ${horas} hora${horas === 1 ? '' : 's'}`;
+    } else {
+      return `Há ${dias} dia${dias === 1 ? '' : 's'}`;
+    }
   };
   
   // Get current page name
@@ -290,7 +358,12 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
                 )}
               </div>
               <div className="max-h-80 overflow-auto">
-                {notificacoes.length > 0 ? (
+                {carregandoNotificacoes ? (
+                  <div className="p-4 text-center">
+                    <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                    <p className="text-sm text-muted-foreground mt-2">Carregando notificações...</p>
+                  </div>
+                ) : notificacoes.length > 0 ? (
                   notificacoes.map((notificacao) => (
                     <div 
                       key={notificacao.id} 
@@ -302,7 +375,9 @@ export function Header({ toggleSidebar, sidebarCollapsed, className, title }: He
                     >
                       <div className="font-medium">{notificacao.title}</div>
                       <div className="text-sm text-muted-foreground mt-1">{notificacao.message}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{notificacao.time}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {formatarTempoRelativo(notificacao.created_at)}
+                      </div>
                     </div>
                   ))
                 ) : (
