@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
+import { ensureArray } from "@/lib/utils";
 
 interface ResponsavelType {
   nome: string;
@@ -34,24 +36,38 @@ export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormPro
   const [dataNascimento, setDataNascimento] = useState((paciente.dataNascimento || paciente.data_nascimento || '').split('T')[0]);
   const [sexo, setSexo] = useState(paciente.sexo);
 
-  // Ensure responsaveis is always an array by checking different possible types
-  let initialResponsaveis: ResponsavelType[] = [];
-  
-  if (paciente.responsaveis) {
-    if (Array.isArray(paciente.responsaveis)) {
-      initialResponsaveis = [...paciente.responsaveis];
-    } else if (typeof paciente.responsaveis === 'object') {
-      // If it's a single object, convert to array
-      initialResponsaveis = [paciente.responsaveis as ResponsavelType];
+  // Process responsaveis data safely
+  const processResponsaveisData = () => {
+    let result: ResponsavelType[] = [];
+    
+    if (paciente.responsaveis) {
+      if (Array.isArray(paciente.responsaveis)) {
+        // Handle array case - validate each item
+        result = paciente.responsaveis.map(resp => ({
+          nome: typeof resp?.nome === 'string' ? resp.nome : '',
+          telefone: typeof resp?.telefone === 'string' ? resp.telefone : '',
+          email: typeof resp?.email === 'string' ? resp.email : ''
+        }));
+      } else if (typeof paciente.responsaveis === 'object' && paciente.responsaveis !== null) {
+        // Handle single object case
+        const resp = paciente.responsaveis as any;
+        result = [{
+          nome: typeof resp?.nome === 'string' ? resp.nome : '',
+          telefone: typeof resp?.telefone === 'string' ? resp.telefone : '',
+          email: typeof resp?.email === 'string' ? resp.email : ''
+        }];
+      }
     }
-  }
+    
+    // If we still have an empty array, add a default empty responsavel
+    if (result.length === 0) {
+      result = [{ nome: '', telefone: '', email: '' }];
+    }
+    
+    return result;
+  };
   
-  // If we still have an empty array, add a default empty responsavel
-  if (initialResponsaveis.length === 0) {
-    initialResponsaveis = [{ nome: '', telefone: '', email: '' }];
-  }
-  
-  const [responsaveis, setResponsaveis] = useState<ResponsavelType[]>(initialResponsaveis);
+  const [responsaveis, setResponsaveis] = useState<ResponsavelType[]>(processResponsaveisData());
   const [isLoading, setIsLoading] = useState(false);
   
   const handleResponsavelChange = (index: number, field: keyof ResponsavelType, value: string) => {
