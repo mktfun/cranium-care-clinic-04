@@ -18,21 +18,35 @@ type ToasterToast = ToastProps & {
 
 const toasts: ToasterToast[] = []
 
-function toast({
-  variant = "default",
-  title,
-  description,
-  ...props
-}: Omit<ToasterToast, "id">) {
-  // Map our toast variants to Sonner variants
-  const sonnerVariant = variant === "destructive" ? "error" 
-    : variant === "success" ? "success" 
-    : "default";
+// Esta é a interface que usaremos para chamar o toast
+interface ToastOptions {
+  title?: string;
+  description?: string;
+  variant?: "default" | "destructive" | "success";
+  [key: string]: any;
+}
+
+// Esta função recebe as opções no formato simplificado e as converte para o formato Sonner
+function toast(options: ToastOptions) {
+  const { variant = "default", title, description, ...props } = options;
   
-  return sonnerToast[sonnerVariant](title, {
-    description,
-    ...props,
-  })
+  // Map our toast variants to Sonner variants
+  if (variant === "destructive") {
+    return sonnerToast.error(title, {
+      description,
+      ...props,
+    });
+  } else if (variant === "success") {
+    return sonnerToast.success(title, {
+      description,
+      ...props,
+    });
+  } else {
+    return sonnerToast(title, {
+      description,
+      ...props,
+    });
+  }
 }
 
 export { toast, SonnerToaster as Toaster, toasts }
