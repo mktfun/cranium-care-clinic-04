@@ -77,6 +77,36 @@ export type Database = {
           },
         ]
       }
+      notificacoes: {
+        Row: {
+          created_at: string | null
+          id: string
+          link: string | null
+          message: string
+          read: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          link?: string | null
+          message: string
+          read?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pacientes: {
         Row: {
           created_at: string | null
@@ -109,6 +139,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tarefas: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          due_date: string
+          id: string
+          paciente_id: string
+          responsible: string | null
+          status: string
+          titulo: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          due_date: string
+          id?: string
+          paciente_id: string
+          responsible?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          due_date?: string
+          id?: string
+          paciente_id?: string
+          responsible?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarefas_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       usuarios: {
         Row: {
