@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { Button } from "@/components/ui/button"
@@ -15,9 +16,8 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/use-toast"
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { calculateAsymmetry } from "@/lib/cranial-utils";
+import { useNavigate, useParams } from 'react-router-dom';
+import { getCranialStatus, SeverityLevel } from "@/lib/cranial-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,7 +45,6 @@ import { CalendarIcon } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { SeverityLevel } from "@/lib/cranial-utils";
 
 // Function to convert SeverityLevel to Database status_medicao enum
 function convertSeverityToStatus(severity: SeverityLevel): Database["public"]["Enums"]["status_medicao"] {
@@ -62,6 +61,17 @@ function convertSeverityToStatus(severity: SeverityLevel): Database["public"]["E
     default:
       return "normal"; // Default fallback
   }
+}
+
+// Function to calculate asymmetry - adding this since it's missing in cranial-utils
+function calculateAsymmetry(comprimento: number, largura: number, diagonalDireita: number, diagonalEsquerda: number): number {
+  // Calculate CVAI: (|Diagonal A - Diagonal B| / Diagonal Maior) x 100%
+  const diagonalDifference = Math.abs(diagonalDireita - diagonalEsquerda);
+  const maxDiagonal = Math.max(diagonalDireita, diagonalEsquerda);
+  
+  if (maxDiagonal === 0) return 0; // Avoid division by zero
+  
+  return (diagonalDifference / maxDiagonal) * 100;
 }
 
 const MedicaoPorFotoPage: React.FC = () => {
@@ -82,8 +92,16 @@ const MedicaoPorFotoPage: React.FC = () => {
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const [isManualInput, setIsManualInput] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const router = useRouter();
-  const { data: session } = useSession();
+  const navigate = useNavigate();
+  const params = useParams();
+  const userId = ""; // This should be replaced with your actual auth logic
+
+  useEffect(() => {
+    // If we have a pacienteId in the URL params, use it
+    if (params.id) {
+      setPacienteId(params.id);
+    }
+  }, [params.id]);
 
   const handleCapture = () => {
     if (webcamRef.current) {
@@ -166,7 +184,7 @@ const MedicaoPorFotoPage: React.FC = () => {
     }
   };
 
-  async function saveMedicaoToDatabase(medicaoData) {
+  async function saveMedicaoToDatabase(medicaoData: any) {
     try {
       // Convert severity to proper enum value
       const dbStatus = convertSeverityToStatus(medicaoData.status);
@@ -234,7 +252,7 @@ const MedicaoPorFotoPage: React.FC = () => {
   const confirmSave = async () => {
     setShowConfirmation(false);
 
-    if (!session?.user?.id) {
+    if (!userId) {
       toast({
         title: "Erro!",
         description: "Usuário não autenticado.",
@@ -245,7 +263,7 @@ const MedicaoPorFotoPage: React.FC = () => {
 
     const medicaoData = {
       paciente_id: pacienteId,
-      user_id: session.user.id,
+      user_id: userId,
       data: format(selectedDate, 'yyyy-MM-dd'),
       comprimento: comprimento,
       largura: largura,
@@ -266,7 +284,7 @@ const MedicaoPorFotoPage: React.FC = () => {
         title: "Medição salva com sucesso!",
         variant: "success",
       });
-      router.push('/pacientes');
+      navigate('/pacientes');
     } else {
       toast({
         title: "Erro ao salvar medição!",
@@ -299,6 +317,7 @@ const MedicaoPorFotoPage: React.FC = () => {
               id="pacienteId"
               value={pacienteId}
               onChange={handlePacienteIdChange}
+              disabled={!!params.id}
             />
           </div>
 
