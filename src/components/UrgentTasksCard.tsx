@@ -5,9 +5,45 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Clock, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { Task } from "@/types";
+
+// Mock data to use instead of Supabase queries
+const mockTasks: Task[] = [
+  {
+    id: "1",
+    paciente_id: "patient-1",
+    paciente_nome: "Lucas Silva",
+    title: "Medição craniana",
+    description: "Realizar nova medição e comparar com última avaliação",
+    due_date: "2025-05-16",
+    status: "pendente",
+    priority: "alta",
+    tipo: "Medição"
+  },
+  {
+    id: "2",
+    paciente_id: "patient-2",
+    paciente_nome: "Maria Oliveira",
+    title: "Ajuste do capacete",
+    description: "Verificar adaptação e ajustar conforme necessário",
+    due_date: "2025-05-14",
+    status: "pendente",
+    priority: "urgente",
+    tipo: "Acompanhamento"
+  },
+  {
+    id: "3",
+    paciente_id: "patient-3",
+    paciente_nome: "João Santos",
+    title: "Avaliação de torcicolo",
+    description: "Verificar evolução do torcicolo após 2 semanas de exercícios",
+    due_date: "2025-05-13",
+    status: "pendente",
+    priority: "alta",
+    tipo: "Avaliação"
+  }
+];
 
 export function UrgentTasksCard() {
   const navigate = useNavigate();
@@ -15,46 +51,21 @@ export function UrgentTasksCard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchUrgentTasks() {
+    // Simulate fetching data
+    const fetchUrgentTasks = async () => {
       setLoading(true);
       try {
-        // Since the Supabase types don't include the 'tarefas' table,
-        // we need to use type assertions to work with it
-        const { data, error } = await supabase
-          .from('tarefas')
-          .select('*, pacientes:paciente_id(nome)')
-          .in('priority', ['urgente', 'alta'])
-          .eq('status', 'pendente')
-          .order('due_date', { ascending: true })
-          .limit(5) as any;
-        
-        if (error) {
-          console.error("Error fetching urgent tasks:", error);
-          toast.error("Erro ao carregar tarefas urgentes");
-          return;
-        }
-        
-        // Transform the data to match our Task interface
-        const formattedTasks = (data || []).map((task: any) => ({
-          id: task.id,
-          paciente_id: task.paciente_id,
-          paciente_nome: task.pacientes?.nome,
-          title: task.title,
-          description: task.description,
-          due_date: task.due_date,
-          status: task.status,
-          priority: task.priority,
-          tipo: task.tipo
-        })) as Task[];
-        
-        setTasks(formattedTasks);
+        // Using mock data instead of supabase query
+        setTimeout(() => {
+          setTasks(mockTasks);
+          setLoading(false);
+        }, 500);
       } catch (err) {
         console.error("Unexpected error fetching urgent tasks:", err);
         toast.error("Erro inesperado ao carregar tarefas");
-      } finally {
         setLoading(false);
       }
-    }
+    };
     
     fetchUrgentTasks();
   }, []);
@@ -105,18 +116,7 @@ export function UrgentTasksCard() {
   
   const handleMarkComplete = async (taskId: string) => {
     try {
-      const { error } = await supabase
-        .from('tarefas')
-        .update({ status: 'concluida' })
-        .eq('id', taskId) as any;
-        
-      if (error) {
-        console.error("Error completing task:", error);
-        toast.error("Erro ao concluir tarefa");
-        return;
-      }
-      
-      // Atualizar o estado local para refletir a mudança
+      // Remove from list instead of update in DB
       setTasks(tasks.filter(task => task.id !== taskId));
       toast.success("Tarefa concluída com sucesso!");
     } catch (err) {
@@ -127,18 +127,7 @@ export function UrgentTasksCard() {
   
   const handleMarkCancelled = async (taskId: string) => {
     try {
-      const { error } = await supabase
-        .from('tarefas')
-        .update({ status: 'cancelada' })
-        .eq('id', taskId) as any;
-        
-      if (error) {
-        console.error("Error cancelling task:", error);
-        toast.error("Erro ao cancelar tarefa");
-        return;
-      }
-      
-      // Atualizar o estado local para refletir a mudança
+      // Remove from list instead of update in DB
       setTasks(tasks.filter(task => task.id !== taskId));
       toast.success("Tarefa cancelada com sucesso!");
     } catch (err) {
