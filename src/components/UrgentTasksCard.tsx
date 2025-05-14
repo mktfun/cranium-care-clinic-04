@@ -18,23 +18,24 @@ export function UrgentTasksCard() {
     async function fetchUrgentTasks() {
       setLoading(true);
       try {
-        // Use type assertion to bypass type checking for Supabase tables
-        const response = await supabase
+        // Since the Supabase types don't include the 'tarefas' table,
+        // we need to use type assertions to work with it
+        const { data, error } = await supabase
           .from('tarefas')
           .select('*, pacientes:paciente_id(nome)')
           .in('priority', ['urgente', 'alta'])
           .eq('status', 'pendente')
           .order('due_date', { ascending: true })
-          .limit(5);
+          .limit(5) as any;
         
-        if (response.error) {
-          console.error("Error fetching urgent tasks:", response.error);
+        if (error) {
+          console.error("Error fetching urgent tasks:", error);
           toast.error("Erro ao carregar tarefas urgentes");
           return;
         }
         
         // Transform the data to match our Task interface
-        const formattedTasks = (response.data || []).map(task => ({
+        const formattedTasks = (data || []).map((task: any) => ({
           id: task.id,
           paciente_id: task.paciente_id,
           paciente_nome: task.pacientes?.nome,
@@ -104,13 +105,13 @@ export function UrgentTasksCard() {
   
   const handleMarkComplete = async (taskId: string) => {
     try {
-      const response = await supabase
+      const { error } = await supabase
         .from('tarefas')
         .update({ status: 'concluida' })
-        .eq('id', taskId);
+        .eq('id', taskId) as any;
         
-      if (response.error) {
-        console.error("Error completing task:", response.error);
+      if (error) {
+        console.error("Error completing task:", error);
         toast.error("Erro ao concluir tarefa");
         return;
       }
@@ -126,13 +127,13 @@ export function UrgentTasksCard() {
   
   const handleMarkCancelled = async (taskId: string) => {
     try {
-      const response = await supabase
+      const { error } = await supabase
         .from('tarefas')
         .update({ status: 'cancelada' })
-        .eq('id', taskId);
+        .eq('id', taskId) as any;
         
-      if (response.error) {
-        console.error("Error cancelling task:", response.error);
+      if (error) {
+        console.error("Error cancelling task:", error);
         toast.error("Erro ao cancelar tarefa");
         return;
       }

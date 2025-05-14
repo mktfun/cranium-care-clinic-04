@@ -1,84 +1,32 @@
 
-import { AsymmetryType, SeverityLevel } from "@/types";
+// Re-export SeverityLevel from types
+export { type AsymmetryType, type SeverityLevel } from '@/types';
 
-// Function to determine asymmetry type based on measurements
-export function determineAsymmetryType(
-  cranialIndex: number, 
-  cvai: number
-): AsymmetryType {
-  const hasBrachy = cranialIndex >= 81;
-  const hasDolich = cranialIndex <= 76;
-  const hasPlagi = cvai >= 3.5;
+// Original functionality remains
+export function getCranialStatus(indiceCraniano: number = 0, cvai: number = 0): { asymmetryType: AsymmetryType, severityLevel: SeverityLevel } {
+  // Get asymmetry type
+  let asymmetryType: AsymmetryType = "Normal";
   
-  if (hasBrachy && hasPlagi) {
-    return "Misto";
-  } else if (hasDolich && hasPlagi) {
-    return "Misto";
-  } else if (hasBrachy) {
-    return "Braquicefalia";
-  } else if (hasDolich) {
-    return "Dolicocefalia";
-  } else if (hasPlagi) {
-    return "Plagiocefalia";
-  } else {
-    return "Normal";
-  }
-}
-
-// Function to determine severity level based on asymmetry type and measurements
-export function determineSeverityLevel(
-  asymmetryType: AsymmetryType, 
-  cranialIndex: number, 
-  cvai: number
-): SeverityLevel {
-  if (asymmetryType === "Normal") {
-    return "normal";
+  if (indiceCraniano > 81 && cvai < 3.5) {
+    asymmetryType = "Braquicefalia";
+  } else if (indiceCraniano < 75 && cvai < 3.5) {
+    asymmetryType = "Dolicocefalia";
+  } else if (cvai >= 3.5 && indiceCraniano < 81 && indiceCraniano > 75) {
+    asymmetryType = "Plagiocefalia";
+  } else if (cvai >= 3.5 && (indiceCraniano >= 81 || indiceCraniano <= 75)) {
+    asymmetryType = "Misto";
   }
   
-  // For Brachy/Dolicocefalia
-  if (asymmetryType === "Braquicefalia") {
-    if (cranialIndex >= 90) return "severa";
-    if (cranialIndex >= 85) return "moderada";
-    return "leve";
+  // Get severity level
+  let severityLevel: SeverityLevel = "normal";
+  
+  if (cvai >= 8.75 || indiceCraniano >= 90 || indiceCraniano <= 70) {
+    severityLevel = "severa";
+  } else if (cvai >= 6.25 || indiceCraniano >= 85 || indiceCraniano <= 72) {
+    severityLevel = "moderada";
+  } else if (cvai >= 3.5 || indiceCraniano >= 81 || indiceCraniano <= 75) {
+    severityLevel = "leve";
   }
   
-  if (asymmetryType === "Dolicocefalia") {
-    if (cranialIndex <= 70) return "severa";
-    if (cranialIndex <= 73) return "moderada";
-    return "leve";
-  }
-  
-  // For Plagiocefalia
-  if (asymmetryType === "Plagiocefalia" || asymmetryType === "Misto") {
-    if (cvai >= 8.5) return "severa";
-    if (cvai >= 6.25) return "moderada";
-    return "leve";
-  }
-  
-  return "leve"; // Default fallback
-}
-
-// Combine type and severity for display
-export function formatAsymmetryStatus(asymmetryType: AsymmetryType, severityLevel: SeverityLevel): string {
-  if (asymmetryType === "Normal") {
-    return "Normal";
-  }
-  return `${asymmetryType} (${severityLevel === 'normal' ? 'leve' : severityLevel})`;
-}
-
-// All-in-one function to get formatted status
-export function getCranialStatus(cranialIndex: number, cvai: number): {
-  asymmetryType: AsymmetryType;
-  severityLevel: SeverityLevel;
-  formattedStatus: string;
-} {
-  const asymmetryType = determineAsymmetryType(cranialIndex, cvai);
-  const severityLevel = determineSeverityLevel(asymmetryType, cranialIndex, cvai);
-  const formattedStatus = formatAsymmetryStatus(asymmetryType, severityLevel);
-  
-  return {
-    asymmetryType,
-    severityLevel,
-    formattedStatus
-  };
+  return { asymmetryType, severityLevel };
 }
