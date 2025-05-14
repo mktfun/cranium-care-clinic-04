@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,11 +31,9 @@ export function UrgentTasksCard() {
             paciente_id,
             due_date,
             status,
-            priority:status,
-            tipo,
             pacientes(nome)
           `)
-          .or(`priority.eq.urgente,priority.eq.alta`)
+          .or(`status.eq.urgente,status.eq.alta`)
           .eq('status', 'pendente')
           .lte('due_date', formattedDate)
           .order('due_date', { ascending: true })
@@ -56,8 +53,8 @@ export function UrgentTasksCard() {
           description: item.descricao || "",
           due_date: item.due_date,
           status: item.status,
-          priority: item.priority || "alta",
-          tipo: item.tipo || "Tarefa"
+          priority: item.status || "alta", // Using status as priority since that's what we queried
+          tipo: "Tarefa" // Default tipo since the column might not exist
         })) || [];
 
         setTasks(formattedTasks);

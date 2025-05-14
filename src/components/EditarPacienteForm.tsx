@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -18,7 +19,7 @@ const formSchema = z.object({
     return !isNaN(parsedDate.getTime());
   }, { message: "Data de nascimento inválida" }),
   sexo: z.string().min(1, { message: "Selecione o sexo" }),
-  responsaveis: z.string().optional(),
+  responsaveis: z.any().optional(), // Changed to any to accommodate both string and array
 });
 
 export interface EditarPacienteFormProps {
@@ -41,11 +42,19 @@ export function EditarPacienteForm({ paciente, onSuccess }: EditarPacienteFormPr
 
   useEffect(() => {
     if (paciente) {
+      // Format responsaveis for display if it's an array
+      let responsaveisValue = paciente.responsaveis;
+      if (Array.isArray(responsaveisValue)) {
+        responsaveisValue = responsaveisValue
+          .map(r => `${r.nome}${r.telefone ? ` - Tel: ${r.telefone}` : ''}${r.email ? ` - Email: ${r.email}` : ''}${r.parentesco ? ` (${r.parentesco})` : ''}`)
+          .join('\n');
+      }
+
       form.reset({
         nome: paciente.nome || "",
         data_nascimento: paciente.data_nascimento || "",
         sexo: paciente.sexo || "",
-        responsaveis: paciente.responsaveis || "",
+        responsaveis: responsaveisValue || "",
       });
     }
   }, [paciente, form]);

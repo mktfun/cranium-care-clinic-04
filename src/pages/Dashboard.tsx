@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +9,7 @@ import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 import { UrgentTasksCard } from "@/components/UrgentTasksCard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { AsymmetryType, SeverityLevel, Paciente } from "@/types";
+import { Paciente, AsymmetryType, SeverityLevel } from "@/types";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { Link } from "react-router-dom";
 import { MobileChartView } from "@/components/MobileChartView";
@@ -185,7 +184,7 @@ export default function Dashboard() {
         setStatusDistribuicaoGeral(distribuicaoGeral);
 
         // Processar pacientes e suas últimas medições para cards de destaque
-        const pacientesProcessados = pacientesData.map(paciente => {
+        const pacientesProcessados: Paciente[] = pacientesData.map(paciente => {
           const medicoesDoPaciente = medicoesProcessadas
             .filter(m => m.paciente_id === paciente.id)
             .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
@@ -215,7 +214,7 @@ export default function Dashboard() {
             idadeEmMeses,
             dataNascimento: paciente.data_nascimento,
             ultimaMedicao: ultimaMedicaoProcessada
-          } as Paciente;
+          };
         });
         
         setPacientes(pacientesProcessados);

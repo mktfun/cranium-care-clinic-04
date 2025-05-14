@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -45,7 +44,15 @@ export default function DetalhePaciente() {
           }
 
           if (pacienteData) {
-            setPaciente(pacienteData);
+            // Convert database format to our Paciente type
+            const pacienteFormatted: Paciente = {
+              ...pacienteData,
+              dataNascimento: pacienteData.data_nascimento,
+              // Calculate age in months
+              idadeEmMeses: calculateAgeInMonths(pacienteData.data_nascimento)
+            };
+            
+            setPaciente(pacienteFormatted);
             
             // Fetch patient's medical record
             const { data: prontuarioData, error: prontuarioError } = await supabase
@@ -84,6 +91,13 @@ export default function DetalhePaciente() {
 
     fetchPaciente();
   }, [id]);
+
+  const calculateAgeInMonths = (birthDate: string): number => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    return ((today.getFullYear() - birth.getFullYear()) * 12) + 
+           (today.getMonth() - birth.getMonth());
+  };
 
   if (loading) {
     return (
