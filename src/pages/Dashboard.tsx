@@ -212,7 +212,7 @@ export default function Dashboard() {
           return {
             ...paciente,
             dataNascimento: paciente.data_nascimento, // Garantindo que este campo esteja presente
-            idadeEmMeses,
+            idadeEmMeses: idadeEmMeses,  // Explicitly assign as a number
             ultimaMedicao: ultimaMedicaoProcessada
           };
         });

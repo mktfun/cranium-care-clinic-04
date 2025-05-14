@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,9 +59,24 @@ export default function Relatorios() {
         if (error) {
           console.error("Erro ao buscar pacientes:", error);
           toast.error("Erro ao buscar pacientes.");
+          return;
         }
+        
+        // Transform the data to match Paciente interface
+        const pacientesProcessados = (data || []).map(paciente => {
+          const hoje = new Date();
+          const dataNascimento = new Date(paciente.data_nascimento);
+          const idadeEmMeses = ((hoje.getFullYear() - dataNascimento.getFullYear()) * 12) +
+                             (hoje.getMonth() - dataNascimento.getMonth());
+          
+          return {
+            ...paciente,
+            dataNascimento: paciente.data_nascimento,
+            idadeEmMeses: idadeEmMeses
+          };
+        });
 
-        setPacientes(data || []);
+        setPacientes(pacientesProcessados);
       } catch (error) {
         console.error("Erro inesperado:", error);
         toast.error("Erro ao buscar pacientes.");

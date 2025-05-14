@@ -19,6 +19,8 @@ const mockConsultas: Consulta[] = [
     id: "1",
     paciente_id: "patient-1",
     data: "2025-05-10T00:00:00",
+    tipo: "Avaliação",
+    descricao: "Avaliação inicial de fisioterapia",
     profissional: "Dr. Ana Silva",
     especialidade: "Fisioterapia",
     motivo: "Avaliação inicial",
@@ -32,6 +34,8 @@ const mockConsultas: Consulta[] = [
     id: "2",
     paciente_id: "patient-1",
     data: "2025-05-01T00:00:00",
+    tipo: "Consulta",
+    descricao: "Consulta de acompanhamento pediátrico",
     profissional: "Dr. Carlos Mendes",
     especialidade: "Pediatria",
     motivo: "Consulta de rotina",
@@ -50,6 +54,8 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
   const [addingNew, setAddingNew] = useState(false);
   const [currentConsulta, setCurrentConsulta] = useState<Partial<Consulta>>({
     data: new Date().toISOString().split('T')[0],
+    tipo: "Consulta",
+    descricao: "",
     profissional: "",
     especialidade: "",
     motivo: "",
@@ -90,6 +96,8 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
     setEditingId(consulta.id);
     setCurrentConsulta({
       data: consulta.data ? consulta.data.split('T')[0] : new Date().toISOString().split('T')[0],
+      tipo: consulta.tipo || "Consulta",
+      descricao: consulta.descricao || "Consulta médica",
       profissional: consulta.profissional || "",
       especialidade: consulta.especialidade || "",
       motivo: consulta.motivo || "",
@@ -105,6 +113,8 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
     setEditingId(null);
     setCurrentConsulta({
       data: new Date().toISOString().split('T')[0],
+      tipo: "Consulta",
+      descricao: "",
       profissional: "",
       especialidade: "",
       motivo: "",
@@ -126,6 +136,8 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
           id: `new-${Date.now()}`,
           paciente_id: pacienteId,
           data: currentConsulta.data || new Date().toISOString(),
+          tipo: currentConsulta.tipo || "Consulta",
+          descricao: currentConsulta.descricao || "Consulta médica",
           profissional: currentConsulta.profissional || "",
           especialidade: currentConsulta.especialidade,
           motivo: currentConsulta.motivo,
@@ -146,6 +158,8 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
             return {
               ...c,
               data: currentConsulta.data || c.data,
+              tipo: currentConsulta.tipo || c.tipo,
+              descricao: currentConsulta.descricao || c.descricao,
               profissional: currentConsulta.profissional || c.profissional,
               especialidade: currentConsulta.especialidade,
               motivo: currentConsulta.motivo,
