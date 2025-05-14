@@ -94,14 +94,14 @@ const MedicaoPorFotoPage: React.FC = () => {
       if (pacienteIdParam) {
         const { data, error } = await supabase
           .from("pacientes")
-          .select("nome_completo")
+          .select("nome")
           .eq("id", pacienteIdParam)
           .single();
         if (error) {
           console.error("Erro ao buscar nome do paciente:", error);
           setPacienteNome("Paciente não encontrado");
         } else if (data) {
-          setPacienteNome(data.nome_completo);
+          setPacienteNome(data.nome);
         }
       }
     };

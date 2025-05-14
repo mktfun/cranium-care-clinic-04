@@ -1,91 +1,53 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, ChevronLeft } from "lucide-react";
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
-import { MedicaoDetails } from "@/components/MedicaoDetails";
-import { PatientTasks } from "@/components/PatientTasks";
-import { formatAgeHeader } from "@/lib/age-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { PatientHeader } from "@/components/patient/PatientHeader";
-import { LastMeasurementCard } from "@/components/patient/LastMeasurementCard";
-import { PatientInfoCard } from "@/components/patient/PatientInfoCard";
-import { MeasurementCharts } from "@/components/patient/MeasurementCharts";
-import { MeasurementHistoryTable } from "@/components/patient/MeasurementHistoryTable";
+import { Paciente } from "@/types";
 
 export default function DetalhePaciente() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [paciente, setPaciente] = useState<any>(null);
-  const [medicoes, setMedicoes] = useState<any[]>([]);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedMedicao, setSelectedMedicao] = useState<any>(null);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  
+
   useEffect(() => {
-    async function fetchData() {
+    async function fetchPaciente() {
       if (id) {
         setLoading(true);
         try {
-          // O ID pode ser um UUID ou um nome parcial, a lógica de busca no Supabase já trata isso.
           const { data: pacienteData, error: pacienteError } = await supabase
             .from('pacientes')
             .select('*')
             .eq('id', id)
-            .maybeSingle();
-          
+            .single();
+
           if (pacienteError) {
-            console.error('Error fetching patient data:', pacienteError);
-            toast.error('Erro ao carregar dados do paciente.');
-            setPaciente(null); // Define como null se houver erro
-            setMedicoes([]);
-            setLoading(false);
-            return;
+            console.error("Erro ao carregar paciente:", pacienteError);
+            toast.error("Erro ao carregar dados do paciente.");
           }
 
-          if (!pacienteData) {
-            toast.error('Paciente não encontrado.');
-            setPaciente(null); // Define como null se não encontrado
-            setMedicoes([]);
-            setLoading(false);
-            // Opcional: redirecionar para página de pacientes ou 404
-            // navigate("/pacientes"); 
-            return;
+          if (pacienteData) {
+            setPaciente(pacienteData);
           }
-          
-          setPaciente(pacienteData);
-          
-          const { data: medicoesData, error: medicoesError } = await supabase
-            .from('medicoes')
-            .select('*')
-            .eq('paciente_id', pacienteData.id) // Usar o ID real do pacienteData
-            .order('data', { ascending: false });
-            
-          if (medicoesError) {
-            console.error('Error fetching medicoes:', medicoesError);
-            toast.error('Erro ao carregar medições.');
-            setMedicoes([]); // Define como vazio se houver erro nas medições
-          } else {
-            setMedicoes(medicoesData || []);
-          }
-        } catch (err) {
-          console.error('Unexpected error fetching patient data:', err);
-          toast.error('Erro inesperado ao carregar dados do paciente.');
-          setPaciente(null);
-          setMedicoes([]);
+        } catch (error) {
+          console.error("Erro ao buscar paciente:", error);
+          toast.error("Erro ao buscar dados do paciente.");
         } finally {
           setLoading(false);
         }
       }
     }
-    
-    fetchData();
-  }, [id, navigate]); // Adicionado navigate às dependências
-  
+
+    fetchPaciente();
+  }, [id]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -93,7 +55,7 @@ export default function DetalhePaciente() {
       </div>
     );
   }
-  
+
   if (!paciente) {
     return (
       <div className="p-8 text-center">
@@ -103,110 +65,72 @@ export default function DetalhePaciente() {
       </div>
     );
   }
-  
-  const ultimaMedicao = medicoes.length > 0 ? medicoes[0] : null;
-  
-  const formatarData = (dataString: string) => {
-    if (!dataString) return "N/A";
-    const data = new Date(dataString);
-    // Adicionar verificação para datas inválidas
-    if (isNaN(data.getTime())) return "Data inválida";
-    return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); // Especificar UTC para consistência
-  };
-  
-  const idadeAtual = formatAgeHeader(paciente.data_nascimento);
-  
-  const handleMedicaoClick = (medicao: any) => {
-    setSelectedMedicao(medicao);
-    setIsDetailDialogOpen(true);
-  };
 
-  const handleEditFormSuccess = async () => {
-    setIsEditDialogOpen(false);
-    // Re-fetch data to show updated info
-    if (id) {
-      setLoading(true);
-      const { data: updatedPaciente, error } = await supabase
-        .from('pacientes')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (updatedPaciente && !error) setPaciente(updatedPaciente);
-      setLoading(false);
+  const formatarData = (data: string) => {
+    try {
+      const parsedDate = new Date(data);
+      return format(parsedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    } catch (error) {
+      console.error("Erro ao formatar a data:", error);
+      return "Data inválida";
     }
   };
-  
+
   return (
     <div className="space-y-6 animate-fade-in p-4 md:p-6">
-      <PatientHeader 
-        paciente={paciente}
-        idadeAtual={idadeAtual}
-        formatarData={formatarData}
-        dataNascimento={paciente.data_nascimento}
-        onEditClick={() => setIsEditDialogOpen(true)}
-      />
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <LastMeasurementCard 
-            paciente={paciente}
-            ultimaMedicao={ultimaMedicao}
-            formatarData={formatarData}
-          />
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/pacientes")}>
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h2 className="text-3xl font-bold">{paciente.nome}</h2>
+            <p className="text-muted-foreground">
+              Cadastrado em: {formatarData(paciente.created_at || '')}
+            </p>
+          </div>
         </div>
-        
-        <div className="space-y-6">
-          <PatientInfoCard 
-            paciente={paciente}
-            ultimaMedicao={ultimaMedicao}
-            medicoesCount={medicoes.length}
-          />
-          
-          <PatientTasks patientId={paciente.id || ""} />
-        </div>
+        <Button onClick={() => navigate(`/pacientes/${id}/prontuario`)} className="bg-turquesa hover:bg-turquesa/90">
+          Ver Prontuário
+        </Button>
       </div>
-      
-      <MeasurementCharts 
-        medicoes={medicoes}
-        dataNascimento={paciente.data_nascimento}
-        sexoPaciente={paciente.sexo}
-      />
-      
-      <MeasurementHistoryTable 
-        medicoes={medicoes}
-        pacienteId={paciente.id}
-        pacienteDataNascimento={paciente.data_nascimento}
-        formatarData={formatarData}
-        onMedicaoClick={handleMedicaoClick}
-      />
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Editar Dados do Paciente</DialogTitle>
-          </DialogHeader>
-          {paciente && (
-            <EditarPacienteForm 
-              paciente={paciente} 
-              onSuccess={handleEditFormSuccess}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <Separator />
 
-      {selectedMedicao && (
-        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Detalhes da Medição - {formatarData(selectedMedicao.data)}</DialogTitle>
-            </DialogHeader>
-            <MedicaoDetails 
-              medicao={selectedMedicao} 
-              pacienteNascimento={paciente.data_nascimento}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Detalhes do Paciente */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações do Paciente</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Nome Completo</p>
+              <p className="text-lg">{paciente.nome}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Data de Nascimento</p>
+              <p className="text-lg">{formatarData(paciente.data_nascimento)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Sexo</p>
+              <p className="text-lg">{paciente.sexo}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Editar Paciente</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EditarPacienteForm
+            paciente={paciente}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

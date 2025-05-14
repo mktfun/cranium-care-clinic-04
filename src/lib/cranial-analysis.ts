@@ -1,16 +1,6 @@
+import { AsymmetryType, SeverityLevel } from "@/types";
 
-// Tipos de assimetria
-export type AsymmetryType = 
-  | "Braquicefalia" 
-  | "Dolicocefalia" 
-  | "Plagiocefalia" 
-  | "Assimetria Mista" 
-  | "Normal";
-
-// Níveis de severidade
-export type SeverityLevel = "normal" | "leve" | "moderada" | "severa";
-
-// Interfaces para os dados de medição
+// Interfaces for the measurement data
 export interface CranialMeasurement {
   comprimento: number;
   largura: number;
@@ -21,48 +11,26 @@ export interface CranialMeasurement {
   data: string;
 }
 
-// Interface para a classificação da assimetria
+// Interface for the classification of the asymmetry
 export interface AsymmetryClassification {
   type: AsymmetryType;
   severity: SeverityLevel;
   description: string;
 }
 
-// Função para calcular o índice craniano
+// Function to calculate the cranial index
 export function calculateCranialIndex(width: number, length: number): number {
   return (width / length) * 100;
 }
 
-// Função para calcular o CVAI (Cranial Vault Asymmetry Index)
+// Function to calculate the CVAI (Cranial Vault Asymmetry Index)
 export function calculateCVAI(diagonalA: number, diagonalB: number): number {
   const shortDiagonal = Math.min(diagonalA, diagonalB);
   const longDiagonal = Math.max(diagonalA, diagonalB);
   return ((longDiagonal - shortDiagonal) / longDiagonal) * 100;
 }
 
-// Função para determinar o tipo de assimetria craniana com base no índice craniano e CVAI
-export function determineAsymmetryType(cranialIndex: number, cvai: number): AsymmetryType {
-  // Critérios baseados nos protocolos fornecidos
-  const hasBrachy = cranialIndex >= 81;
-  const hasDolich = cranialIndex <= 76;
-  const hasPlagi = cvai >= 3.5;
-  
-  if (hasBrachy && hasPlagi) {
-    return "Assimetria Mista";
-  } else if (hasDolich && hasPlagi) {
-    return "Assimetria Mista";
-  } else if (hasBrachy) {
-    return "Braquicefalia";
-  } else if (hasDolich) {
-    return "Dolicocefalia";
-  } else if (hasPlagi) {
-    return "Plagiocefalia";
-  } else {
-    return "Normal";
-  }
-}
-
-// Função para determinar a severidade da assimetria com base no tipo e nas medições
+// Function to determine the severity level of the asymmetry based on type and measurements
 export function determineSeverityLevel(
   asymmetryType: AsymmetryType, 
   cranialIndex: number, 
@@ -72,7 +40,7 @@ export function determineSeverityLevel(
     return "normal";
   }
   
-  // Para Braquicefalia/Dolicocefalia (conforme protocolo da img 7)
+  // For Braquicefalia/Dolicocefalia (according to protocol)
   if (asymmetryType === "Braquicefalia") {
     if (cranialIndex >= 90) return "severa";
     if (cranialIndex >= 85) return "moderada";
@@ -85,14 +53,36 @@ export function determineSeverityLevel(
     return "leve";
   }
   
-  // Para Plagiocefalia (conforme protocolo da img 8)
-  if (asymmetryType === "Plagiocefalia" || asymmetryType === "Assimetria Mista") {
+  // For Plagiocefalia (according to protocol)
+  if (asymmetryType === "Plagiocefalia" || asymmetryType === "Misto") {
     if (cvai >= 8.5) return "severa";
     if (cvai >= 6.25) return "moderada";
     return "leve";
   }
   
   return "leve"; // Default fallback
+}
+
+// Função para determinar o tipo de assimetria craniana com base no índice craniano e CVAI
+export function determineAsymmetryType(cranialIndex: number, cvai: number): AsymmetryType {
+  // Critérios baseados nos protocolos fornecidos
+  const hasBrachy = cranialIndex >= 81;
+  const hasDolich = cranialIndex <= 76;
+  const hasPlagi = cvai >= 3.5;
+  
+  if (hasBrachy && hasPlagi) {
+    return "Misto";
+  } else if (hasDolich && hasPlagi) {
+    return "Misto";
+  } else if (hasBrachy) {
+    return "Braquicefalia";
+  } else if (hasDolich) {
+    return "Dolicocefalia";
+  } else if (hasPlagi) {
+    return "Plagiocefalia";
+  } else {
+    return "Normal";
+  }
 }
 
 // Função para traduzir a classificação para texto legível
@@ -150,7 +140,7 @@ export function getTherapeuticRecommendations(
   }
   
   // Recomendações específicas por tipo
-  if (asymmetryType === "Braquicefalia" || asymmetryType === "Assimetria Mista") {
+  if (asymmetryType === "Braquicefalia" || asymmetryType === "Misto") {
     recommendations.push("Evitar longos períodos na posição supina (de costas).");
     recommendations.push("Alternar posição da cabeça durante o sono.");
   }
@@ -160,7 +150,7 @@ export function getTherapeuticRecommendations(
     recommendations.push("Avaliar possível prematuridade e ajustar expectativas de desenvolvimento.");
   }
   
-  if (asymmetryType === "Plagiocefalia" || asymmetryType === "Assimetria Mista") {
+  if (asymmetryType === "Plagiocefalia" || asymmetryType === "Misto") {
     recommendations.push("Alternar lado da cabeça durante alimentação e sono.");
     recommendations.push("Verificar possível torcicolo ou preferência posicional.");
   }

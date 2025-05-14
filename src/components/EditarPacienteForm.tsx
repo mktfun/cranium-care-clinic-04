@@ -1,252 +1,171 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
+import { Paciente } from "@/types";
 
-interface ResponsavelType {
-  nome: string;
-  telefone: string;
-  email: string;
+const formSchema = z.object({
+  nome: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }),
+  data_nascimento: z.string().refine((date) => {
+    const parsedDate = new Date(date);
+    return !isNaN(parsedDate.getTime());
+  }, { message: "Data de nascimento inválida" }),
+  sexo: z.string().min(1, { message: "Selecione o sexo" }),
+  responsaveis: z.string().optional(),
+});
+
+export interface EditarPacienteFormProps {
+  paciente: Paciente;
+  onSuccess?: () => Promise<void>;
 }
 
-interface PacienteProps {
-  id: string;
-  nome: string;
-  dataNascimento: string;
-  data_nascimento?: string;
-  idadeEmMeses: number;
-  sexo: "M" | "F";
-  responsaveis: ResponsavelType[];
-  medicoes: any[];
-}
+export function EditarPacienteForm({ paciente, onSuccess }: EditarPacienteFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-interface EditarPacienteFormProps {
-  paciente: PacienteProps;
-  onSalvar: () => void;
-}
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      nome: "",
+      data_nascimento: "",
+      sexo: "",
+      responsaveis: "",
+    },
+  });
 
-export function EditarPacienteForm({ paciente, onSalvar }: EditarPacienteFormProps) {
-  const [nome, setNome] = useState(paciente.nome);
-  const [dataNascimento, setDataNascimento] = useState((paciente.dataNascimento || paciente.data_nascimento || '').split('T')[0]);
-  const [sexo, setSexo] = useState(paciente.sexo);
-  const [responsaveis, setResponsaveis] = useState<ResponsavelType[]>([...paciente.responsaveis]);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const handleResponsavelChange = (index: number, field: keyof ResponsavelType, value: string) => {
-    const novosResponsaveis = [...responsaveis];
-    novosResponsaveis[index] = {
-      ...novosResponsaveis[index],
-      [field]: value
-    };
-    setResponsaveis(novosResponsaveis);
-  };
-  
-  const handleAddResponsavel = () => {
-    setResponsaveis([...responsaveis, { nome: '', telefone: '', email: '' }]);
-  };
-  
-  const handleRemoveResponsavel = (index: number) => {
-    if (responsaveis.length > 1) {
-      const novosResponsaveis = [...responsaveis];
-      novosResponsaveis.splice(index, 1);
-      setResponsaveis(novosResponsaveis);
-    } else {
-      toast.error("É necessário pelo menos um responsável");
+  useEffect(() => {
+    if (paciente) {
+      form.reset({
+        nome: paciente.nome || "",
+        data_nascimento: paciente.data_nascimento || "",
+        sexo: paciente.sexo || "",
+        responsaveis: paciente.responsaveis || "",
+      });
     }
-  };
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
+  }, [paciente, form]);
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      // Make sure paciente.id is valid before proceeding
-      if (!paciente.id) {
-        toast.error("ID do paciente inválido");
+      setIsSubmitting(true);
+      
+      const { error } = await supabase
+        .from("pacientes")
+        .update({
+          nome: values.nome,
+          data_nascimento: values.data_nascimento,
+          sexo: values.sexo,
+          responsaveis: values.responsaveis,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", paciente.id);
+
+      if (error) {
+        console.error("Erro ao atualizar paciente:", error);
+        toast.error("Erro ao atualizar paciente. Tente novamente.");
         return;
       }
+
+      toast.success("Paciente atualizado com sucesso!");
       
-      // Validate form data
-      if (!nome || !dataNascimento || !sexo || responsaveis.length === 0) {
-        toast.error("Preencha todos os campos obrigatórios");
-        return;
+      if (onSuccess) {
+        await onSuccess();
       }
-      
-      // Validate responsáveis data
-      for (const resp of responsaveis) {
-        if (!resp.nome || !resp.telefone || !resp.email) {
-          toast.error("Preencha todos os dados dos responsáveis");
-          return;
-        }
-      }
-  
-      // First, check if we're dealing with mock data or Supabase data
-      const { data: existingPaciente, error: checkError } = await supabase
-        .from('pacientes')
-        .select('id')
-        .eq('id', paciente.id)
-        .maybeSingle();
-  
-      if (checkError) {
-        console.error("Erro ao verificar paciente:", checkError);
-      }
-  
-      if (existingPaciente) {
-        // Update in Supabase - convert responsaveis to Json compatible format
-        const { error } = await supabase
-          .from('pacientes')
-          .update({
-            nome,
-            data_nascimento: dataNascimento,
-            sexo,
-            responsaveis: responsaveis as unknown as Json
-          })
-          .eq('id', paciente.id);
-  
-        if (error) {
-          throw error;
-        }
-  
-        toast.success("Dados do paciente atualizados com sucesso!");
-      } else {
-        // Handle mock data update - in real app this would be skipped
-        toast.success("Dados do paciente atualizados com sucesso (mock)!");
-      }
-      
-      onSalvar();
-    } catch (error: any) {
-      console.error("Erro ao atualizar paciente:", error);
-      toast.error(`Erro ao atualizar dados: ${error.message}`);
+    } catch (error) {
+      console.error("Erro inesperado:", error);
+      toast.error("Ocorreu um erro inesperado. Tente novamente.");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
-  };
-  
+  }
+
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="space-y-4 py-2">
-        <div className="space-y-2">
-          <Label htmlFor="nome">Nome completo</Label>
-          <Input 
-            id="nome" 
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            required
-            disabled={isLoading}
-          />
-        </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="nome"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nome Completo</FormLabel>
+              <FormControl>
+                <Input placeholder="Nome completo do paciente" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="data-nascimento">Data de nascimento</Label>
-            <Input 
-              id="data-nascimento" 
-              type="date" 
-              value={dataNascimento}
-              onChange={(e) => setDataNascimento(e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="sexo">Sexo</Label>
-            <select 
-              id="sexo"
-              className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={sexo}
-              onChange={(e) => setSexo(e.target.value as "M" | "F")}
-              required
-              disabled={isLoading}
-            >
-              <option value="M">Masculino</option>
-              <option value="F">Feminino</option>
-            </select>
-          </div>
-        </div>
+        <FormField
+          control={form.control}
+          name="data_nascimento"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Data de Nascimento</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label>Responsáveis</Label>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              onClick={handleAddResponsavel}
-              disabled={isLoading}
-            >
-              Adicionar Responsável
-            </Button>
-          </div>
-          
-          {responsaveis.map((responsavel, index) => (
-            <div key={index} className="space-y-2 border p-3 rounded-md">
-              <div className="flex justify-between">
-                <span className="font-medium">Responsável {index + 1}</span>
-                {responsaveis.length > 1 && (
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-destructive hover:bg-destructive/10 h-7 px-2"
-                    onClick={() => handleRemoveResponsavel(index)}
-                    disabled={isLoading}
-                  >
-                    Remover
-                  </Button>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor={`responsavel-nome-${index}`}>Nome</Label>
-                <Input 
-                  id={`responsavel-nome-${index}`} 
-                  value={responsavel.nome}
-                  onChange={(e) => handleResponsavelChange(index, "nome", e.target.value)}
-                  required
-                  disabled={isLoading}
+        <FormField
+          control={form.control}
+          name="sexo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Sexo</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o sexo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="M">Masculino</SelectItem>
+                  <SelectItem value="F">Feminino</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="responsaveis"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Responsáveis</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Nome dos pais ou responsáveis" 
+                  className="resize-none" 
+                  {...field} 
+                  value={field.value || ""}
                 />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor={`responsavel-telefone-${index}`}>Telefone</Label>
-                  <Input 
-                    id={`responsavel-telefone-${index}`} 
-                    value={responsavel.telefone}
-                    onChange={(e) => handleResponsavelChange(index, "telefone", e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor={`responsavel-email-${index}`}>Email</Label>
-                  <Input 
-                    id={`responsavel-email-${index}`} 
-                    type="email" 
-                    value={responsavel.email}
-                    onChange={(e) => handleResponsavelChange(index, "email", e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="flex justify-end">
+          <Button 
+            type="submit" 
+            disabled={isSubmitting}
+            className="bg-turquesa hover:bg-turquesa/90"
+          >
+            {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+          </Button>
         </div>
-      </div>
-      
-      <DialogFooter className="mt-4">
-        <Button type="submit" className="bg-turquesa hover:bg-turquesa/90" disabled={isLoading}>
-          {isLoading ? "Salvando..." : "Salvar alterações"}
-        </Button>
-      </DialogFooter>
-    </form>
+      </form>
+    </Form>
   );
 }

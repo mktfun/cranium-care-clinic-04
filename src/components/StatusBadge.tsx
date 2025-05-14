@@ -6,9 +6,10 @@ export interface StatusBadgeProps {
   status: SeverityLevel;
   asymmetryType?: AsymmetryType;
   showAsymmetryType?: boolean;
+  className?: string; // Add className prop
 }
 
-export function StatusBadge({ status, asymmetryType = "Normal", showAsymmetryType = false }: StatusBadgeProps) {
+export function StatusBadge({ status, asymmetryType = "Normal", showAsymmetryType = false, className = "" }: StatusBadgeProps) {
   const getBadgeColor = () => {
     switch (status) {
       case "normal":
@@ -32,7 +33,7 @@ export function StatusBadge({ status, asymmetryType = "Normal", showAsymmetryTyp
   };
 
   return (
-    <Badge variant="outline" className={`${getBadgeColor()} font-medium border-0`}>
+    <Badge variant="outline" className={`${getBadgeColor()} font-medium border-0 ${className}`}>
       {getStatusText()}
     </Badge>
   );

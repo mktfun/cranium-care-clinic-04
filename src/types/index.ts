@@ -13,6 +13,11 @@ export interface Paciente {
   created_at?: string;
   updated_at?: string;
   user_id?: string;
+  ultimaMedicao?: {  // Add ultimaMedicao property to Paciente interface
+    data: string;
+    status: SeverityLevel;
+    asymmetryType: AsymmetryType;
+  };
 }
 
 export interface Medicao {
