@@ -1,11 +1,8 @@
 export type Status = "normal" | "leve" | "moderada" | "severa";
 
-export type AsymmetryType = 
-  | "Braquicefalia" 
-  | "Dolicocefalia" 
-  | "Plagiocefalia" 
-  | "Assimetria Mista" 
-  | "Normal";
+import type { AsymmetryType as GlobalAsymmetryType, SeverityLevel } from "@/lib/cranial-utils";
+
+export type AsymmetryType = GlobalAsymmetryType;
 
 export interface Medicao {
   id: string;
@@ -508,7 +505,7 @@ export function processExistingData() {
       // Only update if asymmetryType is not set
       if (!medicao.asymmetryType) {
         const { asymmetryType, severityLevel } = getCranialStatus(medicao.indiceCraniano, medicao.cvai);
-        medicao.asymmetryType = asymmetryType;
+        medicao.asymmetryType = asymmetryType as AsymmetryType;
         medicao.status = severityLevel;
       }
     });

@@ -219,13 +219,20 @@ export default function Dashboard() {
           const dataNascimento = new Date(paciente.data_nascimento);
           const idadeEmMeses = ((hoje.getFullYear() - dataNascimento.getFullYear()) * 12) + (hoje.getMonth() - dataNascimento.getMonth());
           
-          // Create an object that matches the Paciente interface
+          // Create an object that conforms to the Paciente interface
           return { 
-            ...paciente,
+            id: paciente.id,
+            nome: paciente.nome,
+            data_nascimento: paciente.data_nascimento,
             dataNascimento: paciente.data_nascimento,
+            sexo: paciente.sexo || '',
+            responsaveis: paciente.responsaveis,
+            created_at: paciente.created_at,
+            updated_at: paciente.updated_at,
+            user_id: paciente.user_id,
             idadeEmMeses, 
             ultimaMedicao: ultimaMedicaoProcessada 
-          } as Paciente;
+          };
         });
         setPacientes(pacientesProcessadosParaCard);
 

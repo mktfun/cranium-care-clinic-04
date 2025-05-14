@@ -158,7 +158,7 @@ export default function Pacientes() {
     .map(paciente => {
       const ultimaMedicao = getUltimaMedicaoReal(paciente.id, todasMedicoes);
       let statusCalculado: SeverityLevel = "normal";
-      let asymmetryTypeCalculado: AsymmetryType | string = "Normal";
+      let asymmetryTypeCalculado: AsymmetryType = "Normal";
 
       if (ultimaMedicao) {
         const statusInfo = getCranialStatus(ultimaMedicao.indice_craniano, ultimaMedicao.cvai);
