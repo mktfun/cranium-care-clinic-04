@@ -218,7 +218,14 @@ export default function Dashboard() {
           const hoje = new Date();
           const dataNascimento = new Date(paciente.data_nascimento);
           const idadeEmMeses = ((hoje.getFullYear() - dataNascimento.getFullYear()) * 12) + (hoje.getMonth() - dataNascimento.getMonth());
-          return { id: paciente.id, nome: paciente.nome, dataNascimento: paciente.data_nascimento, idadeEmMeses, ultimaMedicao: ultimaMedicaoProcessada };
+          
+          // Create an object that matches the Paciente interface
+          return { 
+            ...paciente,
+            dataNascimento: paciente.data_nascimento,
+            idadeEmMeses, 
+            ultimaMedicao: ultimaMedicaoProcessada 
+          } as Paciente;
         });
         setPacientes(pacientesProcessadosParaCard);
 

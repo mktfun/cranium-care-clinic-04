@@ -140,7 +140,7 @@ export default function RelatorioMedicao() {
           .single();
         
         if (userError) {
-          toast.warn("Não foi possível carregar dados do profissional. Usando valores padrão.");
+          toast.error("Não foi possível carregar dados do profissional. Usando valores padrão.");
         } else if (userData) {
           setProfissionalNome(userData.nome || "Profissional Padrão");
           setClinicaNome(userData.clinica_nome || "Clínica Padrão");

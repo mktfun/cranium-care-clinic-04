@@ -1,6 +1,9 @@
-// Types of asymmetry - keep in sync with cranial-utils.ts
-export type AsymmetryType = "Normal" | "Plagiocefalia" | "Braquicefalia" | "Dolicocefalia" | "Misto";
-export type SeverityLevel = "normal" | "leve" | "moderada" | "severa";
+
+// Types of asymmetry - importing from cranial-utils.ts to ensure consistency
+import { AsymmetryType, SeverityLevel } from "@/lib/cranial-utils";
+
+// Re-export these types
+export { AsymmetryType, SeverityLevel };
 
 export interface Paciente {
   id: string;

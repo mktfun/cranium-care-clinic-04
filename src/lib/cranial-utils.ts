@@ -6,7 +6,10 @@ import {
   calculateCranialIndex, 
   determineSeverityLevel 
 } from "./cranial-analysis";
-import { AsymmetryType, SeverityLevel } from "@/types";
+
+// Export these types so they can be used across the application
+export type AsymmetryType = "Normal" | "Plagiocefalia" | "Braquicefalia" | "Dolicocefalia" | "Misto";
+export type SeverityLevel = "normal" | "leve" | "moderada" | "severa";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
