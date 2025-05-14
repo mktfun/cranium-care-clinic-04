@@ -7,7 +7,7 @@ import { getCranialStatus } from "@/lib/cranial-utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Eye, FileBarChart2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Medicao } from "@/types";
 

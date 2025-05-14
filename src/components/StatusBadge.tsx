@@ -3,34 +3,37 @@ import { Badge } from "@/components/ui/badge";
 import { AsymmetryType, SeverityLevel } from "@/types";
 
 export interface StatusBadgeProps {
-  status?: SeverityLevel;
+  status: SeverityLevel;
   asymmetryType?: AsymmetryType;
+  showAsymmetryType?: boolean;
 }
 
-export function StatusBadge({ status = "normal", asymmetryType = "Normal" }: StatusBadgeProps) {
-  const getBadgeVariant = () => {
+export function StatusBadge({ status, asymmetryType = "Normal", showAsymmetryType = false }: StatusBadgeProps) {
+  const getBadgeColor = () => {
     switch (status) {
       case "normal":
-        return "outline";
+        return "bg-green-100 text-green-800 hover:bg-green-100";
       case "leve":
-        return "default";
+        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
       case "moderada":
-        return "secondary";
+        return "bg-orange-100 text-orange-800 hover:bg-orange-100";
       case "severa":
-        return "destructive";
+        return "bg-red-100 text-red-800 hover:bg-red-100";
       default:
-        return "outline";
+        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
   };
 
-  const getBadgeText = () => {
-    if (asymmetryType === "Normal") return "Normal";
-    return `${asymmetryType} ${status !== "normal" ? status : "leve"}`;
+  const getStatusText = () => {
+    if (showAsymmetryType && asymmetryType !== "Normal") {
+      return `${asymmetryType} ${status === "normal" ? "" : status}`;
+    }
+    return status === "normal" ? "Normal" : status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   return (
-    <Badge variant={getBadgeVariant() as any} className="capitalize">
-      {getBadgeText()}
+    <Badge variant="outline" className={`${getBadgeColor()} font-medium border-0`}>
+      {getStatusText()}
     </Badge>
   );
 }

@@ -2,15 +2,15 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { 
-  AsymmetryType, 
   calculateCVAI, 
   calculateCranialIndex, 
   determineAsymmetryType, 
   determineSeverityLevel 
 } from "./cranial-analysis";
 
-// Export SeverityLevel to be used by other files
+// Export both types 
 export type SeverityLevel = "normal" | "leve" | "moderada" | "severa";
+export type AsymmetryType = "Normal" | "Plagiocefalia" | "Braquicefalia" | "Dolicocefalia" | "Misto";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

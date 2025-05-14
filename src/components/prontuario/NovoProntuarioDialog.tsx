@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { FileText, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Prontuario } from "@/types";
 
 interface NovoProntuarioDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pacienteId: string;
-  onSuccess: (novoProntuario: any) => void;
+  onSuccess: (novoProntuario: Prontuario) => void;
 }
 
 export function NovoProntuarioDialog({
@@ -48,13 +49,14 @@ export function NovoProntuarioDialog({
     setLoading(true);
     
     try {
+      // Use the proper Supabase interface with raw Insert
       const { data, error } = await supabase
         .from('prontuarios')
         .insert({
           paciente_id: pacienteId,
           data_criacao: new Date().toISOString(),
-          altura: formData.altura || null,
-          peso: formData.peso || null,
+          altura: formData.altura ? parseFloat(formData.altura) : null,
+          peso: formData.peso ? parseFloat(formData.peso) : null,
           tipo_sanguineo: formData.tipo_sanguineo || null,
           alergias: formData.alergias || null,
           observacoes_gerais: formData.observacoes_gerais || null
@@ -68,7 +70,7 @@ export function NovoProntuarioDialog({
         return;
       }
       
-      onSuccess(data);
+      onSuccess(data as any as Prontuario);
       onOpenChange(false);
     } catch (err) {
       console.error("Erro ao criar prontuário:", err);

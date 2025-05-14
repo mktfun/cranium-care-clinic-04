@@ -14,12 +14,13 @@ import { HistoricoMedicoTab } from "@/components/prontuario/HistoricoMedicoTab";
 import { ConsultasTab } from "@/components/prontuario/ConsultasTab";
 import { AvaliacoesCraniaisTab } from "@/components/prontuario/AvaliacoesCraniaisTab";
 import { NovoProntuarioDialog } from "@/components/prontuario/NovoProntuarioDialog";
+import { Prontuario } from "@/types";
 
 export default function ProntuarioMedico() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [paciente, setPaciente] = useState<any>(null);
-  const [prontuario, setProntuario] = useState<any>(null);
+  const [prontuario, setProntuario] = useState<Prontuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
@@ -50,7 +51,7 @@ export default function ProntuarioMedico() {
           
           setPaciente(pacienteData);
           
-          // Buscar dados do prontuário
+          // Buscar dados do prontuário usando o supabase client
           const { data: prontuarioData, error: prontuarioError } = await supabase
             .from('prontuarios')
             .select('*')
@@ -62,7 +63,7 @@ export default function ProntuarioMedico() {
             console.error('Erro ao carregar prontuário:', prontuarioError);
             toast.error('Erro ao carregar prontuário.');
           } else {
-            setProntuario(prontuarioData || null);
+            setProntuario(prontuarioData as Prontuario);
           }
         } catch (err) {
           console.error('Erro inesperado:', err);

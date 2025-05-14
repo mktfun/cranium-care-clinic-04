@@ -1,5 +1,4 @@
-
-// Types of asymmetry
+// Types of asymmetry - keep in sync with cranial-utils.ts
 export type AsymmetryType = "Normal" | "Plagiocefalia" | "Braquicefalia" | "Dolicocefalia" | "Misto";
 export type SeverityLevel = "normal" | "leve" | "moderada" | "severa";
 
@@ -32,6 +31,33 @@ export interface Medicao {
   perimetro_cefalico?: number;
   observacoes?: string;
   recomendacoes?: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+// New interface for Prontuario
+export interface Prontuario {
+  id: string;
+  paciente_id: string;
+  data_criacao: string;
+  altura?: number;
+  peso?: number;
+  tipo_sanguineo?: string;
+  alergias?: string;
+  observacoes_gerais?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// New interface for HistoricoMedico
+export interface HistoricoMedico {
+  id: string;
+  prontuario_id?: string;
+  paciente_id: string;
+  data: string;
+  tipo: string;
+  descricao: string;
+  observacoes?: string;
   created_at?: string;
   updated_at?: string;
 }

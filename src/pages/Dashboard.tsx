@@ -9,10 +9,12 @@ import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 import { UrgentTasksCard } from "@/components/UrgentTasksCard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { AsymmetryType, SeverityLevel, getCranialStatus } from "@/lib/cranial-utils";
+import { AsymmetryType, SeverityLevel, Paciente } from "@/types";
+import { getCranialStatus } from "@/lib/cranial-utils";
 import { Link } from "react-router-dom";
+import { Json } from "@/integrations/supabase/types";
 
-interface Paciente {
+interface MedicacaoPaciente {
   id: string;
   nome: string;
   dataNascimento: string;
@@ -30,7 +32,7 @@ interface Medicao {
   data: string;
   indice_craniano?: number;
   cvai?: number;
-  status?: SeverityLevel; // Adicionado para consistência, embora calculado dinamicamente
+  status?: SeverityLevel;
 }
 
 interface StatusDistribuicao {
@@ -42,7 +44,7 @@ interface StatusDistribuicao {
 
 interface TrendData {
   value: number;
-  isPositive: boolean; // true para verde (melhora), false para vermelho (piora)
+  isPositive: boolean;
 }
 
 export default function Dashboard() {
@@ -99,7 +101,22 @@ export default function Dashboard() {
           toast.error("Erro ao carregar pacientes");
           return;
         }
-        setPacientes(pacientesData || []);
+        
+        // Process patients data to match the Paciente interface
+        const processedPacientes = pacientesData?.map(p => ({
+          id: p.id,
+          nome: p.nome,
+          data_nascimento: p.data_nascimento,
+          dataNascimento: p.data_nascimento,
+          sexo: p.sexo || '',
+          responsaveis: p.responsaveis,
+          created_at: p.created_at,
+          updated_at: p.updated_at,
+          user_id: p.user_id,
+          idadeEmMeses: calculateAgeInMonths(p.data_nascimento)
+        })) || [];
+        
+        setPacientes(processedPacientes);
 
         const { data: medicoesData, error: medicoesError } = await supabase
           .from("medicoes")
@@ -214,6 +231,14 @@ export default function Dashboard() {
     }
     carregarDados();
   }, [navigate]);
+  
+  // Helper function to calculate age in months
+  const calculateAgeInMonths = (birthDate: string): number => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    return ((today.getFullYear() - birth.getFullYear()) * 12) + 
+           (today.getMonth() - birth.getMonth());
+  };
 
   const pacienteComMedicaoMaisRecente = pacientes.length > 0
     ? [...pacientes]
@@ -329,4 +354,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

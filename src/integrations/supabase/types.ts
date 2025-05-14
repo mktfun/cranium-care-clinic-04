@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      historico_medico: {
+        Row: {
+          created_at: string | null
+          data: string
+          descricao: string
+          id: string
+          observacoes: string | null
+          paciente_id: string | null
+          prontuario_id: string | null
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data?: string
+          descricao: string
+          id?: string
+          observacoes?: string | null
+          paciente_id?: string | null
+          prontuario_id?: string | null
+          tipo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data?: string
+          descricao?: string
+          id?: string
+          observacoes?: string | null
+          paciente_id?: string | null
+          prontuario_id?: string | null
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_medico_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historico_medico_prontuario_id_fkey"
+            columns: ["prontuario_id"]
+            isOneToOne: false
+            referencedRelation: "prontuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medicoes: {
         Row: {
           comprimento: number
@@ -139,6 +190,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      prontuarios: {
+        Row: {
+          alergias: string | null
+          altura: number | null
+          created_at: string | null
+          data_criacao: string | null
+          id: string
+          observacoes_gerais: string | null
+          paciente_id: string
+          peso: number | null
+          tipo_sanguineo: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alergias?: string | null
+          altura?: number | null
+          created_at?: string | null
+          data_criacao?: string | null
+          id?: string
+          observacoes_gerais?: string | null
+          paciente_id: string
+          peso?: number | null
+          tipo_sanguineo?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alergias?: string | null
+          altura?: number | null
+          created_at?: string | null
+          data_criacao?: string | null
+          id?: string
+          observacoes_gerais?: string | null
+          paciente_id?: string
+          peso?: number | null
+          tipo_sanguineo?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prontuarios_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tarefas: {
         Row: {
