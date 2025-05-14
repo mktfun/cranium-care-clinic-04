@@ -1,25 +1,29 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/use-toast";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { toast } from "@/hooks/use-toast";
 import { formatAgeHeader } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Camera, Ruler } from "lucide-react";
+import { Loader2, Camera, Ruler, Check, ArrowLeft } from "lucide-react";
 
 export default function NovaMedicao() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const photoData = location.state?.photoProcessed ? location.state : null;
+  
   const [paciente, setPaciente] = useState<any>(null);
   const [loadingPaciente, setLoadingPaciente] = useState(true);
   
-  const [activeTab, setActiveTab] = useState("manual");
+  const [activeTab, setActiveTab] = useState(photoData ? "revisao" : "manual");
   const [medicaoData, setMedicaoData] = useState("");
   const [comprimento, setComprimento] = useState("");
   const [largura, setLargura] = useState("");
@@ -27,6 +31,7 @@ export default function NovaMedicao() {
   const [diagonalE, setDiagonalE] = useState("");
   const [perimetroCefalico, setPerimetroCefalico] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   
   const [indiceCraniano, setIndiceCraniano] = useState<number | null>(null);
   const [diferencaDiagonais, setDiferencaDiagonais] = useState<number | null>(null);
@@ -64,7 +69,7 @@ export default function NovaMedicao() {
           description: "Erro ao carregar dados do paciente",
           variant: "destructive",
         });
-        navigate("/pacientes"); // Navega de volta em caso de erro inesperado
+        navigate("/pacientes");
       } finally {
         setLoadingPaciente(false);
       }
@@ -72,6 +77,19 @@ export default function NovaMedicao() {
     
     loadPacienteData();
   }, [id, navigate]);
+  
+  // Processar dados da foto, se disponíveis
+  useEffect(() => {
+    if (photoData?.measurements) {
+      const { measurements, photoUrl } = photoData;
+      setComprimento(String(measurements.comprimento));
+      setLargura(String(measurements.largura));
+      setDiagonalD(String(measurements.diagonalD));
+      setDiagonalE(String(measurements.diagonalE));
+      setPerimetroCefalico(String(measurements.perimetroCefalico));
+      setPhotoUrl(photoUrl);
+    }
+  }, [photoData]);
   
   useEffect(() => {
     if (comprimento && largura && Number(comprimento) > 0) {
@@ -149,7 +167,7 @@ export default function NovaMedicao() {
           recomendacoes: generateRecomendacoes(severityLevel)
         };
         
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("medicoes")
           .insert([novaMedicao])
           .select();
@@ -161,8 +179,15 @@ export default function NovaMedicao() {
         toast({
           title: "Sucesso",
           description: "Medição registrada com sucesso!",
+          variant: "success",
         });
-        navigate(`/pacientes/${paciente.id}`);
+        
+        // Navegar para a visualização do relatório com a nova medição
+        if (data && data[0]) {
+          navigate(`/pacientes/${paciente.id}/relatorios/${data[0].id}`);
+        } else {
+          navigate(`/pacientes/${paciente.id}`);
+        }
       } catch (error: any) {
         console.error("Error saving measurement:", error);
         toast({
@@ -190,12 +215,9 @@ export default function NovaMedicao() {
     return [...baseRecs, "Exercícios de estímulo cervical", "Considerar terapia de capacete", "Reavaliação em 1 mês"];
   };
   
-  // Redirecionar automaticamente para a medição por foto após carregar o paciente
-  useEffect(() => {
-    if (paciente && !loadingPaciente) {
-      navigate(`/pacientes/${id}/medicao-por-foto`);
-    }
-  }, [paciente, loadingPaciente, id, navigate]);
+  const handleVoltarParaFoto = () => {
+    navigate(`/pacientes/${id}/medicao-por-foto`);
+  };
   
   if (loadingPaciente || !paciente) {
     return (
@@ -208,39 +230,179 @@ export default function NovaMedicao() {
   return (
     <div className="space-y-6 animate-fade-in p-4 md:p-6">
       <div>
-        <h2 className="text-3xl font-bold">Nova Medição</h2>
+        <h2 className="text-3xl font-bold">
+          {photoData ? "Revisão da Medição por Foto" : "Nova Medição"}
+        </h2>
         <p className="text-muted-foreground">
-          Paciente: {paciente.nome} • {formatAgeHeader(paciente.data_nascimento)} • {new Date(paciente.data_nascimento).toLocaleDateString("pt-BR")}
+          Paciente: {paciente.nome} • {formatAgeHeader(paciente.data_nascimento)}
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Escolha o método de medição</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col space-y-4">
-            <Button 
-              onClick={() => navigate(`/pacientes/${id}/medicao-por-foto`)}
-              className="bg-turquesa hover:bg-turquesa/90 p-8 flex flex-col items-center"
-            >
-              <Camera className="h-12 w-12 mb-4" />
-              <span className="text-lg font-medium">Medição por Foto</span>
-              <span className="text-sm text-white/80 mt-2">Recomendado</span>
-            </Button>
-            
-            <Button 
-              onClick={() => setActiveTab("manual")}
-              variant="outline" 
-              className="p-8 flex flex-col items-center"
-            >
-              <Ruler className="h-12 w-12 mb-4" />
-              <span className="text-lg font-medium">Medição Manual</span>
-              <span className="text-sm text-muted-foreground mt-2">Entrada manual de medidas</span>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      {photoData ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Foto do Paciente</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {photoUrl ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <AspectRatio ratio={4/3}>
+                    <img 
+                      src={photoUrl} 
+                      alt="Foto processada do paciente" 
+                      className="w-full h-full object-cover"
+                    />
+                  </AspectRatio>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-12 flex items-center justify-center">
+                  <p className="text-muted-foreground">Foto não disponível</p>
+                </div>
+              )}
+              
+              <Button 
+                onClick={handleVoltarParaFoto}
+                variant="outline"
+                className="mt-4"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar para captura de foto
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Medidas Detectadas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="comprimento">Comprimento (mm)</Label>
+                    <Input
+                      id="comprimento"
+                      type="number"
+                      required
+                      value={comprimento}
+                      onChange={(e) => setComprimento(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="largura">Largura (mm)</Label>
+                    <Input
+                      id="largura"
+                      type="number"
+                      required
+                      value={largura}
+                      onChange={(e) => setLargura(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="diagonalD">Diagonal D (mm)</Label>
+                    <Input
+                      id="diagonalD"
+                      type="number"
+                      required
+                      value={diagonalD}
+                      onChange={(e) => setDiagonalD(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="diagonalE">Diagonal E (mm)</Label>
+                    <Input
+                      id="diagonalE"
+                      type="number"
+                      required
+                      value={diagonalE}
+                      onChange={(e) => setDiagonalE(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="perimetroCefalico">Perímetro Cefálico (mm)</Label>
+                  <Input
+                    id="perimetroCefalico"
+                    type="number"
+                    required
+                    value={perimetroCefalico}
+                    onChange={(e) => setPerimetroCefalico(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="observacoes">Observações</Label>
+                  <Textarea
+                    id="observacoes"
+                    value={observacoes}
+                    onChange={(e) => setObservacoes(e.target.value)}
+                    placeholder="Observações adicionais sobre a medição..."
+                  />
+                </div>
+                
+                {/* Cálculos derivados */}
+                {indiceCraniano !== null && cvai !== null && (
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-medium mb-2">Valores Calculados:</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Índice Craniano</p>
+                        <p className="font-bold">{indiceCraniano.toFixed(1)}%</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">CVAI</p>
+                        <p className="font-bold">{cvai.toFixed(1)}%</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Diferença Diagonais</p>
+                        <p className="font-bold">{diferencaDiagonais?.toFixed(1)} mm</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <Button type="submit" className="w-full bg-turquesa hover:bg-turquesa/90">
+                  <Check className="h-4 w-4 mr-2" />
+                  Salvar e Gerar Relatório
+                </Button>
+              </CardContent>
+            </Card>
+          </form>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Escolha o método de medição</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col space-y-4">
+              <Button 
+                onClick={() => navigate(`/pacientes/${id}/medicao-por-foto`)}
+                className="bg-turquesa hover:bg-turquesa/90 p-8 flex flex-col items-center"
+              >
+                <Camera className="h-12 w-12 mb-4" />
+                <span className="text-lg font-medium">Medição por Foto</span>
+                <span className="text-sm text-white/80 mt-2">Recomendado</span>
+              </Button>
+              
+              <Button 
+                onClick={() => setActiveTab("manual")}
+                variant="outline" 
+                className="p-8 flex flex-col items-center"
+              >
+                <Ruler className="h-12 w-12 mb-4" />
+                <span className="text-lg font-medium">Medição Manual</span>
+                <span className="text-sm text-muted-foreground mt-2">Entrada manual de medidas</span>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

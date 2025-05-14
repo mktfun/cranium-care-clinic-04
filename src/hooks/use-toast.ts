@@ -1,27 +1,21 @@
 
-import {
-  ToastActionElement,
-  ToastProps,
-} from "@/components/ui/toast"
+import * as React from "react";
+import { toast as sonnerToast } from "sonner";
 
-import { 
-  toast as sonnerToast,
-  Toaster as SonnerToaster,
-} from "sonner"
+export type ToasterToast = {
+  id: string;
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
+  variant?: "default" | "destructive" | "success";
+};
 
-type ToasterToast = ToastProps & {
-  id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
-  action?: ToastActionElement
-}
-
-const toasts: ToasterToast[] = []
+const toasts: ToasterToast[] = [];
 
 // Esta é a interface que usaremos para chamar o toast
 interface ToastOptions {
-  title?: string;
-  description?: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
   variant?: "default" | "destructive" | "success";
   [key: string]: any;
 }
@@ -32,29 +26,21 @@ function toast(options: ToastOptions) {
   
   // Map our toast variants to Sonner variants
   if (variant === "destructive") {
-    return sonnerToast.error(title, {
+    return sonnerToast.error(title as string, {
       description,
       ...props,
     });
   } else if (variant === "success") {
-    return sonnerToast.success(title, {
+    return sonnerToast.success(title as string, {
       description,
       ...props,
     });
   } else {
-    return sonnerToast(title, {
+    return sonnerToast(title as string, {
       description,
       ...props,
     });
   }
 }
 
-export { toast, SonnerToaster as Toaster, toasts }
-
-export function useToast() {
-  return {
-    toast,
-    toasts,
-    dismiss: sonnerToast.dismiss,
-  }
-}
+export { toast, toasts };
