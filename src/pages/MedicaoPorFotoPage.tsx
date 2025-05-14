@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,41 +10,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/use-toast";
-import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
 
 // Import custom components
-import WebcamCapture from "@/components/medicao/WebcamCapture";
-import CapturedImage from "@/components/medicao/CapturedImage";
-import MeasurementInputs from "@/components/medicao/MeasurementInputs";
-import MeasurementResults from "@/components/medicao/MeasurementResults";
-import NotesAndRecommendations from "@/components/medicao/NotesAndRecommendations";
-import DatePicker from "@/components/medicao/DatePicker";
+import MeasurementModeToggle from "@/components/medicao/MeasurementModeToggle";
+import PhotoCaptureSection from "@/components/medicao/PhotoCaptureSection";
+import PatientInfoForm from "@/components/medicao/PatientInfoForm";
+import MeasurementsSection from "@/components/medicao/MeasurementsSection";
 import ConfirmationDialog from "@/components/medicao/ConfirmationDialog";
-import { useCranialMeasurements } from "@/hooks/use-cranial-measurements";
-import { SeverityLevel } from "@/lib/cranial-utils";
 
-// Function to convert SeverityLevel to Database status_medicao enum
-function convertSeverityToStatus(severity: SeverityLevel): Database["public"]["Enums"]["status_medicao"] {
-  // Map the severity to the database enum values
-  switch (severity) {
-    case "normal":
-      return "normal";
-    case "leve":
-      return "leve";
-    case "moderada":
-      return "moderada";
-    case "severa":
-      return "severa";
-    default:
-      return "normal"; // Default fallback
-  }
-}
+// Import hooks and services
+import { useCranialMeasurements } from "@/hooks/use-cranial-measurements";
+import { saveMedicaoToDatabase, formatMeasurementDate } from "@/services/medicao-service";
 
 const MedicaoPorFotoPage: React.FC = () => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -102,40 +78,6 @@ const MedicaoPorFotoPage: React.FC = () => {
     handleInputChange(field, value);
   };
 
-  async function saveMedicaoToDatabase(medicaoData: any) {
-    try {
-      // Convert severity to proper enum value
-      const dbStatus = convertSeverityToStatus(medicaoData.status);
-      
-      const { error } = await supabase
-        .from('medicoes')
-        .insert({
-          paciente_id: medicaoData.paciente_id,
-          user_id: medicaoData.user_id,
-          data: medicaoData.data,
-          comprimento: medicaoData.comprimento,
-          largura: medicaoData.largura,
-          diagonal_d: medicaoData.diagonal_d,
-          diagonal_e: medicaoData.diagonal_e,
-          diferenca_diagonais: medicaoData.diferenca_diagonais,
-          indice_craniano: medicaoData.indice_craniano,
-          cvai: medicaoData.cvai,
-          status: dbStatus,
-          observacoes: medicaoData.observacoes,
-          recomendacoes: medicaoData.recomendacoes,
-        });
-
-      if (error) {
-        console.error("Erro ao salvar medição:", error);
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error("Erro ao salvar medição:", error);
-      return false;
-    }
-  }
-
   const handleSave = async () => {
     if (!pacienteId) {
       toast({
@@ -183,20 +125,20 @@ const MedicaoPorFotoPage: React.FC = () => {
     const medicaoData = {
       paciente_id: pacienteId,
       user_id: userId,
-      data: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0],
+      data: formatMeasurementDate(selectedDate),
       comprimento: measurements.comprimento,
       largura: measurements.largura,
       diagonal_d: measurements.diagonalDireita,
       diagonal_e: measurements.diagonalEsquerda,
-      diferenca_diagonais: measurements.diferencaDiagonais || 0,
-      indice_craniano: measurements.indiceCraniano || 0,
-      cvai: measurements.cvai || 0,
+      diferenca_diagonais: measurements.diferencaDiagonais,
+      indice_craniano: measurements.indiceCraniano,
+      cvai: measurements.cvai,
       status: getSeverityLevel(),
       observacoes: observacoes,
       recomendacoes: recomendacoes,
     };
 
-    const success = await saveMedicaoToDatabase(medicaoData);
+    const { success } = await saveMedicaoToDatabase(medicaoData);
 
     if (success) {
       toast({
@@ -224,73 +166,38 @@ const MedicaoPorFotoPage: React.FC = () => {
           <CardDescription>Capture ou insira as medidas do paciente.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="manualInput">Entrada Manual</Label>
-            <Switch id="manualInput" checked={isManualInput} onCheckedChange={handleToggleManualInput} />
-          </div>
+          <MeasurementModeToggle 
+            isManualInput={isManualInput}
+            onToggle={handleToggleManualInput}
+          />
 
-          <div className="grid gap-2">
-            <Label htmlFor="pacienteId">ID do Paciente</Label>
-            <Input
-              type="text"
-              id="pacienteId"
-              value={pacienteId}
-              onChange={handlePacienteIdChange}
-              disabled={!!params.id}
-            />
-          </div>
-
-          <DatePicker
+          <PatientInfoForm
+            pacienteId={pacienteId}
+            onPacienteIdChange={handlePacienteIdChange}
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
+            isIdDisabled={!!params.id}
           />
 
           {!isManualInput && (
-            <>
-              {showWebcam ? (
-                <WebcamCapture onCapture={handleCapture} />
-              ) : (
-                <>
-                  {imageSrc && (
-                    <CapturedImage 
-                      imageSrc={imageSrc}
-                      onRetake={handleRetake}
-                    />
-                  )}
-                </>
-              )}
-            </>
+            <PhotoCaptureSection
+              showWebcam={showWebcam}
+              imageSrc={imageSrc}
+              onCapture={handleCapture}
+              onRetake={handleRetake}
+            />
           )}
 
           {(isManualInput || imageSrc) && (
-            <>
-              <MeasurementInputs
-                comprimento={measurements.comprimento}
-                largura={measurements.largura}
-                diagonalDireita={measurements.diagonalDireita}
-                diagonalEsquerda={measurements.diagonalEsquerda}
-                perimetroCefalico={measurements.perimetroCefalico}
-                onInputChange={handleFieldInputChange}
-              />
-
-              <Separator className="my-4" />
-
-              <MeasurementResults
-                indiceCraniano={measurements.indiceCraniano}
-                diferencaDiagonais={measurements.diferencaDiagonais}
-                cvai={measurements.cvai}
-                getSeverityLevel={getSeverityLevel}
-              />
-
-              <Separator className="my-4" />
-
-              <NotesAndRecommendations
-                observacoes={observacoes}
-                recomendacoes={recomendacoes}
-                onObservacoesChange={handleObservacoesChange}
-                onRecomendacoesChange={handleRecomendacoesChange}
-              />
-            </>
+            <MeasurementsSection
+              measurements={measurements}
+              onInputChange={handleFieldInputChange}
+              observacoes={observacoes}
+              recomendacoes={recomendacoes}
+              onObservacoesChange={handleObservacoesChange}
+              onRecomendacoesChange={handleRecomendacoesChange}
+              getSeverityLevel={getSeverityLevel}
+            />
           )}
         </CardContent>
         <CardFooter>
