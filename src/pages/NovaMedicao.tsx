@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,18 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-// import { obterPacientePorId } from "@/data/mock-data"; // Mock data import removido
+import { toast } from "@/components/ui/use-toast";
 import { formatAgeHeader } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react"; // Adicionado Loader2
+import { Loader2, Camera, Ruler } from "lucide-react";
 
 export default function NovaMedicao() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [paciente, setPaciente] = useState<any>(null);
-  const [loadingPaciente, setLoadingPaciente] = useState(true); // Estado de loading para o paciente
+  const [loadingPaciente, setLoadingPaciente] = useState(true);
   
   const [activeTab, setActiveTab] = useState("manual");
   const [medicaoData, setMedicaoData] = useState("");
@@ -44,7 +44,11 @@ export default function NovaMedicao() {
             .maybeSingle();
           
           if (error || !pacienteData) {
-            toast.error("Paciente não encontrado ou erro ao carregar.");
+            toast({
+              title: "Erro",
+              description: "Paciente não encontrado ou erro ao carregar.",
+              variant: "destructive",
+            });
             navigate("/pacientes");
             return;
           } else {
@@ -55,7 +59,11 @@ export default function NovaMedicao() {
         }
       } catch (error) {
         console.error("Error loading patient data:", error);
-        toast.error("Erro ao carregar dados do paciente");
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar dados do paciente",
+          variant: "destructive",
+        });
         navigate("/pacientes"); // Navega de volta em caso de erro inesperado
       } finally {
         setLoadingPaciente(false);
@@ -92,12 +100,20 @@ export default function NovaMedicao() {
     e.preventDefault();
     
     if (!paciente) {
-        toast.error("Dados do paciente não carregados. Tente novamente.");
+        toast({
+          title: "Erro",
+          description: "Dados do paciente não carregados. Tente novamente.",
+          variant: "destructive",
+        });
         return;
     }
 
     if (!medicaoData || !comprimento || !largura || !diagonalD || !diagonalE || !perimetroCefalico) {
-      toast.error("Preencha todas as medidas obrigatórias e a data.");
+      toast({
+        title: "Erro",
+        description: "Preencha todas as medidas obrigatórias e a data.",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -107,13 +123,17 @@ export default function NovaMedicao() {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.user) {
-          toast.error("Usuário não autenticado. Faça login novamente.");
+          toast({
+            title: "Erro",
+            description: "Usuário não autenticado. Faça login novamente.",
+            variant: "destructive",
+          });
           navigate("/login");
           return;
         }
         
         const novaMedicao = {
-          paciente_id: paciente.id, // Usar o ID do paciente carregado
+          paciente_id: paciente.id,
           user_id: session.user.id,
           data: new Date(medicaoData).toISOString(),
           comprimento: Number(comprimento),
@@ -138,14 +158,25 @@ export default function NovaMedicao() {
           throw error;
         }
         
-        toast.success("Medição registrada com sucesso!");
+        toast({
+          title: "Sucesso",
+          description: "Medição registrada com sucesso!",
+        });
         navigate(`/pacientes/${paciente.id}`);
       } catch (error: any) {
         console.error("Error saving measurement:", error);
-        toast.error(`Erro ao salvar a medição: ${error.message}`);
+        toast({
+          title: "Erro",
+          description: `Erro ao salvar a medição: ${error.message}`,
+          variant: "destructive",
+        });
       }
     } else {
-      toast.error("Erro ao calcular os valores derivados. Verifique as medições.");
+      toast({
+        title: "Erro",
+        description: "Erro ao calcular os valores derivados. Verifique as medições.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -158,6 +189,13 @@ export default function NovaMedicao() {
     if (severity === "leve") return [...baseRecs, "Exercícios de estímulo cervical", "Reavaliação em 2 meses"];
     return [...baseRecs, "Exercícios de estímulo cervical", "Considerar terapia de capacete", "Reavaliação em 1 mês"];
   };
+  
+  // Redirecionar automaticamente para a medição por foto após carregar o paciente
+  useEffect(() => {
+    if (paciente && !loadingPaciente) {
+      navigate(`/pacientes/${id}/medicao-por-foto`);
+    }
+  }, [paciente, loadingPaciente, id, navigate]);
   
   if (loadingPaciente || !paciente) {
     return (
@@ -176,104 +214,33 @@ export default function NovaMedicao() {
         </p>
       </div>
       
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="manual">Entrada Manual</TabsTrigger>
-          <TabsTrigger value="scanner" disabled>Scanner 3D (Em breve)</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="manual">
-          <Card>
-            <CardHeader>
-              <CardTitle>Entrada Manual de Medições</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="data">Data da Medição</Label>
-                    <Input id="data" type="date" value={medicaoData} onChange={(e) => setMedicaoData(e.target.value)} required />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="comprimento">Comprimento Máximo (mm)</Label>
-                    <Input id="comprimento" type="number" min="0" step="0.1" value={comprimento} onChange={(e) => setComprimento(e.target.value)} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="largura">Largura Máxima (mm)</Label>
-                    <Input id="largura" type="number" min="0" step="0.1" value={largura} onChange={(e) => setLargura(e.target.value)} required />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="diagonalD">Diagonal Direita (mm)</Label>
-                    <Input id="diagonalD" type="number" min="0" step="0.1" value={diagonalD} onChange={(e) => setDiagonalD(e.target.value)} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="diagonalE">Diagonal Esquerda (mm)</Label>
-                    <Input id="diagonalE" type="number" min="0" step="0.1" value={diagonalE} onChange={(e) => setDiagonalE(e.target.value)} required />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="perimetroCefalico">Perímetro Cefálico (mm)</Label>
-                    <Input id="perimetroCefalico" type="number" min="0" step="0.1" value={perimetroCefalico} onChange={(e) => setPerimetroCefalico(e.target.value)} required />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="observacoes">Observações</Label>
-                  <Textarea id="observacoes" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} rows={3} />
-                </div>
-                
-                <div className="p-4 border rounded-md bg-muted/30 dark:bg-gray-800/30">
-                  <h4 className="font-medium mb-3">Valores Calculados</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label>Índice Craniano</Label>
-                      <div className="font-medium mt-1">{indiceCraniano !== null ? `${indiceCraniano.toFixed(1)}%` : "-"}</div>
-                    </div>
-                    <div>
-                      <Label>Diferença das Diagonais</Label>
-                      <div className="font-medium mt-1">{diferencaDiagonais !== null ? `${diferencaDiagonais.toFixed(1)} mm` : "-"}</div>
-                    </div>
-                    <div>
-                      <Label>CVAI</Label>
-                      <div className="font-medium mt-1">{cvai !== null ? `${cvai.toFixed(1)}%` : "-"}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" type="button" onClick={() => navigate(`/pacientes/${paciente.id}`)}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="bg-turquesa hover:bg-turquesa/90">
-                    Salvar Medição
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="scanner">
-          <Card>
-            <CardHeader>
-              <CardTitle>Scanner 3D</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">Esta funcionalidade estará disponível em breve.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Escolha o método de medição</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col space-y-4">
+            <Button 
+              onClick={() => navigate(`/pacientes/${id}/medicao-por-foto`)}
+              className="bg-turquesa hover:bg-turquesa/90 p-8 flex flex-col items-center"
+            >
+              <Camera className="h-12 w-12 mb-4" />
+              <span className="text-lg font-medium">Medição por Foto</span>
+              <span className="text-sm text-white/80 mt-2">Recomendado</span>
+            </Button>
+            
+            <Button 
+              onClick={() => setActiveTab("manual")}
+              variant="outline" 
+              className="p-8 flex flex-col items-center"
+            >
+              <Ruler className="h-12 w-12 mb-4" />
+              <span className="text-lg font-medium">Medição Manual</span>
+              <span className="text-sm text-muted-foreground mt-2">Entrada manual de medidas</span>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

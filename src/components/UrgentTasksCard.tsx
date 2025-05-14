@@ -1,12 +1,25 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Clock, ChevronRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { Task } from "@/types";
+import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+export interface Task {
+  id: string;
+  paciente_id: string;
+  paciente_nome?: string;
+  titulo: string;
+  descricao?: string;
+  due_date: string;
+  status: string;
+  priority?: string; 
+  tipo?: string;
+  responsible?: string;
+}
 
 export function UrgentTasksCard() {
   const navigate = useNavigate();
@@ -31,10 +44,10 @@ export function UrgentTasksCard() {
             paciente_id,
             due_date,
             status,
+            responsible,
             pacientes(nome)
           `)
-          .or(`status.eq.urgente,status.eq.alta`)
-          .eq('status', 'pendente')
+          .in('status', ['pendente', 'overdue'])
           .lte('due_date', formattedDate)
           .order('due_date', { ascending: true })
           .limit(3);
@@ -49,18 +62,23 @@ export function UrgentTasksCard() {
           id: item.id,
           paciente_id: item.paciente_id,
           paciente_nome: item.pacientes?.nome || "Paciente não encontrado",
-          title: item.titulo,
-          description: item.descricao || "",
+          titulo: item.titulo,
+          descricao: item.descricao || "",
           due_date: item.due_date,
-          status: item.status,
-          priority: item.status || "alta", // Using status as priority since that's what we queried
-          tipo: "Tarefa" // Default tipo since the column might not exist
+          status: item.due_date < formattedDate ? "overdue" : item.status,
+          priority: 'alta', // Todas são urgentes neste card
+          tipo: "Tarefa", // Default tipo
+          responsible: item.responsible || "Não atribuído"
         })) || [];
 
         setTasks(formattedTasks);
       } catch (err) {
         console.error("Unexpected error fetching urgent tasks:", err);
-        toast.error("Erro ao carregar tarefas urgentes");
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar tarefas urgentes",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -126,10 +144,17 @@ export function UrgentTasksCard() {
       
       // Remove from list
       setTasks(tasks.filter(task => task.id !== taskId));
-      toast.success("Tarefa concluída com sucesso!");
+      toast({
+        title: "Sucesso",
+        description: "Tarefa concluída com sucesso!"
+      });
     } catch (err) {
       console.error("Unexpected error completing task:", err);
-      toast.error("Erro ao concluir tarefa");
+      toast({
+        title: "Erro",
+        description: "Erro ao concluir tarefa",
+        variant: "destructive"
+      });
     }
   };
   
@@ -146,10 +171,17 @@ export function UrgentTasksCard() {
       
       // Remove from list
       setTasks(tasks.filter(task => task.id !== taskId));
-      toast.success("Tarefa cancelada com sucesso!");
+      toast({
+        title: "Sucesso",
+        description: "Tarefa cancelada com sucesso!"
+      });
     } catch (err) {
       console.error("Unexpected error cancelling task:", err);
-      toast.error("Erro ao cancelar tarefa");
+      toast({
+        title: "Erro",
+        description: "Erro ao cancelar tarefa",
+        variant: "destructive"
+      });
     }
   };
 
@@ -183,7 +215,7 @@ export function UrgentTasksCard() {
           <div className="space-y-4">
             {tasks.map((task) => {
               const status = getStatusSeverity(task.due_date);
-              const priority = getPriorityBadgeVariant(task.priority);
+              const priority = getPriorityBadgeVariant(task.priority || 'alta');
               
               return (
                 <div 
@@ -193,7 +225,7 @@ export function UrgentTasksCard() {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1 mr-4">
-                      <h4 className="font-medium">{task.title}</h4>
+                      <h4 className="font-medium">{task.titulo}</h4>
                       {task.paciente_nome && (
                         <div className="text-sm text-muted-foreground">
                           Paciente: {task.paciente_nome}

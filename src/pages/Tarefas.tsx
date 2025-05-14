@@ -7,103 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, CheckCircle, ChevronLeft, Circle, Clock, Edit, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { Calendar, CheckCircle, ChevronLeft, Circle, Clock, Edit, Plus, Trash2, Loader2 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define task type
 interface Task {
   id: string;
-  title: string;
-  description: string;
-  dueDate: string;
-  status: 'pending' | 'completed' | 'overdue';
-  patientId: string;
-  patientName: string;
+  titulo: string;
+  descricao: string;
+  due_date: string;
+  status: string;
+  paciente_id: string;
+  paciente_nome?: string;
   responsible: string;
 }
-
-// Sample tasks for demonstration
-const initialTasks: Task[] = [
-  {
-    id: "task-1",
-    title: "Reavaliação craniana",
-    description: "Realizar nova medição e avaliar a evolução do tratamento",
-    dueDate: "2025-05-15",
-    status: "pending",
-    patientId: "1",
-    patientName: "João da Silva",
-    responsible: "Dr. Ana"
-  },
-  {
-    id: "task-2",
-    title: "Verificar adaptação à órtese",
-    description: "Avaliar se o paciente está se adaptando bem ao capacete e fazer ajustes necessários",
-    dueDate: "2025-05-10",
-    status: "pending",
-    patientId: "1",
-    patientName: "João da Silva",
-    responsible: "Dr. Ana"
-  },
-  {
-    id: "task-3",
-    title: "Acompanhamento de exercícios",
-    description: "Verificar se os exercícios de fisioterapia estão sendo realizados corretamente",
-    dueDate: "2025-04-30",
-    status: "overdue",
-    patientId: "1",
-    patientName: "João da Silva",
-    responsible: "Fisioterapeuta João"
-  },
-  {
-    id: "task-4",
-    title: "Encaminhar para neurologista",
-    description: "Enviar relatório e solicitar avaliação neurológica",
-    dueDate: "2025-05-03",
-    status: "completed",
-    patientId: "1",
-    patientName: "João da Silva",
-    responsible: "Dr. Ana"
-  },
-  {
-    id: "task-5",
-    title: "Verificação da medida craniana",
-    description: "Reavaliar o perímetro cefálico e comparar com medição anterior",
-    dueDate: "2025-05-12",
-    status: "pending",
-    patientId: "2",
-    patientName: "Maria Oliveira",
-    responsible: "Dr. Ana"
-  },
-  {
-    id: "task-6",
-    title: "Consulta de retorno",
-    description: "Avaliação pós-início do tratamento com capacete",
-    dueDate: "2025-05-07",
-    status: "pending",
-    patientId: "3",
-    patientName: "Lucas Mendes",
-    responsible: "Dr. Ana"
-  },
-  {
-    id: "task-7",
-    title: "Avaliação fisioterápica",
-    description: "Encaminhar para avaliação de assimetria cervical",
-    dueDate: "2025-04-25",
-    status: "overdue",
-    patientId: "4",
-    patientName: "Ana Clara Santos",
-    responsible: "Dr. Ana"
-  }
-];
-
-// List of sample patients
-const patients = [
-  { id: "1", nome: "João da Silva" },
-  { id: "2", nome: "Maria Oliveira" },
-  { id: "3", nome: "Lucas Mendes" },
-  { id: "4", nome: "Ana Clara Santos" },
-];
 
 export default function Tarefas() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -114,6 +33,8 @@ export default function Tarefas() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [patientFilter, setPatientFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [patients, setPatients] = useState<any[]>([]);
   
   // Form state for new/edit task
   const [taskTitle, setTaskTitle] = useState("");
@@ -123,16 +44,74 @@ export default function Tarefas() {
   const [taskPatientId, setTaskPatientId] = useState("");
 
   useEffect(() => {
-    // In a real app, fetch tasks from API
-    // For now, use initialTasks with updated status based on due date
-    const tasksWithUpdatedStatus = initialTasks.map(task => {
-      if (task.status !== 'completed' && isPastDue(task.dueDate)) {
-        return { ...task, status: 'overdue' as 'overdue' };
+    async function fetchTasks() {
+      try {
+        setLoading(true);
+        
+        // Buscar pacientes primeiro
+        const { data: patientsData, error: patientsError } = await supabase
+          .from("pacientes")
+          .select("id, nome")
+          .order("nome");
+          
+        if (patientsError) {
+          throw patientsError;
+        }
+        
+        setPatients(patientsData || []);
+        
+        // Buscar tarefas
+        const { data: tasksData, error: tasksError } = await supabase
+          .from("tarefas")
+          .select(`
+            *,
+            pacientes:paciente_id (nome)
+          `)
+          .order("due_date", { ascending: true });
+          
+        if (tasksError) {
+          throw tasksError;
+        }
+        
+        // Formatar os dados das tarefas
+        const formattedTasks = tasksData?.map(task => ({
+          id: task.id,
+          titulo: task.titulo,
+          descricao: task.descricao || "",
+          due_date: task.due_date,
+          status: task.status || "pendente",
+          paciente_id: task.paciente_id,
+          paciente_nome: task.pacientes?.nome || "Paciente não encontrado",
+          responsible: task.responsible || "Não atribuído"
+        })) || [];
+        
+        // Atualizar status para overdue se a data estiver no passado
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const tasksWithUpdatedStatus = formattedTasks.map(task => {
+          const taskDate = new Date(task.due_date);
+          
+          if (task.status === "pendente" && taskDate < today) {
+            return { ...task, status: "overdue" };
+          }
+          return task;
+        });
+        
+        setTasks(tasksWithUpdatedStatus);
+      } catch (error) {
+        console.error("Error loading tasks:", error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar tarefas",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
       }
-      return task;
-    });
+    }
     
-    setTasks(tasksWithUpdatedStatus);
+    fetchTasks();
   }, []);
 
   useEffect(() => {
@@ -144,114 +123,253 @@ export default function Tarefas() {
     }
     
     if (patientFilter !== "all") {
-      result = result.filter(task => task.patientId === patientFilter);
+      result = result.filter(task => task.paciente_id === patientFilter);
     }
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(task => 
-        task.title.toLowerCase().includes(query) || 
-        task.description.toLowerCase().includes(query) ||
-        task.patientName.toLowerCase().includes(query)
+        task.titulo.toLowerCase().includes(query) || 
+        task.descricao.toLowerCase().includes(query) ||
+        (task.paciente_nome && task.paciente_nome.toLowerCase().includes(query))
       );
     }
     
     // Sort by status and due date
     result.sort((a, b) => {
-      // Sort by status priority (overdue > pending > completed)
-      const statusPriority = { overdue: 0, pending: 1, completed: 2 };
-      if (statusPriority[a.status] !== statusPriority[b.status]) {
-        return statusPriority[a.status] - statusPriority[b.status];
+      // Sort by status priority (overdue > pendente > completed)
+      const statusPriority: Record<string, number> = { 
+        overdue: 0, 
+        pendente: 1, 
+        concluida: 2,
+        cancelada: 3
+      };
+      
+      const aPriority = statusPriority[a.status] ?? 99;
+      const bPriority = statusPriority[b.status] ?? 99;
+      
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
       }
+      
       // Then sort by due date (earliest first)
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
     });
     
     setFilteredTasks(result);
   }, [tasks, statusFilter, patientFilter, searchQuery]);
   
-  const handleCreateTask = () => {
-    if (!taskTitle || !taskDueDate || !taskResponsible || !taskPatientId) {
-      toast.error("Por favor, preencha todos os campos obrigatórios");
+  const handleCreateTask = async () => {
+    if (!taskTitle || !taskDueDate || !taskPatientId) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
       return;
     }
     
-    const selectedPatient = patients.find(patient => patient.id === taskPatientId);
-    if (!selectedPatient) {
-      toast.error("Paciente inválido");
-      return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Erro",
+          description: "Usuário não autenticado",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const newTask = {
+        titulo: taskTitle,
+        descricao: taskDescription,
+        due_date: taskDueDate,
+        status: 'pendente',
+        paciente_id: taskPatientId,
+        user_id: session.user.id,
+        responsible: taskResponsible || "Não atribuído"
+      };
+      
+      const { data, error } = await supabase
+        .from("tarefas")
+        .insert([newTask])
+        .select(`
+          *,
+          pacientes:paciente_id (nome)
+        `);
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data[0]) {
+        const formattedTask = {
+          id: data[0].id,
+          titulo: data[0].titulo,
+          descricao: data[0].descricao || "",
+          due_date: data[0].due_date,
+          status: data[0].status,
+          paciente_id: data[0].paciente_id,
+          paciente_nome: data[0].pacientes?.nome || "Paciente não encontrado",
+          responsible: data[0].responsible
+        };
+        
+        setTasks([...tasks, formattedTask]);
+      }
+      
+      resetTaskForm();
+      setIsNewTaskDialogOpen(false);
+      
+      toast({
+        title: "Sucesso",
+        description: "Tarefa criada com sucesso!",
+      });
+    } catch (error: any) {
+      console.error("Error creating task:", error);
+      toast({
+        title: "Erro",
+        description: `Erro ao criar tarefa: ${error.message}`,
+        variant: "destructive"
+      });
     }
-    
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      title: taskTitle,
-      description: taskDescription,
-      dueDate: taskDueDate,
-      status: 'pending',
-      patientId: taskPatientId,
-      patientName: selectedPatient.nome,
-      responsible: taskResponsible
-    };
-    
-    setTasks([...tasks, newTask]);
-    resetTaskForm();
-    setIsNewTaskDialogOpen(false);
-    toast.success("Tarefa criada com sucesso!");
   };
   
-  const handleEditTask = () => {
-    if (!currentTask || !taskTitle || !taskDueDate || !taskResponsible || !taskPatientId) {
-      toast.error("Por favor, preencha todos os campos obrigatórios");
+  const handleEditTask = async () => {
+    if (!currentTask || !taskTitle || !taskDueDate || !taskPatientId) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
       return;
     }
     
-    const selectedPatient = patients.find(patient => patient.id === taskPatientId);
-    if (!selectedPatient) {
-      toast.error("Paciente inválido");
-      return;
+    try {
+      const updatedTaskData = {
+        titulo: taskTitle,
+        descricao: taskDescription,
+        due_date: taskDueDate,
+        paciente_id: taskPatientId,
+        responsible: taskResponsible || "Não atribuído"
+      };
+      
+      const { data, error } = await supabase
+        .from("tarefas")
+        .update(updatedTaskData)
+        .eq("id", currentTask.id)
+        .select(`
+          *,
+          pacientes:paciente_id (nome)
+        `);
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data[0]) {
+        const updatedTask = {
+          id: data[0].id,
+          titulo: data[0].titulo,
+          descricao: data[0].descricao || "",
+          due_date: data[0].due_date,
+          status: data[0].status,
+          paciente_id: data[0].paciente_id,
+          paciente_nome: data[0].pacientes?.nome || "Paciente não encontrado",
+          responsible: data[0].responsible
+        };
+        
+        setTasks(tasks.map(task => 
+          task.id === currentTask.id ? updatedTask : task
+        ));
+      }
+      
+      resetTaskForm();
+      setCurrentTask(null);
+      setIsEditTaskDialogOpen(false);
+      
+      toast({
+        title: "Sucesso",
+        description: "Tarefa atualizada com sucesso!",
+      });
+    } catch (error: any) {
+      console.error("Error updating task:", error);
+      toast({
+        title: "Erro",
+        description: `Erro ao atualizar tarefa: ${error.message}`,
+        variant: "destructive"
+      });
     }
-    
-    const updatedTasks = tasks.map(task => 
-      task.id === currentTask.id 
-        ? { 
-            ...task, 
-            title: taskTitle, 
-            description: taskDescription, 
-            dueDate: taskDueDate, 
-            responsible: taskResponsible,
-            patientId: taskPatientId,
-            patientName: selectedPatient.nome
-          } 
-        : task
-    );
-    
-    setTasks(updatedTasks);
-    resetTaskForm();
-    setCurrentTask(null);
-    setIsEditTaskDialogOpen(false);
-    toast.success("Tarefa atualizada com sucesso!");
   };
   
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
-    toast.success("Tarefa excluída com sucesso!");
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from("tarefas")
+        .delete()
+        .eq("id", taskId);
+        
+      if (error) {
+        throw error;
+      }
+      
+      setTasks(tasks.filter(task => task.id !== taskId));
+      
+      toast({
+        title: "Sucesso",
+        description: "Tarefa excluída com sucesso!",
+      });
+    } catch (error: any) {
+      console.error("Error deleting task:", error);
+      toast({
+        title: "Erro",
+        description: `Erro ao excluir tarefa: ${error.message}`,
+        variant: "destructive"
+      });
+    }
   };
   
-  const handleToggleTaskStatus = (taskId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, status: task.status === 'completed' ? 'pending' : 'completed' } 
-        : task
-    ));
+  const handleToggleTaskStatus = async (taskId: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === "concluida" ? "pendente" : "concluida";
+      
+      const { data, error } = await supabase
+        .from("tarefas")
+        .update({ status: newStatus })
+        .eq("id", taskId)
+        .select();
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setTasks(tasks.map(task => 
+          task.id === taskId ? { ...task, status: newStatus } : task
+        ));
+      }
+      
+      toast({
+        title: "Sucesso",
+        description: `Tarefa marcada como ${newStatus === "concluida" ? "concluída" : "pendente"}!`,
+      });
+    } catch (error: any) {
+      console.error("Error updating task status:", error);
+      toast({
+        title: "Erro",
+        description: `Erro ao atualizar status da tarefa: ${error.message}`,
+        variant: "destructive"
+      });
+    }
   };
   
   const handleOpenEditDialog = (task: Task) => {
     setCurrentTask(task);
-    setTaskTitle(task.title);
-    setTaskDescription(task.description);
-    setTaskDueDate(task.dueDate);
+    setTaskTitle(task.titulo);
+    setTaskDescription(task.descricao);
+    setTaskDueDate(task.due_date);
     setTaskResponsible(task.responsible);
-    setTaskPatientId(task.patientId);
+    setTaskPatientId(task.paciente_id);
     setIsEditTaskDialogOpen(true);
   };
   
@@ -264,22 +382,29 @@ export default function Tarefas() {
   };
   
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('pt-BR').format(date);
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('pt-BR').format(date);
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
   };
   
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-500 hover:bg-green-600';
+      case 'concluida': return 'bg-green-500 hover:bg-green-600';
       case 'overdue': return 'bg-red-500 hover:bg-red-600';
+      case 'cancelada': return 'bg-gray-500 hover:bg-gray-600';
       default: return 'bg-yellow-500 hover:bg-yellow-600';
     }
   };
   
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'completed': return 'Concluída';
+      case 'concluida': return 'Concluída';
       case 'overdue': return 'Atrasada';
+      case 'cancelada': return 'Cancelada';
       default: return 'Pendente';
     }
   };
@@ -364,7 +489,7 @@ export default function Tarefas() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="responsible" className="text-sm font-medium">Responsável*</label>
+                      <label htmlFor="responsible" className="text-sm font-medium">Responsável</label>
                       <Input
                         id="responsible"
                         value={taskResponsible}
@@ -399,9 +524,10 @@ export default function Tarefas() {
                 <SelectContent>
                   <SelectGroup>
                     <SelectItem value="all">Todos os status</SelectItem>
-                    <SelectItem value="pending">Pendentes</SelectItem>
-                    <SelectItem value="completed">Concluídas</SelectItem>
+                    <SelectItem value="pendente">Pendentes</SelectItem>
+                    <SelectItem value="concluida">Concluídas</SelectItem>
                     <SelectItem value="overdue">Atrasadas</SelectItem>
+                    <SelectItem value="cancelada">Canceladas</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -424,89 +550,96 @@ export default function Tarefas() {
             </div>
           </div>
 
-          <div className="space-y-3">
-            {filteredTasks.length > 0 ? (
-              filteredTasks.map(task => (
-                <div 
-                  key={task.id} 
-                  className={`p-4 border rounded-md transition-all duration-200 ${
-                    task.status === 'completed' ? 'bg-muted/50 border-muted' : 'bg-card hover:bg-muted/10'
-                  }`}
-                >
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <button 
-                        onClick={() => handleToggleTaskStatus(task.id)}
-                        className="mt-1 text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {task.status === 'completed' ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <Circle className="h-5 w-5" />
-                        )}
-                      </button>
-                      <div className="flex-1">
-                        <h4 className={`font-medium ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
-                          {task.title}
-                        </h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {task.description}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
-                          <Link to={`/pacientes/${task.patientId}`} className="text-primary hover:underline">
-                            {task.patientName}
-                          </Link>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>{formatDate(task.dueDate)}</span>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-turquesa mr-2" />
+              <span>Carregando tarefas...</span>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredTasks.length > 0 ? (
+                filteredTasks.map(task => (
+                  <div 
+                    key={task.id} 
+                    className={`p-4 border rounded-md transition-all duration-200 ${
+                      task.status === 'concluida' ? 'bg-muted/50 border-muted' : 'bg-card hover:bg-muted/10'
+                    }`}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <button 
+                          onClick={() => handleToggleTaskStatus(task.id, task.status)}
+                          className="mt-1 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          {task.status === 'concluida' ? (
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <Circle className="h-5 w-5" />
+                          )}
+                        </button>
+                        <div className="flex-1">
+                          <h4 className={`font-medium ${task.status === 'concluida' ? 'line-through text-muted-foreground' : ''}`}>
+                            {task.titulo}
+                          </h4>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {task.descricao}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
+                            <Link to={`/pacientes/${task.paciente_id}`} className="text-primary hover:underline">
+                              {task.paciente_nome}
+                            </Link>
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span>{formatDate(task.due_date)}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Clock className="h-3.5 w-3.5" />
+                              <span>{task.responsible}</span>
+                            </div>
+                            <Badge 
+                              className={`text-white ${getStatusColor(task.status)}`}
+                            >
+                              {getStatusText(task.status)}
+                            </Badge>
                           </div>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>{task.responsible}</span>
-                          </div>
-                          <Badge 
-                            className={`text-white ${getStatusColor(task.status)}`}
-                          >
-                            {getStatusText(task.status)}
-                          </Badge>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-1 self-end md:self-start">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8" 
-                        onClick={() => handleOpenEditDialog(task)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-destructive hover:text-destructive" 
-                        onClick={() => handleDeleteTask(task.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      
+                      <div className="flex items-center gap-1 self-end md:self-start">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8" 
+                          onClick={() => handleOpenEditDialog(task)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-destructive hover:text-destructive" 
+                          onClick={() => handleDeleteTask(task.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p className="mb-2">Nenhuma tarefa encontrada</p>
+                  <p className="text-sm mb-4">Ajuste os filtros ou crie uma nova tarefa</p>
+                  <Button 
+                    onClick={() => setIsNewTaskDialogOpen(true)} 
+                    className="bg-turquesa hover:bg-turquesa/90"
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Adicionar Tarefa
+                  </Button>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="mb-2">Nenhuma tarefa encontrada</p>
-                <p className="text-sm mb-4">Ajuste os filtros ou crie uma nova tarefa</p>
-                <Button 
-                  onClick={() => setIsNewTaskDialogOpen(true)} 
-                  className="bg-turquesa hover:bg-turquesa/90"
-                >
-                  <Plus className="w-4 h-4 mr-1" /> Adicionar Tarefa
-                </Button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -561,7 +694,7 @@ export default function Tarefas() {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="edit-responsible" className="text-sm font-medium">Responsável*</label>
+                <label htmlFor="edit-responsible" className="text-sm font-medium">Responsável</label>
                 <Input
                   id="edit-responsible"
                   value={taskResponsible}
