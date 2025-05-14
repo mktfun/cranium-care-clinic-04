@@ -3,47 +3,11 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Clock, ChevronRight } from "lucide-react";
+import { Check, X, Clock, ChevronRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Task } from "@/types";
-
-// Mock data to use instead of Supabase queries
-const mockTasks: Task[] = [
-  {
-    id: "1",
-    paciente_id: "patient-1",
-    paciente_nome: "Lucas Silva",
-    title: "Medição craniana",
-    description: "Realizar nova medição e comparar com última avaliação",
-    due_date: "2025-05-16",
-    status: "pendente",
-    priority: "alta",
-    tipo: "Medição"
-  },
-  {
-    id: "2",
-    paciente_id: "patient-2",
-    paciente_nome: "Maria Oliveira",
-    title: "Ajuste do capacete",
-    description: "Verificar adaptação e ajustar conforme necessário",
-    due_date: "2025-05-14",
-    status: "pendente",
-    priority: "urgente",
-    tipo: "Acompanhamento"
-  },
-  {
-    id: "3",
-    paciente_id: "patient-3",
-    paciente_nome: "João Santos",
-    title: "Avaliação de torcicolo",
-    description: "Verificar evolução do torcicolo após 2 semanas de exercícios",
-    due_date: "2025-05-13",
-    status: "pendente",
-    priority: "alta",
-    tipo: "Avaliação"
-  }
-];
+import { supabase } from "@/integrations/supabase/client";
 
 export function UrgentTasksCard() {
   const navigate = useNavigate();
@@ -51,18 +15,56 @@ export function UrgentTasksCard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching data
     const fetchUrgentTasks = async () => {
       setLoading(true);
       try {
-        // Using mock data instead of supabase query
-        setTimeout(() => {
-          setTasks(mockTasks);
-          setLoading(false);
-        }, 500);
+        // Get current date
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        // Query tasks that are urgent or high priority and not completed
+        const { data, error } = await supabase
+          .from('tarefas')
+          .select(`
+            id,
+            titulo,
+            descricao,
+            paciente_id,
+            due_date,
+            status,
+            priority:status,
+            tipo,
+            pacientes(nome)
+          `)
+          .or(`priority.eq.urgente,priority.eq.alta`)
+          .eq('status', 'pendente')
+          .lte('due_date', formattedDate)
+          .order('due_date', { ascending: true })
+          .limit(3);
+
+        if (error) {
+          console.error("Error fetching urgent tasks:", error);
+          throw error;
+        }
+
+        // Format the tasks with proper structure
+        const formattedTasks = data?.map(item => ({
+          id: item.id,
+          paciente_id: item.paciente_id,
+          paciente_nome: item.pacientes?.nome || "Paciente não encontrado",
+          title: item.titulo,
+          description: item.descricao || "",
+          due_date: item.due_date,
+          status: item.status,
+          priority: item.priority || "alta",
+          tipo: item.tipo || "Tarefa"
+        })) || [];
+
+        setTasks(formattedTasks);
       } catch (err) {
         console.error("Unexpected error fetching urgent tasks:", err);
-        toast.error("Erro inesperado ao carregar tarefas");
+        toast.error("Erro ao carregar tarefas urgentes");
+      } finally {
         setLoading(false);
       }
     };
@@ -116,23 +118,41 @@ export function UrgentTasksCard() {
   
   const handleMarkComplete = async (taskId: string) => {
     try {
-      // Remove from list instead of update in DB
+      const { error } = await supabase
+        .from('tarefas')
+        .update({ status: 'concluida' })
+        .eq('id', taskId);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Remove from list
       setTasks(tasks.filter(task => task.id !== taskId));
       toast.success("Tarefa concluída com sucesso!");
     } catch (err) {
       console.error("Unexpected error completing task:", err);
-      toast.error("Erro inesperado ao concluir tarefa");
+      toast.error("Erro ao concluir tarefa");
     }
   };
   
   const handleMarkCancelled = async (taskId: string) => {
     try {
-      // Remove from list instead of update in DB
+      const { error } = await supabase
+        .from('tarefas')
+        .update({ status: 'cancelada' })
+        .eq('id', taskId);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Remove from list
       setTasks(tasks.filter(task => task.id !== taskId));
       toast.success("Tarefa cancelada com sucesso!");
     } catch (err) {
       console.error("Unexpected error cancelling task:", err);
-      toast.error("Erro inesperado ao cancelar tarefa");
+      toast.error("Erro ao cancelar tarefa");
     }
   };
 
@@ -147,10 +167,20 @@ export function UrgentTasksCard() {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-center text-muted-foreground py-6">Carregando tarefas...</div>
+          <div className="flex justify-center items-center text-muted-foreground py-6">
+            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+            <span>Carregando tarefas...</span>
+          </div>
         ) : tasks.length === 0 ? (
           <div className="text-center text-muted-foreground py-6">
-            Nenhuma tarefa urgente pendente
+            <p className="mb-2">Nenhuma tarefa urgente pendente</p>
+            <Button 
+              onClick={() => navigate("/tarefas")} 
+              variant="outline"
+              className="mt-2"
+            >
+              Gerenciar Tarefas
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -216,7 +246,10 @@ export function UrgentTasksCard() {
                         size="icon" 
                         variant="ghost" 
                         className="h-7 w-7"
-                        onClick={() => navigate(`/tarefas/${task.id}`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/tarefas`);
+                        }}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>

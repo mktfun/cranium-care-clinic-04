@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -12,35 +13,7 @@ import { toast } from "sonner";
 import { AsymmetryType, SeverityLevel, Paciente } from "@/types";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { Link } from "react-router-dom";
-import { Json } from "@/integrations/supabase/types";
-
-interface MedicacaoPaciente {
-  id: string;
-  nome: string;
-  dataNascimento: string;
-  idadeEmMeses: number;
-  ultimaMedicao?: {
-    data: string;
-    status: SeverityLevel;
-    asymmetryType: AsymmetryType;
-  };
-}
-
-interface Medicao {
-  id: string;
-  paciente_id: string;
-  data: string;
-  indice_craniano?: number;
-  cvai?: number;
-  status?: SeverityLevel;
-}
-
-interface StatusDistribuicao {
-  normal: number;
-  leve: number;
-  moderada: number;
-  severa: number;
-}
+import { MobileChartView } from "@/components/MobileChartView";
 
 interface TrendData {
   value: number;
@@ -51,8 +24,13 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [clinicaNome, setClinicaNome] = useState("CraniumCare");
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [medicoes, setMedicoes] = useState<Medicao[]>([]);
-  const [statusDistribuicaoGeral, setStatusDistribuicaoGeral] = useState<StatusDistribuicao>({
+  const [medicoes, setMedicoes] = useState<any[]>([]);
+  const [statusDistribuicaoGeral, setStatusDistribuicaoGeral] = useState<{
+    normal: number;
+    leve: number;
+    moderada: number;
+    severa: number;
+  }>({
     normal: 0,
     leve: 0,
     moderada: 0,
@@ -63,6 +41,18 @@ export default function Dashboard() {
   const [pacientesAlertaMesAtual, setPacientesAlertaMesAtual] = useState(0);
   const [trendPacientesAlerta, setTrendPacientesAlerta] = useState<TrendData | undefined>(undefined);
   const [percentualPacientesAlerta, setPercentualPacientesAlerta] = useState(0);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     async function carregarDados() {
@@ -102,21 +92,10 @@ export default function Dashboard() {
           return;
         }
         
-        // Process patients data to match the Paciente interface
-        const processedPacientes = pacientesData?.map(p => ({
-          id: p.id,
-          nome: p.nome,
-          data_nascimento: p.data_nascimento,
-          dataNascimento: p.data_nascimento,
-          sexo: p.sexo || '',
-          responsaveis: p.responsaveis,
-          created_at: p.created_at,
-          updated_at: p.updated_at,
-          user_id: p.user_id,
-          idadeEmMeses: calculateAgeInMonths(p.data_nascimento)
-        })) || [];
-        
-        setPacientes(processedPacientes);
+        if (!pacientesData) {
+          setPacientes([]);
+          return;
+        }
 
         const { data: medicoesData, error: medicoesError } = await supabase
           .from("medicoes")
@@ -128,6 +107,7 @@ export default function Dashboard() {
           toast.error("Erro ao carregar medições");
           return;
         }
+        
         const medicoesProcessadas = medicoesData || [];
         setMedicoes(medicoesProcessadas);
 
@@ -138,14 +118,14 @@ export default function Dashboard() {
         const primeiroDiaMesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
         const ultimoDiaMesAnterior = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
 
-        const getPacientesEmAlertaNoPeriodo = (meds: Medicao[], inicio: Date, fim: Date): Set<string> => {
+        const getPacientesEmAlertaNoPeriodo = (meds: any[], inicio: Date, fim: Date): Set<string> => {
           const pacientesEmAlertaSet = new Set<string>();
           meds.forEach(medicao => {
             const dataMedicao = new Date(medicao.data);
             if (dataMedicao >= inicio && dataMedicao <= fim) {
               const { severityLevel } = getCranialStatus(
-                (medicao as any).indice_craniano || 0,
-                (medicao as any).cvai || 0
+                medicao.indice_craniano || 0,
+                medicao.cvai || 0
               );
               if (severityLevel === "moderada" || severityLevel === "severa") {
                 pacientesEmAlertaSet.add(medicao.paciente_id);
@@ -190,14 +170,14 @@ export default function Dashboard() {
           setPercentualPacientesAlerta(0);
         }
         
-        // Processar distribuição geral de status (para outros cards, se necessário, ou apenas para consistência)
+        // Processar distribuição geral de status
         const distribuicaoGeral = { normal: 0, leve: 0, moderada: 0, severa: 0 };
-        const pacientesComMedicaoIds = new Set<string>(); // Para contar status da última medição de cada paciente
+        const pacientesComMedicaoIds = new Set<string>();
         medicoesProcessadas
           .sort((a,b) => new Date(b.data).getTime() - new Date(a.data).getTime())
           .forEach(medicao => {
             if(!pacientesComMedicaoIds.has(medicao.paciente_id)){
-                const { severityLevel } = getCranialStatus((medicao as any).indice_craniano || 0, (medicao as any).cvai || 0);
+                const { severityLevel } = getCranialStatus(medicao.indice_craniano || 0, medicao.cvai || 0);
                 distribuicaoGeral[severityLevel]++;
                 pacientesComMedicaoIds.add(medicao.paciente_id);
             }
@@ -205,37 +185,40 @@ export default function Dashboard() {
         setStatusDistribuicaoGeral(distribuicaoGeral);
 
         // Processar pacientes e suas últimas medições para cards de destaque
-        const pacientesProcessadosParaCard = (pacientesData || []).map(paciente => {
+        const pacientesProcessados = pacientesData.map(paciente => {
           const medicoesDoPaciente = medicoesProcessadas
             .filter(m => m.paciente_id === paciente.id)
             .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+          
           const ultimaMedicao = medicoesDoPaciente[0];
           let ultimaMedicaoProcessada;
+          
           if (ultimaMedicao) {
-            const { severityLevel, asymmetryType } = getCranialStatus((ultimaMedicao as any).indice_craniano || 0, (ultimaMedicao as any).cvai || 0);
-            ultimaMedicaoProcessada = { data: ultimaMedicao.data, status: severityLevel, asymmetryType };
+            const { severityLevel, asymmetryType } = getCranialStatus(
+              ultimaMedicao.indice_craniano || 0, 
+              ultimaMedicao.cvai || 0
+            );
+            ultimaMedicaoProcessada = { 
+              data: ultimaMedicao.data, 
+              status: severityLevel, 
+              asymmetryType 
+            };
           }
+          
           const hoje = new Date();
           const dataNascimento = new Date(paciente.data_nascimento);
-          const idadeEmMeses = ((hoje.getFullYear() - dataNascimento.getFullYear()) * 12) + (hoje.getMonth() - dataNascimento.getMonth());
+          const idadeEmMeses = ((hoje.getFullYear() - dataNascimento.getFullYear()) * 12) + 
+                              (hoje.getMonth() - dataNascimento.getMonth());
           
-          // Create an object that conforms to the Paciente interface
-          return { 
-            id: paciente.id,
-            nome: paciente.nome,
-            data_nascimento: paciente.data_nascimento,
+          return {
+            ...paciente,
+            idadeEmMeses,
             dataNascimento: paciente.data_nascimento,
-            sexo: paciente.sexo || '',
-            responsaveis: paciente.responsaveis,
-            created_at: paciente.created_at,
-            updated_at: paciente.updated_at,
-            user_id: paciente.user_id,
-            idadeEmMeses, 
-            ultimaMedicao: ultimaMedicaoProcessada 
-          };
+            ultimaMedicao: ultimaMedicaoProcessada
+          } as Paciente;
         });
-        setPacientes(pacientesProcessadosParaCard);
-
+        
+        setPacientes(pacientesProcessados);
       } catch (err) {
         console.error("Erro:", err);
         toast.error("Erro ao carregar dados do dashboard");
@@ -243,6 +226,7 @@ export default function Dashboard() {
         setCarregando(false);
       }
     }
+    
     carregarDados();
   }, [navigate]);
   
@@ -332,22 +316,29 @@ export default function Dashboard() {
         <div onClick={() => navegarParaPacientesComFiltro("alerta")} className="cursor-pointer">
           <StatsCard
             title="Pacientes em Alerta"
-            value={pacientesAlertaMesAtual} // Valor atualizado
-            description={`${percentualPacientesAlerta}% dos pacientes`} // Descrição atualizada
+            value={pacientesAlertaMesAtual}
+            description={`${percentualPacientesAlerta}% dos pacientes`}
             icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-            trend={trendPacientesAlerta} // Trend atualizada
+            trend={trendPacientesAlerta}
           />
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <div className="md:col-span-2">
-          <PacientesMedicoesChart altura={350} />
+      {/* Charts Section - Responsive View Switch */}
+      {isMobileView ? (
+        // Mobile View - Carousel of Charts
+        <MobileChartView />
+      ) : (
+        // Desktop View - Grid Layout
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="md:col-span-2">
+            <PacientesMedicoesChart altura={350} />
+          </div>
+          <div className="space-y-6">
+            <UrgentTasksCard />
+          </div>
         </div>
-        <div className="space-y-6">
-          <UrgentTasksCard />
-        </div>
-      </div>
+      )}
 
       <div>
         <h3 className="text-lg font-medium mb-4">Pacientes em Destaque</h3>

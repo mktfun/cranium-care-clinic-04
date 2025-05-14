@@ -8,12 +8,12 @@ interface Medicao {
   data: string;
   comprimento: number;
   largura: number;
-  diagonalD: number;
-  diagonalE: number;
-  diferencaDiagonais: number;
+  diagonal_d: number;
+  diagonal_e: number;
+  diferenca_diagonais: number;
   cvai: number;
-  indiceCraniano: number;
-  perimetroCefalico?: number;
+  indice_craniano: number;
+  perimetro_cefalico?: number;
   recomendacoes?: string[];
 }
 
@@ -58,7 +58,7 @@ export function MedicoesHistoricoTable({
         <tbody>
           {medicoesOrdenadas.map((med, index) => {
             const { asymmetryType, severityLevel } = getCranialStatus(
-              med.indiceCraniano,
+              med.indice_craniano,
               med.cvai
             );
             
@@ -68,12 +68,12 @@ export function MedicoesHistoricoTable({
                 <td className="p-2 text-xs">{formatAge(dataNascimento, med.data)}</td>
                 <td className="p-2 text-xs">{med.comprimento}</td>
                 <td className="p-2 text-xs">{med.largura}</td>
-                <td className="p-2 text-xs">{med.diagonalD}</td>
-                <td className="p-2 text-xs">{med.diagonalE}</td>
-                <td className="p-2 text-xs">{med.diferencaDiagonais}</td>
+                <td className="p-2 text-xs">{med.diagonal_d}</td>
+                <td className="p-2 text-xs">{med.diagonal_e}</td>
+                <td className="p-2 text-xs">{med.diferenca_diagonais}</td>
                 <td className="p-2 text-xs">{med.cvai}%</td>
-                <td className="p-2 text-xs">{med.indiceCraniano}%</td>
-                <td className="p-2 text-xs">{med.perimetroCefalico || "-"}</td>
+                <td className="p-2 text-xs">{med.indice_craniano}%</td>
+                <td className="p-2 text-xs">{med.perimetro_cefalico || "-"}</td>
                 <td className="p-2">
                   <StatusBadge 
                     status={severityLevel} 

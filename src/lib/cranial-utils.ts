@@ -1,77 +1,82 @@
 
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-import { 
-  calculateCVAI, 
-  calculateCranialIndex, 
-  determineSeverityLevel 
-} from "./cranial-analysis";
-
-// Export these types so they can be used across the application
-export type AsymmetryType = "Normal" | "Plagiocefalia" | "Braquicefalia" | "Dolicocefalia" | "Misto";
+// Define types for asymmetry and severity
+export type AsymmetryType = "Braquicefalia" | "Dolicocefalia" | "Plagiocefalia" | "Misto" | "Normal";
 export type SeverityLevel = "normal" | "leve" | "moderada" | "severa";
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+// Threshold values
+const CVAI_THRESHOLDS = {
+  NORMAL: 3.5,
+  LEVE: 6.25,
+  MODERADA: 8.75,
+  // Above 8.75 is considered 'severa'
+};
 
-// Function to determine type of asymmetry based on measurements
-export function determineAsymmetryType(cranialIndex: number, cvai: number): AsymmetryType {
-  // Criteria based on protocols
-  const hasBrachy = cranialIndex >= 81;
-  const hasDolich = cranialIndex <= 76;
-  const hasPlagi = cvai >= 3.5;
-  
-  if (hasBrachy && hasPlagi) {
-    return "Misto";
-  } else if (hasDolich && hasPlagi) {
-    return "Misto";
-  } else if (hasBrachy) {
-    return "Braquicefalia";
-  } else if (hasDolich) {
-    return "Dolicocefalia";
-  } else if (hasPlagi) {
-    return "Plagiocefalia";
-  } else {
-    return "Normal";
-  }
-}
+const IC_THRESHOLDS = {
+  DOLICOCEFALIA_UPPER: 76, // Below this is dolicocefalia
+  NORMAL_UPPER: 81, // 76-81 is normal
+  BRAQUICEFALIA_MODERATE: 90, // 81-90 is moderate braquicefalia
+  // Above 90 is severe braquicefalia
+};
 
-// Function to determine cranial status based on measurements
-export function getCranialStatus(indiceCraniano: number, cvai: number): {
+interface CranialStatus {
   asymmetryType: AsymmetryType;
   severityLevel: SeverityLevel;
-} {
-  // Determine the type of asymmetry based on indices
-  const asymmetryType = determineAsymmetryType(indiceCraniano, cvai);
-  
-  // Determine severity level based on type and measurements
-  const severityLevel = determineSeverityLevel(asymmetryType, indiceCraniano, cvai);
-  
-  return {
-    asymmetryType,
-    severityLevel
-  };
 }
 
-// Helper function to calculate indices from raw measurements
-export function calculateCranialIndices(
-  comprimento: number,
-  largura: number,
-  diagonalD: number,
-  diagonalE: number
-): {
-  indiceCraniano: number;
-  cvai: number;
-  diferencaDiagonais: number;
-} {
-  const indiceCraniano = calculateCranialIndex(largura, comprimento);
-  const cvai = calculateCVAI(diagonalD, diagonalE);
-  const diferencaDiagonais = Math.abs(diagonalD - diagonalE);
+/**
+ * Determines the cranial status based on the cranial index and CVAI
+ * @param indiceCraniano - Cranial index (cephalic index) as a percentage
+ * @param cvai - Cranial Vault Asymmetry Index as a percentage
+ * @returns Object with asymmetry type and severity level
+ */
+export function getCranialStatus(indiceCraniano: number, cvai: number): CranialStatus {
+  // Default status
+  let asymmetryType: AsymmetryType = "Normal";
+  let severityLevel: SeverityLevel = "normal";
+
+  // Determine asymmetry type based on cranial index
+  if (indiceCraniano < IC_THRESHOLDS.DOLICOCEFALIA_UPPER) {
+    asymmetryType = "Dolicocefalia";
+  } else if (indiceCraniano > IC_THRESHOLDS.NORMAL_UPPER) {
+    asymmetryType = "Braquicefalia";
+  } 
   
-  return {
-    indiceCraniano,
-    cvai,
-    diferencaDiagonais
-  };
+  // Determine if there's plagiocephaly based on CVAI
+  if (cvai > CVAI_THRESHOLDS.NORMAL) {
+    // If already has another asymmetry type, it's a mixed asymmetry
+    if (asymmetryType !== "Normal") {
+      asymmetryType = "Misto";
+    } else {
+      asymmetryType = "Plagiocefalia";
+    }
+  }
+
+  // Determine severity level
+  // For braquicefalia/dolicocefalia
+  if (asymmetryType === "Braquicefalia") {
+    if (indiceCraniano > IC_THRESHOLDS.BRAQUICEFALIA_MODERATE) {
+      severityLevel = "severa";
+    } else if (indiceCraniano > IC_THRESHOLDS.NORMAL_UPPER) {
+      severityLevel = "moderada";
+    }
+  } else if (asymmetryType === "Dolicocefalia") {
+    // Lower is more severe for dolicocefalia
+    if (indiceCraniano < IC_THRESHOLDS.DOLICOCEFALIA_UPPER - 5) {
+      severityLevel = "moderada";
+    } else if (indiceCraniano < IC_THRESHOLDS.DOLICOCEFALIA_UPPER - 10) {
+      severityLevel = "severa";
+    }
+  }
+
+  // For plagiocephaly (or mixed cases)
+  if (cvai > CVAI_THRESHOLDS.MODERADA) {
+    severityLevel = "severa";
+  } else if (cvai > CVAI_THRESHOLDS.LEVE) {
+    severityLevel = "moderada";
+  } else if (cvai > CVAI_THRESHOLDS.NORMAL) {
+    severityLevel = "leve";
+  }
+
+  // Return the determined status
+  return { asymmetryType, severityLevel };
 }
