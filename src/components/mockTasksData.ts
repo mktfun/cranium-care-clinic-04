@@ -1,6 +1,5 @@
-
 import { Task } from "@/types";
 
-// This file now only defines a type, without mock data
-// All data is fetched directly from the database
+// Este arquivo está vazio agora que não usamos mais dados mockados
+
 export const mockUrgentTasks: Task[] = [];

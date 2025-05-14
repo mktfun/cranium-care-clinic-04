@@ -14,8 +14,8 @@ export interface Paciente {
   created_at?: string;
   updated_at?: string;
   user_id?: string;
-  dataNascimento?: string; // Added for compatibility with existing components
-  idadeEmMeses?: number;   // Added for compatibility with existing components
+  dataNascimento: string; // Changed to required for compatibility with PacienteCard
+  idadeEmMeses?: number;   
   ultimaMedicao?: {
     data: string;
     status: SeverityLevel;
@@ -35,7 +35,6 @@ export interface Task {
   tipo: string;
 }
 
-// Add missing type definitions
 export interface Medicao {
   id: string;
   paciente_id: string;
@@ -53,6 +52,11 @@ export interface Medicao {
   recomendacoes?: string[];
   created_at?: string;
   updated_at?: string;
+  // Adicionando aliás para compatibilidade com código existente
+  comprimento_maximo?: number;
+  largura_maxima?: number;
+  diagonal_direita?: number;
+  diagonal_esquerda?: number;
 }
 
 export interface Consulta {
@@ -64,6 +68,12 @@ export interface Consulta {
   observacoes?: string;
   created_at?: string;
   updated_at?: string;
+  // Adicionando os campos que estão sendo usados em ConsultasTab.tsx
+  profissional?: string;
+  especialidade?: string;
+  motivo?: string;
+  diagnostico?: string;
+  tratamento?: string;
 }
 
 export interface Prontuario {

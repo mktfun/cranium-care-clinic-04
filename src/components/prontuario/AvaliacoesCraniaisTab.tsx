@@ -56,18 +56,19 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
             id: item.id,
             paciente_id: item.paciente_id,
             data: item.data,
-            comprimento_maximo: item.comprimento || 0,
-            largura_maxima: item.largura || 0,
-            diagonal_direita: item.diagonal_d,
-            diagonal_esquerda: item.diagonal_e,
+            comprimento: item.comprimento || 0,
+            largura: item.largura || 0,
+            diagonal_d: item.diagonal_d,
+            diagonal_e: item.diagonal_e,
             diferenca_diagonais: item.diferenca_diagonais || 0,
             cvai: item.cvai,
             indice_craniano: item.indice_craniano,
             perimetro_cefalico: item.perimetro_cefalico,
+            status: item.status,
             observacoes: item.observacoes,
             created_at: item.created_at,
             updated_at: item.updated_at
-          }));
+          })) as Medicao[];
           
           setMedicoes(medicoesData);
         }

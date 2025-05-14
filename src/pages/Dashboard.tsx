@@ -211,8 +211,8 @@ export default function Dashboard() {
           
           return {
             ...paciente,
+            dataNascimento: paciente.data_nascimento, // Garantindo que este campo esteja presente
             idadeEmMeses,
-            dataNascimento: paciente.data_nascimento,
             ultimaMedicao: ultimaMedicaoProcessada
           };
         });
