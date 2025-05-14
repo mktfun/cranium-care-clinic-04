@@ -80,3 +80,26 @@ export function getCranialStatus(indiceCraniano: number, cvai: number): CranialS
   // Return the determined status
   return { asymmetryType, severityLevel };
 }
+
+/**
+ * Calculates the Cranial Vault Asymmetry Index (CVAI)
+ * @param comprimento - Cranial length in mm
+ * @param largura - Cranial width in mm
+ * @param diagonalDireita - Right diagonal measurement in mm
+ * @param diagonalEsquerda - Left diagonal measurement in mm
+ * @returns CVAI as a percentage
+ */
+export function calculateAsymmetry(
+  comprimento: number, 
+  largura: number, 
+  diagonalDireita: number, 
+  diagonalEsquerda: number
+): number {
+  // Calculate CVAI: (|Diagonal A - Diagonal B| / Diagonal Maior) x 100%
+  const diagonalDifference = Math.abs(diagonalDireita - diagonalEsquerda);
+  const maxDiagonal = Math.max(diagonalDireita, diagonalEsquerda);
+  
+  if (maxDiagonal === 0) return 0; // Avoid division by zero
+  
+  return (diagonalDifference / maxDiagonal) * 100;
+}
