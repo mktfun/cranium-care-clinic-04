@@ -7,31 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash } from "lucide-react";
-
-// Mock data for historico medico
-const mockHistoricoMedico = [
-  {
-    id: "1",
-    prontuario_id: "1",
-    paciente_id: "123",
-    tipo: "Doença",
-    descricao: "Sarampo",
-    data: "2024-03-15",
-    tratamento: "Repouso e medicação",
-    observacoes: "Recuperação completa"
-  },
-  {
-    id: "2",
-    prontuario_id: "1",
-    paciente_id: "123",
-    tipo: "Cirurgia",
-    descricao: "Correção de hérnia umbilical",
-    data: "2024-02-10",
-    tratamento: "Procedimento cirúrgico",
-    observacoes: "Sem complicações"
-  }
-];
+import { Plus, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { HistoricoMedicoList } from "@/components/historico/HistoricoMedicoList";
 
 interface HistoricoMedicoTabProps {
   prontuario: any;
@@ -56,32 +34,40 @@ export function HistoricoMedicoTab({ prontuario, pacienteId }: HistoricoMedicoTa
       try {
         setLoading(true);
         
-        // Use mock data instead of supabase query
-        setTimeout(() => {
-          setHistoricoMedico(mockHistoricoMedico);
-          setLoading(false);
-        }, 500);
+        const { data, error } = await supabase
+          .from('historico_medico')
+          .select('*')
+          .eq('paciente_id', pacienteId)
+          .order('data', { ascending: false });
+          
+        if (error) {
+          console.error('Erro ao carregar histórico médico:', error);
+          toast.error('Erro ao carregar histórico médico.');
+          return;
+        }
         
+        setHistoricoMedico(data || []);
       } catch (err) {
-        console.error('Erro ao carregar histórico médico:', err);
-        toast.error('Erro ao carregar histórico médico.');
+        console.error('Erro inesperado:', err);
+        toast.error('Erro ao carregar dados do histórico médico.');
+      } finally {
         setLoading(false);
       }
     }
     
-    if (prontuario?.id) {
+    if (pacienteId) {
       fetchHistoricoMedico();
     }
-  }, [prontuario?.id, pacienteId]);
+  }, [pacienteId]);
   
   const handleOpenDialog = (item?: any) => {
     if (item) {
       setFormData({
         tipo: item.tipo,
         descricao: item.descricao,
-        data: item.data,
-        tratamento: item.tratamento,
-        observacoes: item.observacoes
+        data: item.data.substring(0, 10), // Format as YYYY-MM-DD for input
+        tratamento: item.tratamento || "",
+        observacoes: item.observacoes || ""
       });
       setEditingItemId(item.id);
     } else {
@@ -108,33 +94,65 @@ export function HistoricoMedicoTab({ prontuario, pacienteId }: HistoricoMedicoTa
       }
       
       if (editingItemId) {
-        // Simulate updating item
-        const updatedHistorico = historicoMedico.map(item => {
-          if (item.id === editingItemId) {
-            return { ...item, ...formData };
-          }
-          return item;
-        });
+        // Update existing record
+        const { error } = await supabase
+          .from('historico_medico')
+          .update({
+            tipo: formData.tipo,
+            descricao: formData.descricao,
+            data: formData.data,
+            tratamento: formData.tratamento || null,
+            observacoes: formData.observacoes || null
+          })
+          .eq('id', editingItemId);
+          
+        if (error) {
+          console.error('Erro ao atualizar registro:', error);
+          toast.error('Erro ao atualizar registro.');
+          return;
+        }
         
-        setHistoricoMedico(updatedHistorico);
-        toast.success('Item atualizado com sucesso!');
+        toast.success('Registro atualizado com sucesso!');
       } else {
-        // Simulate creating new item
-        const newItem = {
-          id: `temp-${Date.now()}`,
-          prontuario_id: prontuario.id,
-          paciente_id: pacienteId,
-          ...formData
-        };
+        // Create new record
+        const { error } = await supabase
+          .from('historico_medico')
+          .insert({
+            paciente_id: pacienteId,
+            prontuario_id: prontuario?.id || null,
+            tipo: formData.tipo,
+            descricao: formData.descricao,
+            data: formData.data,
+            tratamento: formData.tratamento || null,
+            observacoes: formData.observacoes || null
+          });
+          
+        if (error) {
+          console.error('Erro ao adicionar registro:', error);
+          toast.error('Erro ao adicionar registro.');
+          return;
+        }
         
-        setHistoricoMedico([...historicoMedico, newItem]);
-        toast.success('Item adicionado com sucesso!');
+        toast.success('Registro adicionado com sucesso!');
+      }
+      
+      // Refresh data
+      const { data, error } = await supabase
+        .from('historico_medico')
+        .select('*')
+        .eq('paciente_id', pacienteId)
+        .order('data', { ascending: false });
+        
+      if (error) {
+        console.error('Erro ao recarregar dados:', error);
+      } else {
+        setHistoricoMedico(data || []);
       }
       
       setDialogOpen(false);
     } catch (err) {
-      console.error('Erro ao salvar histórico médico:', err);
-      toast.error('Erro ao salvar histórico médico.');
+      console.error('Erro inesperado:', err);
+      toast.error('Erro ao salvar registro.');
     } finally {
       setLoading(false);
     }
@@ -144,24 +162,25 @@ export function HistoricoMedicoTab({ prontuario, pacienteId }: HistoricoMedicoTa
     try {
       setLoading(true);
       
-      // Simulate deletion
-      const filteredHistorico = historicoMedico.filter(item => item.id !== id);
-      setHistoricoMedico(filteredHistorico);
+      const { error } = await supabase
+        .from('historico_medico')
+        .delete()
+        .eq('id', id);
+        
+      if (error) {
+        console.error('Erro ao remover registro:', error);
+        toast.error('Erro ao remover registro.');
+        return;
+      }
       
-      toast.success('Item removido com sucesso!');
+      setHistoricoMedico(historicoMedico.filter(item => item.id !== id));
+      toast.success('Registro removido com sucesso!');
     } catch (err) {
-      console.error('Erro ao remover item do histórico:', err);
-      toast.error('Erro ao remover item do histórico.');
+      console.error('Erro inesperado:', err);
+      toast.error('Erro ao remover registro.');
     } finally {
       setLoading(false);
     }
-  };
-  
-  const formatarData = (dataString: string) => {
-    if (!dataString) return "N/A";
-    const data = new Date(dataString);
-    if (isNaN(data.getTime())) return "Data inválida";
-    return data.toLocaleDateString('pt-BR');
   };
 
   return (
@@ -171,6 +190,7 @@ export function HistoricoMedicoTab({ prontuario, pacienteId }: HistoricoMedicoTa
         <Button 
           onClick={() => handleOpenDialog()}
           className="flex items-center gap-1 bg-turquesa hover:bg-turquesa/90"
+          disabled={loading}
         >
           <Plus className="h-4 w-4" /> Adicionar
         </Button>
@@ -178,73 +198,15 @@ export function HistoricoMedicoTab({ prontuario, pacienteId }: HistoricoMedicoTa
       
       {loading && historicoMedico.length === 0 ? (
         <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
           <p className="mt-2 text-muted-foreground">Carregando histórico médico...</p>
         </div>
-      ) : historicoMedico.length > 0 ? (
-        <div className="space-y-4">
-          {historicoMedico.map((item) => (
-            <div 
-              key={item.id} 
-              className="border rounded-lg p-4 hover:border-primary/50 transition-colors"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded text-xs">{item.tipo}</span>
-                    <h4 className="font-medium">{item.descricao}</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">Data: {formatarData(item.data)}</p>
-                  
-                  {item.tratamento && (
-                    <div className="mb-2">
-                      <span className="text-sm font-medium">Tratamento:</span>
-                      <p className="text-sm">{item.tratamento}</p>
-                    </div>
-                  )}
-                  
-                  {item.observacoes && (
-                    <div>
-                      <span className="text-sm font-medium">Observações:</span>
-                      <p className="text-sm">{item.observacoes}</p>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    size="icon" 
-                    variant="outline" 
-                    className="h-8 w-8" 
-                    onClick={() => handleOpenDialog(item)}
-                    title="Editar"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    size="icon" 
-                    variant="outline" 
-                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" 
-                    onClick={() => handleDelete(item.id)}
-                    title="Excluir"
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
       ) : (
-        <div className="text-center py-8 border rounded-lg">
-          <p className="text-muted-foreground">Nenhum registro no histórico médico.</p>
-          <Button 
-            onClick={() => handleOpenDialog()} 
-            className="mt-4 bg-turquesa hover:bg-turquesa/90"
-          >
-            <Plus className="h-4 w-4 mr-2" /> Adicionar Primeiro Registro
-          </Button>
-        </div>
+        <HistoricoMedicoList 
+          historico={historicoMedico} 
+          onEdit={handleOpenDialog}
+          onDelete={handleDelete}
+        />
       )}
       
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -322,10 +284,10 @@ export function HistoricoMedicoTab({ prontuario, pacienteId }: HistoricoMedicoTa
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={loading}>Cancelar</Button>
             <Button onClick={handleSave} disabled={loading}>
               {loading ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em]"></div>
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : editingItemId ? 'Atualizar' : 'Adicionar'}
             </Button>
           </DialogFooter>

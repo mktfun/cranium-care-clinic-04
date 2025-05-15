@@ -1,61 +1,29 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Plus, Pencil, Save, Trash2, X, Calendar, FileText 
-} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Consulta } from "@/types";
+import { Plus, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { ConsultasList } from "@/components/historico/ConsultasList";
 
 interface ConsultasTabProps {
   pacienteId: string;
 }
 
-// Mock data for consultas
-const mockConsultas: Consulta[] = [
-  {
-    id: "1",
-    paciente_id: "patient-1",
-    data: "2025-05-10T00:00:00",
-    tipo: "Avaliação",
-    descricao: "Avaliação inicial de fisioterapia",
-    profissional: "Dr. Ana Silva",
-    especialidade: "Fisioterapia",
-    motivo: "Avaliação inicial",
-    diagnostico: "Plagiocefalia leve, sem alterações neurológicas",
-    tratamento: "Recomenda-se exercícios de fisioterapia e reposicionamento",
-    observacoes: "Paciente colaborativo durante a avaliação",
-    created_at: "2025-05-10T14:30:00",
-    updated_at: "2025-05-10T14:30:00"
-  },
-  {
-    id: "2",
-    paciente_id: "patient-1",
-    data: "2025-05-01T00:00:00",
-    tipo: "Consulta",
-    descricao: "Consulta de acompanhamento pediátrico",
-    profissional: "Dr. Carlos Mendes",
-    especialidade: "Pediatria",
-    motivo: "Consulta de rotina",
-    diagnostico: "Desenvolvimento normal para a idade",
-    tratamento: "Continuar acompanhamento de fisioterapia",
-    observacoes: "",
-    created_at: "2025-05-01T10:15:00",
-    updated_at: "2025-05-01T10:15:00"
-  }
-];
-
 export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
-  const [consultas, setConsultas] = useState<Consulta[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [addingNew, setAddingNew] = useState(false);
-  const [currentConsulta, setCurrentConsulta] = useState<Partial<Consulta>>({
-    data: new Date().toISOString().split('T')[0],
+  const [loading, setLoading] = useState(false);
+  const [consultas, setConsultas] = useState<any[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
     tipo: "Consulta",
     descricao: "",
+    data: "",
     profissional: "",
     especialidade: "",
     motivo: "",
@@ -65,484 +33,320 @@ export function ConsultasTab({ pacienteId }: ConsultasTabProps) {
   });
 
   useEffect(() => {
-    fetchConsultas();
-  }, [pacienteId]);
-
-  async function fetchConsultas() {
-    try {
-      setLoading(true);
-      // Using mock data instead of Supabase query
-      setTimeout(() => {
-        // Filter consultas for current patient
-        const patientConsultas = mockConsultas.filter(c => c.paciente_id === pacienteId);
-        setConsultas(patientConsultas);
-        setLoading(false);
-      }, 500);
-    } catch (err) {
-      console.error('Erro inesperado:', err);
-      toast.error('Erro ao carregar dados de consultas.');
-      setLoading(false);
-    }
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setCurrentConsulta({
-      ...currentConsulta,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleEdit = (consulta: Consulta) => {
-    setEditingId(consulta.id);
-    setCurrentConsulta({
-      data: consulta.data ? consulta.data.split('T')[0] : new Date().toISOString().split('T')[0],
-      tipo: consulta.tipo || "Consulta",
-      descricao: consulta.descricao || "Consulta médica",
-      profissional: consulta.profissional || "",
-      especialidade: consulta.especialidade || "",
-      motivo: consulta.motivo || "",
-      diagnostico: consulta.diagnostico || "",
-      tratamento: consulta.tratamento || "",
-      observacoes: consulta.observacoes || ""
-    });
-    setAddingNew(false);
-  };
-
-  const handleAdd = () => {
-    setAddingNew(true);
-    setEditingId(null);
-    setCurrentConsulta({
-      data: new Date().toISOString().split('T')[0],
-      tipo: "Consulta",
-      descricao: "",
-      profissional: "",
-      especialidade: "",
-      motivo: "",
-      diagnostico: "",
-      tratamento: "",
-      observacoes: ""
-    });
-  };
-
-  const handleCancel = () => {
-    setAddingNew(false);
-    setEditingId(null);
-  };
-
-  const handleSave = async () => {
-    try {
-      if (addingNew) {
-        const newConsulta: Consulta = {
-          id: `new-${Date.now()}`,
-          paciente_id: pacienteId,
-          data: currentConsulta.data || new Date().toISOString(),
-          tipo: currentConsulta.tipo || "Consulta",
-          descricao: currentConsulta.descricao || "Consulta médica",
-          profissional: currentConsulta.profissional || "",
-          especialidade: currentConsulta.especialidade,
-          motivo: currentConsulta.motivo,
-          diagnostico: currentConsulta.diagnostico,
-          tratamento: currentConsulta.tratamento,
-          observacoes: currentConsulta.observacoes,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        // Update local state instead of database
-        setConsultas([newConsulta, ...consultas]);
-        toast.success("Consulta registrada com sucesso");
-      } else if (editingId) {
-        // Find consulta to update
-        const updatedConsultas = consultas.map(c => {
-          if (c.id === editingId) {
-            return {
-              ...c,
-              data: currentConsulta.data || c.data,
-              tipo: currentConsulta.tipo || c.tipo,
-              descricao: currentConsulta.descricao || c.descricao,
-              profissional: currentConsulta.profissional || c.profissional,
-              especialidade: currentConsulta.especialidade,
-              motivo: currentConsulta.motivo,
-              diagnostico: currentConsulta.diagnostico,
-              tratamento: currentConsulta.tratamento,
-              observacoes: currentConsulta.observacoes,
-              updated_at: new Date().toISOString()
-            };
-          }
-          return c;
-        });
+    async function fetchConsultas() {
+      try {
+        setLoading(true);
         
-        setConsultas(updatedConsultas);
-        toast.success("Consulta atualizada com sucesso");
+        const { data, error } = await supabase
+          .from('consultas')
+          .select('*')
+          .eq('paciente_id', pacienteId)
+          .order('data', { ascending: false });
+          
+        if (error) {
+          console.error('Erro ao carregar consultas:', error);
+          toast.error('Erro ao carregar consultas.');
+          return;
+        }
+        
+        setConsultas(data || []);
+      } catch (err) {
+        console.error('Erro inesperado:', err);
+        toast.error('Erro ao carregar dados de consultas.');
+      } finally {
+        setLoading(false);
       }
-      
-      setAddingNew(false);
-      setEditingId(null);
-    } catch (err) {
-      console.error("Erro:", err);
-      toast.error("Ocorreu um erro ao processar sua solicitação");
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta consulta?")) {
-      return;
     }
     
+    if (pacienteId) {
+      fetchConsultas();
+    }
+  }, [pacienteId]);
+  
+  const handleOpenDialog = (item?: any) => {
+    if (item) {
+      setFormData({
+        tipo: item.tipo || "Consulta",
+        descricao: item.descricao || "",
+        data: item.data ? new Date(item.data).toISOString().substring(0, 16) : "", // Format as YYYY-MM-DDThh:mm
+        profissional: item.profissional || "",
+        especialidade: item.especialidade || "",
+        motivo: item.motivo || "",
+        diagnostico: item.diagnostico || "",
+        tratamento: item.tratamento || "",
+        observacoes: item.observacoes || ""
+      });
+      setEditingItemId(item.id);
+    } else {
+      const now = new Date();
+      const localDatetime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+        .toISOString()
+        .substring(0, 16);
+        
+      setFormData({
+        tipo: "Consulta",
+        descricao: "",
+        data: localDatetime,
+        profissional: "",
+        especialidade: "",
+        motivo: "",
+        diagnostico: "",
+        tratamento: "",
+        observacoes: ""
+      });
+      setEditingItemId(null);
+    }
+    setDialogOpen(true);
+  };
+  
+  const handleSave = async () => {
     try {
-      // Update local state instead of database
-      setConsultas(consultas.filter(item => item.id !== id));
-      toast.success("Consulta excluída com sucesso");
+      setLoading(true);
+      
+      if (!formData.descricao || !formData.data) {
+        toast.error('Preencha todos os campos obrigatórios.');
+        setLoading(false);
+        return;
+      }
+      
+      const consultaData = {
+        paciente_id: pacienteId,
+        tipo: formData.tipo,
+        descricao: formData.descricao,
+        data: formData.data,
+        profissional: formData.profissional || null,
+        especialidade: formData.especialidade || null,
+        motivo: formData.motivo || null,
+        diagnostico: formData.diagnostico || null,
+        tratamento: formData.tratamento || null,
+        observacoes: formData.observacoes || null
+      };
+      
+      if (editingItemId) {
+        // Update existing record
+        const { error } = await supabase
+          .from('consultas')
+          .update(consultaData)
+          .eq('id', editingItemId);
+          
+        if (error) {
+          console.error('Erro ao atualizar consulta:', error);
+          toast.error('Erro ao atualizar consulta.');
+          return;
+        }
+        
+        toast.success('Consulta atualizada com sucesso!');
+      } else {
+        // Create new record
+        const { error } = await supabase
+          .from('consultas')
+          .insert(consultaData);
+          
+        if (error) {
+          console.error('Erro ao adicionar consulta:', error);
+          toast.error('Erro ao adicionar consulta.');
+          return;
+        }
+        
+        toast.success('Consulta adicionada com sucesso!');
+      }
+      
+      // Refresh data
+      const { data, error } = await supabase
+        .from('consultas')
+        .select('*')
+        .eq('paciente_id', pacienteId)
+        .order('data', { ascending: false });
+        
+      if (error) {
+        console.error('Erro ao recarregar dados:', error);
+      } else {
+        setConsultas(data || []);
+      }
+      
+      setDialogOpen(false);
     } catch (err) {
-      console.error("Erro ao excluir:", err);
-      toast.error("Ocorreu um erro ao excluir a consulta");
+      console.error('Erro inesperado:', err);
+      toast.error('Erro ao salvar consulta.');
+    } finally {
+      setLoading(false);
     }
   };
-
-  const formatarData = (dataString: string) => {
-    if (!dataString) return "N/A";
-    const data = new Date(dataString);
-    if (isNaN(data.getTime())) return "Data inválida";
-    return data.toLocaleDateString('pt-BR');
+  
+  const handleDelete = async (id: string) => {
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('consultas')
+        .delete()
+        .eq('id', id);
+        
+      if (error) {
+        console.error('Erro ao remover consulta:', error);
+        toast.error('Erro ao remover consulta.');
+        return;
+      }
+      
+      setConsultas(consultas.filter(item => item.id !== id));
+      toast.success('Consulta removida com sucesso!');
+    } catch (err) {
+      console.error('Erro inesperado:', err);
+      toast.error('Erro ao remover consulta.');
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const ConsultaForm = () => (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle className="text-lg">
-          {addingNew ? "Nova Consulta" : "Editar Consulta"}
-        </CardTitle>
-        <CardDescription>
-          Preencha as informações da consulta
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="data">Data da Consulta</Label>
-              <Input
-                id="data"
-                name="data"
-                type="date"
-                value={currentConsulta.data}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="profissional">Profissional</Label>
-              <Input
-                id="profissional"
-                name="profissional"
-                value={currentConsulta.profissional}
-                onChange={handleChange}
-                placeholder="Nome do profissional"
-              />
-            </div>
-            <div>
-              <Label htmlFor="especialidade">Especialidade</Label>
-              <Input
-                id="especialidade"
-                name="especialidade"
-                value={currentConsulta.especialidade}
-                onChange={handleChange}
-                placeholder="Ex: Fisioterapeuta, Pediatra"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="motivo">Motivo da Consulta</Label>
-            <Input
-              id="motivo"
-              name="motivo"
-              value={currentConsulta.motivo}
-              onChange={handleChange}
-              placeholder="Descreva o motivo principal da consulta"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="diagnostico">Diagnóstico</Label>
-            <textarea
-              id="diagnostico"
-              name="diagnostico"
-              value={currentConsulta.diagnostico}
-              onChange={handleChange}
-              placeholder="Diagnóstico e/ou impressões clínicas"
-              className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="tratamento">Tratamento/Recomendações</Label>
-            <textarea
-              id="tratamento"
-              name="tratamento"
-              value={currentConsulta.tratamento}
-              onChange={handleChange}
-              placeholder="Tratamento indicado e/ou recomendações"
-              className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="observacoes">Observações</Label>
-            <textarea
-              id="observacoes"
-              name="observacoes"
-              value={currentConsulta.observacoes}
-              onChange={handleChange}
-              placeholder="Observações adicionais"
-              className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            />
-          </div>
-          
-          <div className="flex justify-end gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleCancel}
-              className="flex items-center gap-1"
-            >
-              <X className="h-4 w-4" /> Cancelar
-            </Button>
-            <Button 
-              type="button" 
-              onClick={handleSave}
-              className="flex items-center gap-1 bg-turquesa hover:bg-turquesa/90"
-            >
-              <Save className="h-4 w-4" /> Salvar
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  );
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Consultas</h3>
-        {!addingNew && !editingId && (
-          <Button 
-            onClick={handleAdd}
-            className="flex items-center gap-1 bg-turquesa hover:bg-turquesa/90"
-          >
-            <Plus className="h-4 w-4" /> Registrar Consulta
-          </Button>
-        )}
+        <Button 
+          onClick={() => handleOpenDialog()}
+          className="flex items-center gap-1 bg-turquesa hover:bg-turquesa/90"
+          disabled={loading}
+        >
+          <Plus className="h-4 w-4" /> Adicionar
+        </Button>
       </div>
       
-      {(addingNew || editingId) && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {addingNew ? "Nova Consulta" : "Editar Consulta"}
-            </CardTitle>
-            <CardDescription>
-              Preencha as informações da consulta
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="data">Data da Consulta</Label>
-                  <Input
-                    id="data"
-                    name="data"
-                    type="date"
-                    value={currentConsulta.data}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="profissional">Profissional</Label>
-                  <Input
-                    id="profissional"
-                    name="profissional"
-                    value={currentConsulta.profissional}
-                    onChange={handleChange}
-                    placeholder="Nome do profissional"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="especialidade">Especialidade</Label>
-                  <Input
-                    id="especialidade"
-                    name="especialidade"
-                    value={currentConsulta.especialidade}
-                    onChange={handleChange}
-                    placeholder="Ex: Fisioterapeuta, Pediatra"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="motivo">Motivo da Consulta</Label>
-                <Input
-                  id="motivo"
-                  name="motivo"
-                  value={currentConsulta.motivo}
-                  onChange={handleChange}
-                  placeholder="Descreva o motivo principal da consulta"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="diagnostico">Diagnóstico</Label>
-                <textarea
-                  id="diagnostico"
-                  name="diagnostico"
-                  value={currentConsulta.diagnostico}
-                  onChange={handleChange}
-                  placeholder="Diagnóstico e/ou impressões clínicas"
-                  className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="tratamento">Tratamento/Recomendações</Label>
-                <textarea
-                  id="tratamento"
-                  name="tratamento"
-                  value={currentConsulta.tratamento}
-                  onChange={handleChange}
-                  placeholder="Tratamento indicado e/ou recomendações"
-                  className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="observacoes">Observações</Label>
-                <textarea
-                  id="observacoes"
-                  name="observacoes"
-                  value={currentConsulta.observacoes}
-                  onChange={handleChange}
-                  placeholder="Observações adicionais"
-                  className="w-full min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                />
-              </div>
-              
-              <div className="flex justify-end gap-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={handleCancel}
-                  className="flex items-center gap-1"
-                >
-                  <X className="h-4 w-4" /> Cancelar
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={handleSave}
-                  className="flex items-center gap-1 bg-turquesa hover:bg-turquesa/90"
-                >
-                  <Save className="h-4 w-4" /> Salvar
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-      
-      {loading ? (
+      {loading && consultas.length === 0 ? (
         <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
           <p className="mt-2 text-muted-foreground">Carregando consultas...</p>
         </div>
-      ) : consultas.length > 0 ? (
-        <div className="space-y-4">
-          {consultas.map((consulta) => (
-            <Card key={consulta.id}>
-              <CardHeader className="pb-2">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-turquesa" />
-                      <CardTitle className="text-base">
-                        {formatarData(consulta.data)}
-                      </CardTitle>
-                    </div>
-                    <CardDescription>
-                      {consulta.especialidade ? 
-                        `${consulta.profissional} • ${consulta.especialidade}` : 
-                        consulta.profissional}
-                    </CardDescription>
-                  </div>
-                  
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEdit(consulta)}
-                      className="flex items-center gap-1"
-                    >
-                      <Pencil className="h-4 w-4" /> Editar
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleDelete(consulta.id)}
-                      className="text-red-500 hover:text-red-700 flex items-center gap-1"
-                    >
-                      <Trash2 className="h-4 w-4" /> Excluir
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {consulta.motivo && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Motivo da Consulta</p>
-                      <p>{consulta.motivo}</p>
-                    </div>
-                  )}
-                  
-                  {consulta.diagnostico && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Diagnóstico</p>
-                      <p>{consulta.diagnostico}</p>
-                    </div>
-                  )}
-                  
-                  {consulta.tratamento && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Tratamento/Recomendações</p>
-                      <p>{consulta.tratamento}</p>
-                    </div>
-                  )}
-                  
-                  {consulta.observacoes && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Observações</p>
-                      <p>{consulta.observacoes}</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
       ) : (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">Nenhuma consulta registrada para este paciente.</p>
-            {!addingNew && (
-              <Button 
-                className="mt-4 bg-turquesa hover:bg-turquesa/90"
-                onClick={handleAdd}
-              >
-                <Plus className="h-4 w-4 mr-2" /> Registrar Nova Consulta
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <ConsultasList 
+          consultas={consultas} 
+          onEdit={handleOpenDialog}
+          onDelete={handleDelete}
+        />
       )}
+      
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingItemId ? 'Editar' : 'Adicionar'} Consulta</DialogTitle>
+            <DialogDescription>
+              Preencha os detalhes da consulta abaixo.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-1">
+                <Label htmlFor="tipo">Tipo</Label>
+                <Select 
+                  value={formData.tipo} 
+                  onValueChange={(value) => setFormData({...formData, tipo: value})}
+                >
+                  <SelectTrigger id="tipo">
+                    <SelectValue placeholder="Selecione um tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Consulta">Consulta</SelectItem>
+                    <SelectItem value="Retorno">Retorno</SelectItem>
+                    <SelectItem value="Avaliação">Avaliação</SelectItem>
+                    <SelectItem value="Emergência">Emergência</SelectItem>
+                    <SelectItem value="Outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="col-span-1">
+                <Label htmlFor="data">Data e Hora</Label>
+                <Input 
+                  id="data" 
+                  type="datetime-local" 
+                  value={formData.data} 
+                  onChange={(e) => setFormData({...formData, data: e.target.value})} 
+                  required 
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="descricao">Descrição</Label>
+              <Input 
+                id="descricao" 
+                value={formData.descricao} 
+                onChange={(e) => setFormData({...formData, descricao: e.target.value})} 
+                required 
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-1">
+                <Label htmlFor="profissional">Profissional</Label>
+                <Input 
+                  id="profissional" 
+                  value={formData.profissional} 
+                  onChange={(e) => setFormData({...formData, profissional: e.target.value})} 
+                />
+              </div>
+              
+              <div className="col-span-1">
+                <Label htmlFor="especialidade">Especialidade</Label>
+                <Input 
+                  id="especialidade" 
+                  value={formData.especialidade} 
+                  onChange={(e) => setFormData({...formData, especialidade: e.target.value})} 
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="motivo">Motivo da Consulta</Label>
+              <Textarea 
+                id="motivo" 
+                value={formData.motivo} 
+                onChange={(e) => setFormData({...formData, motivo: e.target.value})} 
+                rows={2} 
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="diagnostico">Diagnóstico</Label>
+              <Textarea 
+                id="diagnostico" 
+                value={formData.diagnostico} 
+                onChange={(e) => setFormData({...formData, diagnostico: e.target.value})} 
+                rows={2} 
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="tratamento">Tratamento</Label>
+              <Textarea 
+                id="tratamento" 
+                value={formData.tratamento} 
+                onChange={(e) => setFormData({...formData, tratamento: e.target.value})} 
+                rows={2} 
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="observacoes">Observações</Label>
+              <Textarea 
+                id="observacoes" 
+                value={formData.observacoes} 
+                onChange={(e) => setFormData({...formData, observacoes: e.target.value})} 
+                rows={2} 
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={loading}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={loading}>
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : editingItemId ? 'Atualizar' : 'Adicionar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

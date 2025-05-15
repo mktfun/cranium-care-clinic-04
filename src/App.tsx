@@ -22,6 +22,7 @@ import Tarefas from "@/pages/Tarefas";
 import { NotificacoesPage } from "@/pages/NotificacoesPage";
 import MedicaoPorFotoPage from "@/pages/MedicaoPorFotoPage";
 import ProntuarioMedico from "@/pages/ProntuarioMedico";
+import HistoricoCompletoPaciente from "@/pages/HistoricoCompletoPaciente";
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
             <Route path="/pacientes/:id/relatorio" element={<RelatorioMedicao />} />
             <Route path="/pacientes/:id/relatorios/:medicaoId" element={<RelatorioVisualizar />} />
             <Route path="/pacientes/:id/prontuario" element={<ProntuarioMedico />} />
+            <Route path="/pacientes/:id/historico" element={<HistoricoCompletoPaciente />} />
             <Route path="/historico" element={<Historico />} />
             <Route path="/relatorios" element={<Relatorios />} />
             <Route path="/tarefas" element={<Tarefas />} />

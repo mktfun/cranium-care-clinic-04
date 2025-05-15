@@ -9,6 +9,62 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      consultas: {
+        Row: {
+          created_at: string | null
+          data: string
+          descricao: string
+          diagnostico: string | null
+          especialidade: string | null
+          id: string
+          motivo: string | null
+          observacoes: string | null
+          paciente_id: string
+          profissional: string | null
+          tipo: string
+          tratamento: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data: string
+          descricao: string
+          diagnostico?: string | null
+          especialidade?: string | null
+          id?: string
+          motivo?: string | null
+          observacoes?: string | null
+          paciente_id: string
+          profissional?: string | null
+          tipo: string
+          tratamento?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data?: string
+          descricao?: string
+          diagnostico?: string | null
+          especialidade?: string | null
+          id?: string
+          motivo?: string | null
+          observacoes?: string | null
+          paciente_id?: string
+          profissional?: string | null
+          tipo?: string
+          tratamento?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultas_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       historico_medico: {
         Row: {
           created_at: string | null
@@ -19,6 +75,7 @@ export type Database = {
           paciente_id: string | null
           prontuario_id: string | null
           tipo: string
+          tratamento: string | null
           updated_at: string | null
         }
         Insert: {
@@ -30,6 +87,7 @@ export type Database = {
           paciente_id?: string | null
           prontuario_id?: string | null
           tipo: string
+          tratamento?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -41,6 +99,7 @@ export type Database = {
           paciente_id?: string | null
           prontuario_id?: string | null
           tipo?: string
+          tratamento?: string | null
           updated_at?: string | null
         }
         Relationships: [

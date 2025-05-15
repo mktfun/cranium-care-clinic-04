@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ChevronLeft, FileText, Edit } from "lucide-react";
+import { Loader2, ChevronLeft, FileText, Edit, History } from "lucide-react";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
@@ -313,11 +313,19 @@ export default function DetalhePaciente() {
                     </div>
                   </div>
                   
-                  <div className="flex justify-end">
+                  <div className="flex justify-end space-x-2">
                     <Button 
                       variant="outline"
-                      onClick={() => navigate(`/pacientes/${id}/medicoes`)}
+                      onClick={() => navigate(`/pacientes/${id}/nova-medicao`)}
                     >
+                      Nova medição
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate(`/pacientes/${id}/historico`)}
+                      className="flex items-center gap-1"
+                    >
+                      <History className="h-4 w-4" />
                       Ver histórico completo
                     </Button>
                   </div>
@@ -341,8 +349,16 @@ export default function DetalhePaciente() {
         
         <TabsContent value="medicoes">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Histórico de Medições</CardTitle>
+              <Button 
+                variant="outline"
+                onClick={() => navigate(`/pacientes/${id}/historico`)}
+                className="flex items-center gap-1"
+              >
+                <History className="h-4 w-4" />
+                Ver histórico completo
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
