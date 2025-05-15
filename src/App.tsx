@@ -1,7 +1,7 @@
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ui/theme-provider";
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from 'sonner';
 
 import Login from "@/pages/Login";
 import Registro from "@/pages/Registro";

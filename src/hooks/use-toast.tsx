@@ -102,4 +102,4 @@ export const toast = (options: ToastOptions) => {
   }
 };
 
-export { ToastProvider };
+// Removed duplicate export of ToastProvider here
