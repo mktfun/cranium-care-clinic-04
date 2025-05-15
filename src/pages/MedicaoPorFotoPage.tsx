@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -141,7 +140,7 @@ export default function MedicaoPorFotoPage() {
                   <div className="border rounded-lg overflow-hidden">
                     <AspectRatio ratio={4/3}>
                       <img 
-                        src="/lovable-uploads/f27417e2-1c2a-43d1-a465-0b99f9dde50a.png" 
+                        src="/lovable-uploads/b51ddd39-04ec-4d53-9607-336dfd54259d.png" 
                         alt="Exemplo de foto para medição" 
                         className="w-full h-full object-cover"
                       />
@@ -153,6 +152,9 @@ export default function MedicaoPorFotoPage() {
                     <li>Coloque uma régua ou referência de medida ao lado da cabeça</li>
                     <li>Mantenha boa iluminação e fundo sem distrações</li>
                     <li>Tire a foto de cima para baixo em um ângulo de 90°</li>
+                    <li>Use a maior resolução possível da câmera</li>
+                    <li>Evite sombras fortes que possam obscurecer contornos do crânio</li>
+                    <li>Utilize um fundo neutro e contrastante para melhor identificação</li>
                   </ul>
                 </CardContent>
               </Card>

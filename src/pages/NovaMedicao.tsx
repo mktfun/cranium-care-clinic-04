@@ -5,14 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { toast } from "@/hooks/use-toast";
 import { formatAgeHeader } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Camera, Ruler, Check, ArrowLeft } from "lucide-react";
+import { Loader2, Check, ArrowLeft } from "lucide-react";
 
 export default function NovaMedicao() {
   const { id } = useParams();
@@ -23,7 +22,6 @@ export default function NovaMedicao() {
   const [paciente, setPaciente] = useState<any>(null);
   const [loadingPaciente, setLoadingPaciente] = useState(true);
   
-  const [activeTab, setActiveTab] = useState(photoData ? "revisao" : "manual");
   const [medicaoData, setMedicaoData] = useState("");
   const [comprimento, setComprimento] = useState("");
   const [largura, setLargura] = useState("");
@@ -61,6 +59,12 @@ export default function NovaMedicao() {
           }
           
           setMedicaoData(new Date().toISOString().split("T")[0]);
+          
+          // Redirect to photo measurement if no photoData is present
+          if (!photoData) {
+            navigate(`/pacientes/${id}/medicao-por-foto`);
+            return;
+          }
         }
       } catch (error) {
         console.error("Error loading patient data:", error);
@@ -76,7 +80,7 @@ export default function NovaMedicao() {
     }
     
     loadPacienteData();
-  }, [id, navigate]);
+  }, [id, navigate, photoData]);
   
   // Processar dados da foto, se disponíveis
   useEffect(() => {
@@ -227,182 +231,152 @@ export default function NovaMedicao() {
     );
   }
   
+  // Now we only show the photo review page since we redirected
+  // those without photo data to the photo measurement page
   return (
     <div className="space-y-6 animate-fade-in p-4 md:p-6">
       <div>
-        <h2 className="text-3xl font-bold">
-          {photoData ? "Revisão da Medição por Foto" : "Nova Medição"}
-        </h2>
+        <h2 className="text-3xl font-bold">Revisão da Medição por Foto</h2>
         <p className="text-muted-foreground">
           Paciente: {paciente.nome} • {formatAgeHeader(paciente.data_nascimento)}
         </p>
       </div>
       
-      {photoData ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Foto do Paciente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {photoUrl ? (
+              <div className="border rounded-lg overflow-hidden">
+                <AspectRatio ratio={4/3}>
+                  <img 
+                    src={photoUrl} 
+                    alt="Foto processada do paciente" 
+                    className="w-full h-full object-cover"
+                  />
+                </AspectRatio>
+              </div>
+            ) : (
+              <div className="border rounded-lg p-12 flex items-center justify-center">
+                <p className="text-muted-foreground">Foto não disponível</p>
+              </div>
+            )}
+            
+            <Button 
+              onClick={handleVoltarParaFoto}
+              variant="outline"
+              className="mt-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar para captura de foto
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Foto do Paciente</CardTitle>
+              <CardTitle>Medidas Detectadas</CardTitle>
             </CardHeader>
-            <CardContent>
-              {photoUrl ? (
-                <div className="border rounded-lg overflow-hidden">
-                  <AspectRatio ratio={4/3}>
-                    <img 
-                      src={photoUrl} 
-                      alt="Foto processada do paciente" 
-                      className="w-full h-full object-cover"
-                    />
-                  </AspectRatio>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="comprimento">Comprimento (mm)</Label>
+                  <Input
+                    id="comprimento"
+                    type="number"
+                    required
+                    value={comprimento}
+                    onChange={(e) => setComprimento(e.target.value)}
+                  />
                 </div>
-              ) : (
-                <div className="border rounded-lg p-12 flex items-center justify-center">
-                  <p className="text-muted-foreground">Foto não disponível</p>
+                <div className="space-y-2">
+                  <Label htmlFor="largura">Largura (mm)</Label>
+                  <Input
+                    id="largura"
+                    type="number"
+                    required
+                    value={largura}
+                    onChange={(e) => setLargura(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="diagonalD">Diagonal D (mm)</Label>
+                  <Input
+                    id="diagonalD"
+                    type="number"
+                    required
+                    value={diagonalD}
+                    onChange={(e) => setDiagonalD(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="diagonalE">Diagonal E (mm)</Label>
+                  <Input
+                    id="diagonalE"
+                    type="number"
+                    required
+                    value={diagonalE}
+                    onChange={(e) => setDiagonalE(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="perimetroCefalico">Perímetro Cefálico (mm)</Label>
+                <Input
+                  id="perimetroCefalico"
+                  type="number"
+                  required
+                  value={perimetroCefalico}
+                  onChange={(e) => setPerimetroCefalico(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="observacoes">Observações</Label>
+                <Textarea
+                  id="observacoes"
+                  value={observacoes}
+                  onChange={(e) => setObservacoes(e.target.value)}
+                  placeholder="Observações adicionais sobre a medição..."
+                />
+              </div>
+              
+              {/* Cálculos derivados */}
+              {indiceCraniano !== null && cvai !== null && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-2">Valores Calculados:</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Índice Craniano</p>
+                      <p className="font-bold">{indiceCraniano.toFixed(1)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">CVAI</p>
+                      <p className="font-bold">{cvai.toFixed(1)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Diferença Diagonais</p>
+                      <p className="font-bold">{diferencaDiagonais?.toFixed(1)} mm</p>
+                    </div>
+                  </div>
                 </div>
               )}
               
-              <Button 
-                onClick={handleVoltarParaFoto}
-                variant="outline"
-                className="mt-4"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar para captura de foto
+              <Button type="submit" className="w-full bg-turquesa hover:bg-turquesa/90">
+                <Check className="h-4 w-4 mr-2" />
+                Salvar e Gerar Relatório
               </Button>
             </CardContent>
           </Card>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Medidas Detectadas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="comprimento">Comprimento (mm)</Label>
-                    <Input
-                      id="comprimento"
-                      type="number"
-                      required
-                      value={comprimento}
-                      onChange={(e) => setComprimento(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="largura">Largura (mm)</Label>
-                    <Input
-                      id="largura"
-                      type="number"
-                      required
-                      value={largura}
-                      onChange={(e) => setLargura(e.target.value)}
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="diagonalD">Diagonal D (mm)</Label>
-                    <Input
-                      id="diagonalD"
-                      type="number"
-                      required
-                      value={diagonalD}
-                      onChange={(e) => setDiagonalD(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="diagonalE">Diagonal E (mm)</Label>
-                    <Input
-                      id="diagonalE"
-                      type="number"
-                      required
-                      value={diagonalE}
-                      onChange={(e) => setDiagonalE(e.target.value)}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="perimetroCefalico">Perímetro Cefálico (mm)</Label>
-                  <Input
-                    id="perimetroCefalico"
-                    type="number"
-                    required
-                    value={perimetroCefalico}
-                    onChange={(e) => setPerimetroCefalico(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="observacoes">Observações</Label>
-                  <Textarea
-                    id="observacoes"
-                    value={observacoes}
-                    onChange={(e) => setObservacoes(e.target.value)}
-                    placeholder="Observações adicionais sobre a medição..."
-                  />
-                </div>
-                
-                {/* Cálculos derivados */}
-                {indiceCraniano !== null && cvai !== null && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h4 className="font-medium mb-2">Valores Calculados:</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Índice Craniano</p>
-                        <p className="font-bold">{indiceCraniano.toFixed(1)}%</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">CVAI</p>
-                        <p className="font-bold">{cvai.toFixed(1)}%</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Diferença Diagonais</p>
-                        <p className="font-bold">{diferencaDiagonais?.toFixed(1)} mm</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <Button type="submit" className="w-full bg-turquesa hover:bg-turquesa/90">
-                  <Check className="h-4 w-4 mr-2" />
-                  Salvar e Gerar Relatório
-                </Button>
-              </CardContent>
-            </Card>
-          </form>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Escolha o método de medição</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col space-y-4">
-              <Button 
-                onClick={() => navigate(`/pacientes/${id}/medicao-por-foto`)}
-                className="bg-turquesa hover:bg-turquesa/90 p-8 flex flex-col items-center"
-              >
-                <Camera className="h-12 w-12 mb-4" />
-                <span className="text-lg font-medium">Medição por Foto</span>
-                <span className="text-sm text-white/80 mt-2">Recomendado</span>
-              </Button>
-              
-              <Button 
-                onClick={() => setActiveTab("manual")}
-                variant="outline" 
-                className="p-8 flex flex-col items-center"
-              >
-                <Ruler className="h-12 w-12 mb-4" />
-                <span className="text-lg font-medium">Medição Manual</span>
-                <span className="text-sm text-muted-foreground mt-2">Entrada manual de medidas</span>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        </form>
+      </div>
     </div>
   );
 }
