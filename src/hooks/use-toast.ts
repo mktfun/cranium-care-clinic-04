@@ -1,5 +1,5 @@
 
-// Re-export from hooks directory for backward compatibility
-import { toast } from "@/hooks/use-toast";
+// Re-export from the hooks/use-toast.tsx file
+import { toast } from "@/hooks/use-toast.tsx";
 
 export { toast };

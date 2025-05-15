@@ -101,3 +101,5 @@ export const toast = (options: ToastOptions) => {
     });
   }
 };
+
+export { ToastProvider };

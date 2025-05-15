@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus } from "lucide-react";
+import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatsCard } from "@/components/StatsCard";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
