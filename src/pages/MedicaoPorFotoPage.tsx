@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,13 @@ import { ChevronLeft, Camera, Upload, Loader2, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { formatAgeHeader } from "@/lib/age-utils";
-import { getCranialStatus } from "@/lib/cranial-utils";
+import { calculateCranialIndex, calculateCVAI } from "@/lib/cranial-analysis";
+
+interface MeasurementPoint {
+  x: number;
+  y: number;
+  label: string;
+}
 
 export default function MedicaoPorFotoPage() {
   const { id } = useParams();
@@ -20,6 +27,15 @@ export default function MedicaoPorFotoPage() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<any>(null);
   const [activeStep, setActiveStep] = useState(1); // 1: upload, 2: review, 3: confirm
+  const [measurementPoints, setMeasurementPoints] = useState<MeasurementPoint[]>([]);
+  const [calibrationFactor, setCalibrationFactor] = useState<number | null>(null);
+  const [calibrationMode, setCalibrationMode] = useState(false);
+  const [calibrationStart, setCalibrationStart] = useState<{x: number, y: number} | null>(null);
+  const [calibrationEnd, setCalibrationEnd] = useState<{x: number, y: number} | null>(null);
+  const [measurementMode, setMeasurementMode] = useState<string | null>(null);
+  
+  const imageRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadPacienteData() {
@@ -76,35 +92,15 @@ export default function MedicaoPorFotoPage() {
       // Criar um objeto URL para a prévia da imagem
       const fileUrl = URL.createObjectURL(file);
       setUploadedImage(fileUrl);
-      
-      setTimeout(() => {
-        setUploading(false);
-        setProcessingImage(true);
-        
-        // Simulação de processamento de imagem
-        setTimeout(() => {
-          setProcessingImage(false);
-          
-          // Valores simulados que viriam do processamento de imagem
-          const simulatedMeasurements = {
-            comprimento: 146,
-            largura: 119,
-            diagonalD: 158,
-            diagonalE: 153,
-            perimetroCefalico: 420
-          };
-          
-          setMeasurements(simulatedMeasurements);
-          setActiveStep(2); // Avança para revisão
-          
-          toast({
-            title: "Foto processada com sucesso",
-            description: "Os valores foram extraídos e estão prontos para revisão.",
-            variant: "success",
-          });
-        }, 3000);
-      }, 2000);
-      
+      setUploading(false);
+      setActiveStep(2); // Avança para o modo de medição
+      // Reset measurement points
+      setMeasurementPoints([]);
+      setCalibrationFactor(null);
+      setCalibrationMode(false);
+      setCalibrationStart(null);
+      setCalibrationEnd(null);
+      setMeasurementMode(null);
     } catch (error) {
       console.error("Erro ao fazer upload da foto:", error);
       toast({
@@ -116,6 +112,203 @@ export default function MedicaoPorFotoPage() {
     }
   };
 
+  const handleImageClick = (event: React.MouseEvent<HTMLImageElement>) => {
+    if (!imageRef.current || !containerRef.current || !uploadedImage) return;
+
+    const rect = imageRef.current.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // Convert to relative coordinates within the image
+    const relX = x / rect.width;
+    const relY = y / rect.height;
+
+    if (calibrationMode) {
+      if (!calibrationStart) {
+        setCalibrationStart({ x: relX, y: relY });
+        toast({
+          title: "Ponto inicial definido",
+          description: "Agora clique no ponto final da régua/referência.",
+        });
+      } else {
+        setCalibrationEnd({ x: relX, y: relY });
+        // Ask the user for the real-world length
+        const length = prompt("Informe o comprimento real em milímetros:");
+        if (length && !isNaN(Number(length))) {
+          // Calculate calibration factor (mm/px)
+          const dx = relX - calibrationStart.x;
+          const dy = relY - calibrationStart.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const factor = Number(length) / (distance * imageRef.current.width);
+          setCalibrationFactor(factor);
+          setCalibrationMode(false);
+          toast({
+            title: "Calibração concluída",
+            description: `Fator de calibração: ${factor.toFixed(4)} mm/px`,
+          });
+        } else {
+          toast({
+            title: "Erro de calibração",
+            description: "Por favor, informe um valor numérico válido.",
+            variant: "destructive",
+          });
+          setCalibrationStart(null);
+          setCalibrationEnd(null);
+        }
+      }
+      return;
+    }
+
+    if (measurementMode) {
+      // Add the point based on the current measurement mode
+      const existingPoints = measurementPoints.filter(p => p.label.startsWith(measurementMode));
+      
+      if (measurementMode === 'comprimento' && existingPoints.length < 2) {
+        const label = existingPoints.length === 0 
+          ? `${measurementMode}-start` 
+          : `${measurementMode}-end`;
+        
+        setMeasurementPoints([
+          ...measurementPoints,
+          { x: relX, y: relY, label }
+        ]);
+        
+        if (existingPoints.length === 1) {
+          setMeasurementMode(null);
+          toast({
+            title: "Comprimento definido",
+            description: "Agora selecione a próxima medida a ser realizada.",
+          });
+        }
+      } 
+      else if (measurementMode === 'largura' && existingPoints.length < 2) {
+        const label = existingPoints.length === 0 
+          ? `${measurementMode}-start` 
+          : `${measurementMode}-end`;
+        
+        setMeasurementPoints([
+          ...measurementPoints,
+          { x: relX, y: relY, label }
+        ]);
+        
+        if (existingPoints.length === 1) {
+          setMeasurementMode(null);
+          toast({
+            title: "Largura definida",
+            description: "Agora selecione a próxima medida a ser realizada.",
+          });
+        }
+      }
+      else if (measurementMode === 'diagonalD' && existingPoints.length < 2) {
+        const label = existingPoints.length === 0 
+          ? `${measurementMode}-start` 
+          : `${measurementMode}-end`;
+        
+        setMeasurementPoints([
+          ...measurementPoints,
+          { x: relX, y: relY, label }
+        ]);
+        
+        if (existingPoints.length === 1) {
+          setMeasurementMode(null);
+          toast({
+            title: "Diagonal D definida",
+            description: "Agora selecione a próxima medida a ser realizada.",
+          });
+        }
+      }
+      else if (measurementMode === 'diagonalE' && existingPoints.length < 2) {
+        const label = existingPoints.length === 0 
+          ? `${measurementMode}-start` 
+          : `${measurementMode}-end`;
+        
+        setMeasurementPoints([
+          ...measurementPoints,
+          { x: relX, y: relY, label }
+        ]);
+        
+        if (existingPoints.length === 1) {
+          setMeasurementMode(null);
+          toast({
+            title: "Diagonal E definida",
+            description: "Agora selecione a próxima medida a ser realizada.",
+          });
+        }
+      }
+    }
+  };
+
+  const calculateMeasurements = () => {
+    if (!calibrationFactor || !imageRef.current) {
+      toast({
+        title: "Calibração necessária",
+        description: "Por favor, calibre a imagem primeiro.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const imgWidth = imageRef.current.width;
+    
+    // Helper function to find points by label prefix
+    const getPointsByPrefix = (prefix: string) => measurementPoints.filter(p => p.label.startsWith(prefix));
+    
+    // Calculate distances
+    const calculateDistance = (points: MeasurementPoint[]) => {
+      if (points.length !== 2) return null;
+      
+      const dx = (points[1].x - points[0].x) * imgWidth;
+      const dy = (points[1].y - points[0].y) * imgWidth;
+      return Math.sqrt(dx * dx + dy * dy) * calibrationFactor;
+    };
+
+    const comprimentoPoints = getPointsByPrefix('comprimento');
+    const larguraPoints = getPointsByPrefix('largura');
+    const diagonalDPoints = getPointsByPrefix('diagonalD');
+    const diagonalEPoints = getPointsByPrefix('diagonalE');
+
+    const comprimento = calculateDistance(comprimentoPoints);
+    const largura = calculateDistance(larguraPoints);
+    const diagonalD = calculateDistance(diagonalDPoints);
+    const diagonalE = calculateDistance(diagonalEPoints);
+
+    // Simple perimetro estimado (this is a rough estimation that can be improved)
+    const perimetroCefalico = comprimento && largura 
+      ? Math.round(2 * Math.PI * Math.sqrt((Math.pow(comprimento/2, 2) + Math.pow(largura/2, 2)) / 2))
+      : null;
+
+    // Check if we have all required measurements
+    if (!comprimento || !largura || !diagonalD || !diagonalE) {
+      toast({
+        title: "Medições incompletas",
+        description: "Por favor, complete todas as medições necessárias.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Round to integers for display
+    const measurements = {
+      comprimento: Math.round(comprimento),
+      largura: Math.round(largura),
+      diagonalD: Math.round(diagonalD),
+      diagonalE: Math.round(diagonalE),
+      perimetroCefalico: perimetroCefalico
+    };
+
+    setMeasurements(measurements);
+    setProcessingImage(true);
+    
+    // Simulate processing time for UX
+    setTimeout(() => {
+      setProcessingImage(false);
+      toast({
+        title: "Foto processada com sucesso",
+        description: "Os valores foram extraídos e estão prontos para revisão.",
+      });
+    }, 800);
+  };
+
   const handleConfirmMeasurements = () => {
     navigate(`/pacientes/${id}/nova-medicao`, { 
       state: { 
@@ -124,6 +317,104 @@ export default function MedicaoPorFotoPage() {
         photoUrl: uploadedImage
       } 
     });
+  };
+
+  const renderMeasurementOverlay = () => {
+    if (!uploadedImage || !imageRef.current) return null;
+
+    return (
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Calibration line */}
+        {calibrationStart && (
+          <div 
+            className="absolute w-2 h-2 bg-yellow-500 rounded-full z-10" 
+            style={{ 
+              left: `${calibrationStart.x * 100}%`, 
+              top: `${calibrationStart.y * 100}%` 
+            }}
+          />
+        )}
+        
+        {calibrationStart && calibrationEnd && (
+          <div 
+            className="absolute bg-yellow-500 h-0.5 z-10"
+            style={{ 
+              left: `${calibrationStart.x * 100}%`, 
+              top: `${calibrationStart.y * 100}%`,
+              width: `${Math.sqrt(
+                Math.pow((calibrationEnd.x - calibrationStart.x) * 100, 2) + 
+                Math.pow((calibrationEnd.y - calibrationStart.y) * 100, 2)
+              )}%`,
+              transform: `rotate(${Math.atan2(
+                (calibrationEnd.y - calibrationStart.y),
+                (calibrationEnd.x - calibrationStart.x)
+              ) * (180 / Math.PI)}deg)`,
+              transformOrigin: 'left center'
+            }}
+          />
+        )}
+        
+        {calibrationEnd && (
+          <div 
+            className="absolute w-2 h-2 bg-yellow-500 rounded-full z-10" 
+            style={{ 
+              left: `${calibrationEnd.x * 100}%`, 
+              top: `${calibrationEnd.y * 100}%` 
+            }}
+          />
+        )}
+        
+        {/* Measurement points */}
+        {measurementPoints.map((point, index) => (
+          <div 
+            key={index}
+            className={`absolute w-3 h-3 rounded-full z-10 ${
+              point.label.startsWith('comprimento') ? 'bg-red-500' :
+              point.label.startsWith('largura') ? 'bg-blue-500' :
+              point.label.startsWith('diagonalD') ? 'bg-green-500' :
+              'bg-purple-500'
+            }`}
+            style={{ 
+              left: `${point.x * 100}%`, 
+              top: `${point.y * 100}%`,
+              transform: 'translate(-50%, -50%)'
+            }}
+          />
+        ))}
+        
+        {/* Measurement lines */}
+        {['comprimento', 'largura', 'diagonalD', 'diagonalE'].map(prefix => {
+          const points = measurementPoints.filter(p => p.label.startsWith(prefix));
+          if (points.length !== 2) return null;
+          
+          const lineColor = 
+            prefix === 'comprimento' ? 'bg-red-500' :
+            prefix === 'largura' ? 'bg-blue-500' :
+            prefix === 'diagonalD' ? 'bg-green-500' :
+            'bg-purple-500';
+          
+          return (
+            <div 
+              key={prefix}
+              className={`absolute h-0.5 z-5 ${lineColor}`}
+              style={{ 
+                left: `${points[0].x * 100}%`, 
+                top: `${points[0].y * 100}%`,
+                width: `${Math.sqrt(
+                  Math.pow((points[1].x - points[0].x) * 100, 2) + 
+                  Math.pow((points[1].y - points[0].y) * 100, 2)
+                )}%`,
+                transform: `rotate(${Math.atan2(
+                  (points[1].y - points[0].y),
+                  (points[1].x - points[0].x)
+                ) * (180 / Math.PI)}deg)`,
+                transformOrigin: 'left center'
+              }}
+            />
+          );
+        })}
+      </div>
+    );
   };
 
   const renderStepContent = () => {
@@ -140,7 +431,7 @@ export default function MedicaoPorFotoPage() {
                   <div className="border rounded-lg overflow-hidden">
                     <AspectRatio ratio={4/3}>
                       <img 
-                        src="/lovable-uploads/b51ddd39-04ec-4d53-9607-336dfd54259d.png" 
+                        src="/lovable-uploads/f27417e2-1c2a-43d1-a465-0b99f9dde50a.png" 
                         alt="Exemplo de foto para medição" 
                         className="w-full h-full object-cover"
                       />
@@ -219,20 +510,148 @@ export default function MedicaoPorFotoPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Imagem Processada</CardTitle>
+                  <CardTitle className="flex justify-between items-center">
+                    <span>Imagem para Medição</span>
+                    {measurements ? (
+                      <Button
+                        onClick={() => setMeasurements(null)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Refazer Medições
+                      </Button>
+                    ) : null}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="border rounded-lg overflow-hidden">
+                  <div className="border rounded-lg overflow-hidden relative" ref={containerRef}>
                     <AspectRatio ratio={4/3}>
                       {uploadedImage && (
                         <img 
+                          ref={imageRef}
                           src={uploadedImage} 
-                          alt="Foto processada do paciente" 
-                          className="w-full h-full object-cover"
+                          alt="Foto do paciente" 
+                          className={`w-full h-full object-contain ${
+                            calibrationMode || measurementMode ? 'cursor-crosshair' : ''
+                          }`}
+                          onClick={handleImageClick}
                         />
                       )}
+                      {renderMeasurementOverlay()}
                     </AspectRatio>
                   </div>
+
+                  {!measurements && (
+                    <div className="mt-4 space-y-2">
+                      <h3 className="font-medium">Instruções para Medição:</h3>
+                      <p className="text-sm text-muted-foreground">
+                        1. Primeiro calibre a imagem usando um objeto de tamanho conhecido.
+                        <br />
+                        2. Em seguida, meça o comprimento, largura e as diagonais.
+                      </p>
+                      
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        <Button
+                          onClick={() => {
+                            setCalibrationMode(true);
+                            setMeasurementMode(null);
+                            toast({
+                              title: "Modo de calibração",
+                              description: "Clique em um extremo da sua régua/referência de medida",
+                            });
+                          }}
+                          variant={calibrationMode ? "default" : "outline"}
+                          size="sm"
+                          disabled={!!measurements}
+                          className={calibrationMode ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                        >
+                          {calibrationFactor ? "Recalibrar" : "Calibrar"} Imagem
+                        </Button>
+                        
+                        <Button
+                          onClick={() => {
+                            setMeasurementMode("comprimento");
+                            setCalibrationMode(false);
+                            toast({
+                              title: "Medindo comprimento",
+                              description: "Clique nos pontos mais anterior e posterior da cabeça",
+                            });
+                          }}
+                          variant={measurementMode === "comprimento" ? "default" : "outline"}
+                          size="sm"
+                          disabled={!calibrationFactor || !!measurements}
+                          className={measurementMode === "comprimento" ? "bg-red-500 hover:bg-red-600" : ""}
+                        >
+                          Comprimento
+                        </Button>
+                        
+                        <Button
+                          onClick={() => {
+                            setMeasurementMode("largura");
+                            setCalibrationMode(false);
+                            toast({
+                              title: "Medindo largura",
+                              description: "Clique nos pontos mais laterais da cabeça",
+                            });
+                          }}
+                          variant={measurementMode === "largura" ? "default" : "outline"}
+                          size="sm"
+                          disabled={!calibrationFactor || !!measurements}
+                          className={measurementMode === "largura" ? "bg-blue-500 hover:bg-blue-600" : ""}
+                        >
+                          Largura
+                        </Button>
+                        
+                        <Button
+                          onClick={() => {
+                            setMeasurementMode("diagonalD");
+                            setCalibrationMode(false);
+                            toast({
+                              title: "Medindo diagonal direita",
+                              description: "Clique para marcar a diagonal direita da cabeça",
+                            });
+                          }}
+                          variant={measurementMode === "diagonalD" ? "default" : "outline"}
+                          size="sm"
+                          disabled={!calibrationFactor || !!measurements}
+                          className={measurementMode === "diagonalD" ? "bg-green-500 hover:bg-green-600" : ""}
+                        >
+                          Diagonal D
+                        </Button>
+                        
+                        <Button
+                          onClick={() => {
+                            setMeasurementMode("diagonalE");
+                            setCalibrationMode(false);
+                            toast({
+                              title: "Medindo diagonal esquerda",
+                              description: "Clique para marcar a diagonal esquerda da cabeça",
+                            });
+                          }}
+                          variant={measurementMode === "diagonalE" ? "default" : "outline"}
+                          size="sm"
+                          disabled={!calibrationFactor || !!measurements}
+                          className={measurementMode === "diagonalE" ? "bg-purple-500 hover:bg-purple-600" : ""}
+                        >
+                          Diagonal E
+                        </Button>
+                      </div>
+                      
+                      <Button
+                        onClick={calculateMeasurements}
+                        className="w-full mt-4 bg-turquesa hover:bg-turquesa/90"
+                        disabled={
+                          !calibrationFactor || 
+                          measurementPoints.filter(p => p.label.startsWith('comprimento')).length !== 2 ||
+                          measurementPoints.filter(p => p.label.startsWith('largura')).length !== 2 ||
+                          measurementPoints.filter(p => p.label.startsWith('diagonalD')).length !== 2 ||
+                          measurementPoints.filter(p => p.label.startsWith('diagonalE')).length !== 2
+                        }
+                      >
+                        Calcular Medidas
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
               
@@ -241,7 +660,12 @@ export default function MedicaoPorFotoPage() {
                   <CardTitle>Medidas Detectadas</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {measurements && (
+                  {processingImage ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-turquesa" />
+                      <p className="ml-2">Processando medições...</p>
+                    </div>
+                  ) : measurements ? (
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
@@ -266,7 +690,7 @@ export default function MedicaoPorFotoPage() {
                       </div>
                       
                       <div>
-                        <p className="text-sm text-muted-foreground">Perímetro Cefálico</p>
+                        <p className="text-sm text-muted-foreground">Perímetro Cefálico (estimado)</p>
                         <p className="text-2xl font-bold">{measurements.perimetroCefalico} mm</p>
                       </div>
                       
@@ -276,13 +700,13 @@ export default function MedicaoPorFotoPage() {
                           <div className="space-y-1">
                             <p className="text-sm text-muted-foreground">Índice Craniano</p>
                             <p className="text-xl font-bold">
-                              {((measurements.largura / measurements.comprimento) * 100).toFixed(1)}%
+                              {calculateCranialIndex(measurements.largura, measurements.comprimento).toFixed(1)}%
                             </p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Diferença Diagonal</p>
+                            <p className="text-sm text-muted-foreground">CVAI</p>
                             <p className="text-xl font-bold">
-                              {Math.abs(measurements.diagonalD - measurements.diagonalE).toFixed(1)} mm
+                              {calculateCVAI(measurements.diagonalD, measurements.diagonalE).toFixed(2)}%
                             </p>
                           </div>
                         </div>
@@ -303,6 +727,34 @@ export default function MedicaoPorFotoPage() {
                         <ArrowRight className="h-4 w-4 mr-2" />
                         Confirmar e Continuar
                       </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <p className="text-muted-foreground mb-2">
+                        Faça as medições na imagem para ver os resultados aqui.
+                      </p>
+                      <div className="flex flex-col gap-2 items-start mt-4 text-sm">
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2" />
+                          <p>Amarelo - Calibração</p>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 bg-red-500 rounded-full mr-2" />
+                          <p>Vermelho - Comprimento</p>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full mr-2" />
+                          <p>Azul - Largura</p>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 bg-green-500 rounded-full mr-2" />
+                          <p>Verde - Diagonal D</p>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 bg-purple-500 rounded-full mr-2" />
+                          <p>Roxo - Diagonal E</p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </CardContent>

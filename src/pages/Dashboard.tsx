@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Activity, Calendar, AlertTriangle, Loader2 } from "lucide-react";
+import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatsCard } from "@/components/StatsCard";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
@@ -13,6 +13,8 @@ import { Paciente, AsymmetryType, SeverityLevel } from "@/types";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { Link } from "react-router-dom";
 import { MobileChartView } from "@/components/MobileChartView";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface TrendData {
   value: number;
@@ -265,6 +267,16 @@ export default function Dashboard() {
     return data.toLocaleDateString("pt-BR");
   };
 
+  // Handling quick action selection
+  const handleQuickAction = (pacienteId?: string) => {
+    if (pacienteId) {
+      navigate(`/pacientes/${pacienteId}/medicao-por-foto`);
+    } else {
+      // If no patient selected, go to patient selection first
+      navigate('/pacientes');
+    }
+  };
+
   if (carregando) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -281,6 +293,48 @@ export default function Dashboard() {
           Bem-vindo(a) de volta ao painel da {clinicaNome}. Confira o resumo dos seus pacientes.
         </p>
       </div>
+
+      {/* Quick Actions Section */}
+      <Card className="mb-6">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-medium">Ações Rápidas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              onClick={() => navigate('/pacientes/registro')}
+              className="bg-turquesa hover:bg-turquesa/90"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Paciente
+            </Button>
+            {pacientes.length > 0 ? (
+              <Button 
+                onClick={() => handleQuickAction(pacientes[0]?.id)}
+                variant="outline"
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                Nova Medição
+              </Button>
+            ) : (
+              <Button 
+                onClick={() => navigate('/pacientes/registro')}
+                variant="outline"
+                disabled={pacientes.length === 0}
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                Nova Medição
+              </Button>
+            )}
+            <Button 
+              onClick={() => navigate('/historico')}
+              variant="outline"
+            >
+              Ver Histórico
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div onClick={() => navigate("/pacientes")} className="cursor-pointer">
