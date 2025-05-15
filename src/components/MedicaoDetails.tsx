@@ -37,13 +37,13 @@ export function MedicaoDetails({
   return (
     <Card
       className={`${
-        compact ? "border-0 shadow-none p-0" : "border shadow"
+        compact ? "border-0 shadow-none p-0" : "border shadow-soft gradient-card"
       } mb-4`}
     >
       <CardContent className={compact ? "p-0" : "p-6"}>
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-3">
               <div className="text-lg font-medium">
                 {formatarData(medicao.data)}
               </div>
@@ -52,49 +52,49 @@ export function MedicaoDetails({
               </div>
             </div>
 
-            <div className="mt-2 space-y-3">
+            <div className="mt-2 space-y-4">
               {/* Linha 1: Comprimento, Largura, Índice Craniano */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="bg-muted/30 p-3 rounded-lg">
                   <div className="text-sm text-muted-foreground">Comprimento</div>
-                  <div className="text-lg font-medium">{medicao.comprimento} mm</div>
+                  <div className="text-lg font-medium mt-1">{medicao.comprimento} mm</div>
                 </div>
-                <div>
+                <div className="bg-muted/30 p-3 rounded-lg">
                   <div className="text-sm text-muted-foreground">Largura</div>
-                  <div className="text-lg font-medium">{medicao.largura} mm</div>
+                  <div className="text-lg font-medium mt-1">{medicao.largura} mm</div>
                 </div>
-                <div>
+                <div className="bg-muted/30 p-3 rounded-lg">
                   <div className="text-sm text-muted-foreground">Índice Craniano</div>
-                  <div className="text-lg font-medium">{indiceCraniano}%</div>
+                  <div className="text-lg font-medium mt-1">{indiceCraniano}%</div>
                 </div>
               </div>
               
               {/* Linha 2: Diagonal D, Diagonal E, Diferença, CVAI */}
-              <div className="grid grid-cols-4 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="bg-muted/30 p-3 rounded-lg">
                   <div className="text-sm text-muted-foreground">Diagonal D</div>
-                  <div className="text-lg font-medium">{medicao.diagonal_d || medicao.diagonalD} mm</div>
+                  <div className="text-lg font-medium mt-1">{medicao.diagonal_d || medicao.diagonalD} mm</div>
                 </div>
-                <div>
+                <div className="bg-muted/30 p-3 rounded-lg">
                   <div className="text-sm text-muted-foreground">Diagonal E</div>
-                  <div className="text-lg font-medium">{medicao.diagonal_e || medicao.diagonalE} mm</div>
+                  <div className="text-lg font-medium mt-1">{medicao.diagonal_e || medicao.diagonalE} mm</div>
                 </div>
-                <div>
+                <div className="bg-muted/30 p-3 rounded-lg">
                   <div className="text-sm text-muted-foreground">Diferença</div>
-                  <div className="text-lg font-medium">{medicao.diferenca_diagonais || medicao.diferencaDiagonais} mm</div>
+                  <div className="text-lg font-medium mt-1">{medicao.diferenca_diagonais || medicao.diferencaDiagonais} mm</div>
                 </div>
-                <div>
+                <div className="bg-muted/30 p-3 rounded-lg">
                   <div className="text-sm text-muted-foreground">CVAI</div>
-                  <div className="text-lg font-medium">{cvai}%</div>
+                  <div className="text-lg font-medium mt-1">{cvai}%</div>
                 </div>
               </div>
               
               {/* Perímetro Cefálico (se disponível) */}
               {(medicao.perimetro_cefalico || medicao.perimetroCefalico) && (
                 <div className="grid grid-cols-1 gap-4">
-                  <div>
+                  <div className="bg-muted/30 p-3 rounded-lg">
                     <div className="text-sm text-muted-foreground">Perímetro Cefálico</div>
-                    <div className="text-lg font-medium">{medicao.perimetro_cefalico || medicao.perimetroCefalico} mm</div>
+                    <div className="text-lg font-medium mt-1">{medicao.perimetro_cefalico || medicao.perimetroCefalico} mm</div>
                   </div>
                 </div>
               )}
@@ -103,14 +103,18 @@ export function MedicaoDetails({
 
           <div className="flex flex-col items-start md:items-end gap-2">
             <div className="text-sm text-muted-foreground">Status</div>
-            <StatusBadge status={severityLevel} asymmetryType={asymmetryType} />
+            <StatusBadge 
+              status={severityLevel} 
+              asymmetryType={asymmetryType}
+              showAsymmetryType={true}
+            />
           </div>
         </div>
 
         {medicao.observacoes && (
-          <div className="mt-4">
-            <div className="text-sm text-muted-foreground">Observações</div>
-            <p className="text-sm mt-1">{medicao.observacoes}</p>
+          <div className="mt-6 bg-muted/30 p-4 rounded-lg">
+            <div className="text-sm font-medium mb-1">Observações</div>
+            <p className="text-sm">{medicao.observacoes}</p>
           </div>
         )}
       </CardContent>

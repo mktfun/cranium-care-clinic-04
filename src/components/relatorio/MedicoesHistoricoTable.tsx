@@ -42,17 +42,17 @@ export function MedicoesHistoricoTable({
       <table className="min-w-full border-collapse">
         <thead>
           <tr className="bg-muted/50">
-            <th className="p-2 text-left text-xs">Data</th>
-            <th className="p-2 text-left text-xs">Idade</th>
-            <th className="p-2 text-left text-xs">Comp.</th>
-            <th className="p-2 text-left text-xs">Larg.</th>
-            <th className="p-2 text-left text-xs">Diag. D</th>
-            <th className="p-2 text-left text-xs">Diag. E</th>
-            <th className="p-2 text-left text-xs">Dif.</th>
-            <th className="p-2 text-left text-xs">CVAI</th>
-            <th className="p-2 text-left text-xs">IC</th>
-            <th className="p-2 text-left text-xs">PC</th>
-            <th className="p-2 text-left text-xs">Status</th>
+            <th className="p-2 text-left text-xs font-semibold">Data</th>
+            <th className="p-2 text-left text-xs font-semibold">Idade</th>
+            <th className="p-2 text-left text-xs font-semibold">Comp.</th>
+            <th className="p-2 text-left text-xs font-semibold">Larg.</th>
+            <th className="p-2 text-left text-xs font-semibold">Diag. D</th>
+            <th className="p-2 text-left text-xs font-semibold">Diag. E</th>
+            <th className="p-2 text-left text-xs font-semibold">Dif.</th>
+            <th className="p-2 text-left text-xs font-semibold">CVAI</th>
+            <th className="p-2 text-left text-xs font-semibold">IC</th>
+            <th className="p-2 text-left text-xs font-semibold">PC</th>
+            <th className="p-2 text-left text-xs font-semibold">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -77,7 +77,8 @@ export function MedicoesHistoricoTable({
                 <td className="p-2">
                   <StatusBadge 
                     status={severityLevel} 
-                    asymmetryType={asymmetryType} 
+                    asymmetryType={asymmetryType}
+                    showAsymmetryType={true}
                     className="text-xs"
                   />
                 </td>
