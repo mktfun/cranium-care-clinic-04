@@ -10,18 +10,30 @@ export type ToasterToast = {
   variant?: "default" | "destructive" | "success";
 };
 
-const toasts: ToasterToast[] = [];
+// State to store all active toasts
+const [toasts, setToasts] = React.useState<ToasterToast[]>([]);
 
-// Esta é a interface que usaremos para chamar o toast
-interface ToastOptions {
+// Interface for toast options
+export interface ToastOptions {
   title?: React.ReactNode;
   description?: React.ReactNode;
   variant?: "default" | "destructive" | "success";
   [key: string]: any;
 }
 
-// Esta função recebe as opções no formato simplificado e as converte para o formato Sonner
-function toast(options: ToastOptions) {
+// Hook for accessing toast functionality
+export function useToast() {
+  return {
+    toasts,
+    toast,
+    dismiss: (toastId: string) => {
+      setToasts((toasts) => toasts.filter((t) => t.id !== toastId));
+    },
+  };
+}
+
+// Function to create toasts
+export function toast(options: ToastOptions) {
   const { variant = "default", title, description, ...props } = options;
   
   // Map our toast variants to Sonner variants
@@ -42,5 +54,3 @@ function toast(options: ToastOptions) {
     });
   }
 }
-
-export { toast, toasts };

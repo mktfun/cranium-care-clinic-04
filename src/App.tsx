@@ -1,7 +1,7 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ui/theme-provider";
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from '@/components/ui/toaster';
 
 import Login from "@/pages/Login";
 import Registro from "@/pages/Registro";
@@ -21,7 +21,7 @@ import Index from "@/pages/Index";
 import Tarefas from "@/pages/Tarefas";
 import { NotificacoesPage } from "@/pages/NotificacoesPage";
 import MedicaoPorFotoPage from "@/pages/MedicaoPorFotoPage";
-import ProntuarioMedico from "@/pages/ProntuarioMedico"; // Importar a nova página de prontuário
+import ProntuarioMedico from "@/pages/ProntuarioMedico";
 
 function App() {
   return (
