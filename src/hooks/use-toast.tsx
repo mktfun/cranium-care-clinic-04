@@ -11,12 +11,12 @@ export type ToasterToast = {
 };
 
 // Interface for toast options
-export interface ToastOptions {
+export type ToastOptions = {
   title?: React.ReactNode;
   description?: React.ReactNode;
   variant?: "default" | "destructive" | "success";
   [key: string]: any;
-}
+};
 
 // Create a React context to store and manage toasts
 const ToastContext = React.createContext<{
@@ -101,5 +101,3 @@ export const toast = (options: ToastOptions) => {
     });
   }
 };
-
-// Removed duplicate export of ToastProvider here
