@@ -5,6 +5,7 @@
 
 @layer base {
   :root {
+    /* Base Theme - Light */
     --background: 180 20% 98%;
     --foreground: 180 10% 14%;
 
@@ -43,6 +44,33 @@
     --sidebar-accent-foreground: 214 65% 45%;
     --sidebar-border: 180 15% 90%;
     --sidebar-ring: 186 97% 35%;
+
+    /* Success colors */
+    --success: 142 72% 29%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 60% 96%;
+    --success-muted-foreground: 142 72% 29%;
+
+    /* Warning colors */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 38 92% 95%;
+    --warning-muted-foreground: 38 92% 30%;
+
+    /* Info colors */
+    --info: 214 95% 60%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 214 95% 95%;
+    --info-muted-foreground: 214 95% 40%;
+
+    /* Animation settings */
+    --animation-speed: 1;
+    --transition-duration: 0.3s;
+    --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Typography */
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --font-heading: var(--font-sans);
   }
 
   .dark {
@@ -82,6 +110,219 @@
     --sidebar-accent-foreground: 190 15% 95%;
     --sidebar-border: 190 20% 25%;
     --sidebar-ring: 186 80% 45%;
+
+    /* Success colors */
+    --success: 142 72% 42%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 60% 20%;
+    --success-muted-foreground: 142 72% 80%;
+
+    /* Warning colors */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 38 92% 20%;
+    --warning-muted-foreground: 38 92% 80%;
+
+    /* Info colors */
+    --info: 214 95% 60%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 214 95% 20%;
+    --info-muted-foreground: 214 95% 80%;
+  }
+
+  /* Theme: Ocean Blue */
+  :root.theme-ocean {
+    --primary: 200 85% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 65% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 230 80% 60%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 200 85% 40%;
+    
+    --sidebar-primary: 200 85% 40%;
+    --sidebar-accent: 230 80% 60%;
+    --sidebar-ring: 200 85% 40%;
+  }
+
+  :root.theme-ocean.dark {
+    --primary: 200 85% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 65% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 230 80% 70%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 200 85% 50%;
+    
+    --sidebar-primary: 200 85% 50%;
+    --sidebar-accent: 230 80% 70%;
+    --sidebar-ring: 200 85% 50%;
+  }
+
+  /* Theme: Natural Green */
+  :root.theme-nature {
+    --primary: 150 60% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 130 40% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 170 80% 40%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 150 60% 40%;
+    
+    --sidebar-primary: 150 60% 40%;
+    --sidebar-accent: 170 80% 40%;
+    --sidebar-ring: 150 60% 40%;
+  }
+
+  :root.theme-nature.dark {
+    --primary: 150 60% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 130 40% 55%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 170 80% 45%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 150 60% 45%;
+    
+    --sidebar-primary: 150 60% 45%;
+    --sidebar-accent: 170 80% 45%;
+    --sidebar-ring: 150 60% 45%;
+  }
+
+  /* Theme: Sunset Orange */
+  :root.theme-sunset {
+    --primary: 20 85% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 35 90% 55%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 350 80% 55%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 20 85% 45%;
+    
+    --sidebar-primary: 20 85% 45%;
+    --sidebar-accent: 350 80% 55%;
+    --sidebar-ring: 20 85% 45%;
+  }
+
+  :root.theme-sunset.dark {
+    --primary: 20 85% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 35 90% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 350 80% 60%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 20 85% 50%;
+    
+    --sidebar-primary: 20 85% 50%;
+    --sidebar-accent: 350 80% 60%;
+    --sidebar-ring: 20 85% 50%;
+  }
+
+  /* Theme: Purple Joy */
+  :root.theme-purple {
+    --primary: 260 75% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 280 70% 65%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 240 80% 70%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 260 75% 55%;
+    
+    --sidebar-primary: 260 75% 55%;
+    --sidebar-accent: 240 80% 70%;
+    --sidebar-ring: 260 75% 55%;
+  }
+
+  :root.theme-purple.dark {
+    --primary: 260 75% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 280 70% 70%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 240 80% 75%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 260 75% 60%;
+    
+    --sidebar-primary: 260 75% 60%;
+    --sidebar-accent: 240 80% 75%;
+    --sidebar-ring: 260 75% 60%;
+  }
+
+  /* High contrast accessibility theme */
+  :root.theme-high-contrast {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+    
+    --primary: 230 100% 45%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 0 0% 0%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 20%;
+    
+    --accent: 230 100% 45%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 100% 45%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 0%;
+    --input: 0 0% 0%;
+    --ring: 230 100% 45%;
+    
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 230 100% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 90%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 0 0% 0%;
+    --sidebar-ring: 230 100% 45%;
+  }
+
+  :root.theme-high-contrast.dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    
+    --primary: 230 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 0 0% 100%;
+    --secondary-foreground: 0 0% 0%;
+    
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 80%;
+    
+    --accent: 230 100% 60%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+    --ring: 230 100% 60%;
+    
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 230 100% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100%;
+    --sidebar-ring: 230 100% 60%;
   }
 }
 
@@ -92,6 +333,40 @@
   
   body {
     @apply bg-background text-foreground font-sans;
+    background-image: var(--background-image, none);
+    background-size: cover;
+    background-attachment: fixed;
+    transition: background-color var(--transition-duration) var(--transition-curve),
+                color var(--transition-duration) var(--transition-curve);
+  }
+
+  /* Typography enhancements */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl font-bold;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold;
+  }
+
+  h4 {
+    @apply text-xl font-medium;
+  }
+
+  h5 {
+    @apply text-lg font-medium;
+  }
+
+  h6 {
+    @apply text-base font-medium;
   }
 
   /* Custom scrollbar styling */
@@ -130,36 +405,165 @@
     scrollbar-color: hsl(var(--muted-foreground)/0.2) transparent;
   }
 
+  /* Enhanced glass effect */
   .glass-card {
-    @apply bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-lg shadow-lg;
+    @apply bg-white/60 dark:bg-black/40 backdrop-blur-md border border-white/30 dark:border-white/10 rounded-lg shadow-lg;
+    transition: all var(--transition-duration) var(--transition-curve);
+  }
+  
+  .glass-card:hover {
+    @apply bg-white/70 dark:bg-black/50 border-white/40 dark:border-white/15;
   }
 
+  /* Animation settings */
   .animate-enter {
-    @apply animate-fade-in;
+    animation-duration: calc(0.3s * var(--animation-speed));
   }
 
+  /* Sidebar link styling */
   .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors;
+    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors relative overflow-hidden;
+  }
+
+  .sidebar-link::before {
+    content: '';
+    @apply absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-sm transform -translate-x-full;
+    transition: transform var(--transition-duration) var(--transition-curve);
+  }
+
+  .sidebar-link:hover::before {
+    transform: translateX(0);
   }
 
   .sidebar-link.active {
     @apply bg-sidebar-accent text-sidebar-accent-foreground font-medium;
   }
 
-  /* Novas classes de utilidade para design mais harmonioso */
+  .sidebar-link.active::before {
+    transform: translateX(0);
+  }
+
+  /* Card styling */
   .card-hover {
     @apply transition-all duration-300 hover:shadow-md hover:border-primary/30;
+    transform: translateY(0);
+    transition: transform var(--transition-duration) var(--transition-curve),
+                box-shadow var(--transition-duration) var(--transition-curve),
+                border-color var(--transition-duration) var(--transition-curve);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px);
   }
 
+  /* Button hovers */
   .btn-hover {
-    @apply transition-all duration-200 hover:shadow-md active:scale-[0.98];
+    @apply transition-all;
+    transition-duration: calc(0.2s * var(--animation-speed));
+    @apply hover:shadow-md active:scale-[0.98];
   }
 
+  /* Enhanced section dividers */
   .section-divider {
-    @apply h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent my-6;
+    @apply h-px my-6 relative overflow-hidden;
+    background-image: linear-gradient(to right, transparent, hsl(var(--primary)/0.5), transparent);
   }
 
+  /* Card header styling */
   .card-header-highlight {
-    @apply bg-gradient-to-r from-primary/5 to-primary/10 border-b border-primary/10;
+    @apply border-b transition-colors;
+    background-image: linear-gradient(to right, hsl(var(--primary)/0.05), hsl(var(--primary)/0.1));
+    border-color: hsl(var(--primary)/0.1);
+  }
+
+  /* Enhanced utility classes */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-secondary;
+  }
+  
+  /* Badge enhancements */
+  .badge-outline-gradient {
+    @apply relative rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors;
+    background-image: linear-gradient(45deg, hsl(var(--primary)/0.1), hsl(var(--secondary)/0.1));
+  }
+
+  /* Animation keyframes */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+    animation-duration: calc(3s * var(--animation-speed));
+  }
+  
+  @keyframes pulse-gentle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+  }
+  
+  .animate-pulse-gentle {
+    animation: pulse-gentle 2s ease-in-out infinite;
+    animation-duration: calc(2s * var(--animation-speed));
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+    animation-duration: calc(0.5s * var(--animation-speed));
+  }
+
+  /* Animation speeds */
+  .animation-fast {
+    --animation-speed: 0.7;
+  }
+  
+  .animation-normal {
+    --animation-speed: 1;
+  }
+  
+  .animation-slow {
+    --animation-speed: 1.5;
+  }
+  
+  .animation-none * {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  /* Enhanced focus styles */
+  .focus-ring {
+    @apply focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none;
+  }
+  
+  /* Density settings */
+  .density-compact {
+    --density-scale: 0.875;
+  }
+  
+  .density-normal {
+    --density-scale: 1;
+  }
+  
+  .density-comfortable {
+    --density-scale: 1.125;
+  }
+  
+  /* Layout density adjustments */
+  .density-compact .card {
+    @apply p-3;
+  }
+  
+  .density-comfortable .card {
+    @apply p-6;
   }
 }

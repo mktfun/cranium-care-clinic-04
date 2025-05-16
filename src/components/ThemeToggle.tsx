@@ -2,6 +2,7 @@
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { applyDarkMode } from "@/lib/theme-utils";
 
 export const ThemeToggle = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -12,14 +13,9 @@ export const ThemeToggle = () => {
   }, []);
 
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    if (isDarkMode) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    }
+    const newIsDark = !isDarkMode;
+    setIsDarkMode(newIsDark);
+    applyDarkMode(newIsDark);
   };
 
   // Check for saved theme preference
@@ -34,8 +30,21 @@ export const ThemeToggle = () => {
   }, []);
 
   return (
-    <Button variant="ghost" size="sm" onClick={toggleTheme} className="w-9 px-0">
-      {isDarkMode ? <Sun className="h-[1.2rem] w-[1.2rem]" /> : <Moon className="h-[1.2rem] w-[1.2rem]" />}
+    <Button 
+      variant="ghost" 
+      size="sm" 
+      onClick={toggleTheme} 
+      className="w-9 px-0 relative overflow-hidden"
+    >
+      {isDarkMode ? (
+        <div className="animate-fade-in">
+          <Sun className="h-[1.2rem] w-[1.2rem]" />
+        </div>
+      ) : (
+        <div className="animate-fade-in">
+          <Moon className="h-[1.2rem] w-[1.2rem]" />
+        </div>
+      )}
       <span className="sr-only">Alternar tema</span>
     </Button>
   );

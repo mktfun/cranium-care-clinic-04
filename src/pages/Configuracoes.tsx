@@ -14,12 +14,13 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import AparenciaTab from "@/components/configuracoes/AparenciaTab";
 
 interface Usuario {
   id: string;
@@ -334,17 +335,17 @@ export default function Configuracoes() {
   if (carregando) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-turquesa" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
   
   return (
     <div className="space-y-6 animate-fade-in">
-      <h2 className="text-3xl font-bold">Configurações</h2>
+      <h2 className="text-3xl font-bold tracking-tight">Configurações</h2>
       
       <Tabs defaultValue="perfil" className="space-y-6">
-        <TabsList>
+        <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
           <TabsTrigger value="perfil">Perfil</TabsTrigger>
           <TabsTrigger value="conta">Conta</TabsTrigger>
           <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
@@ -352,19 +353,19 @@ export default function Configuracoes() {
           <TabsTrigger value="colaboradores">Colaboradores</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="perfil">
-          <Card>
-            <CardHeader>
+        <TabsContent value="perfil" className="space-y-6">
+          <Card className="animate-fade-in">
+            <CardHeader className="card-header-highlight">
               <CardTitle>Informações Pessoais</CardTitle>
               <CardDescription>
                 Atualize suas informações pessoais e foto de perfil.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <Avatar className="h-24 w-24">
+                <Avatar className="h-24 w-24 border-2 border-primary/20 shadow-sm">
                   <AvatarImage src={avatarUrl || ""} />
-                  <AvatarFallback className="text-2xl bg-azul text-white">
+                  <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
                     {obterIniciais(nome || "Usuário")}
                   </AvatarFallback>
                 </Avatar>
@@ -378,7 +379,7 @@ export default function Configuracoes() {
                   />
                   <Button 
                     variant="outline" 
-                    className="mr-2"
+                    className="mr-2 btn-hover"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingAvatar}
                   >
@@ -391,7 +392,7 @@ export default function Configuracoes() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="text-destructive"
+                    className="text-destructive btn-hover"
                     onClick={removerAvatar}
                     disabled={!avatarUrl || uploadingAvatar}
                   >
@@ -407,6 +408,7 @@ export default function Configuracoes() {
                     id="nome" 
                     value={nome} 
                     onChange={(e) => setNome(e.target.value)} 
+                    className="transition-all focus:border-primary/30 focus:shadow-sm"
                   />
                 </div>
                 
@@ -417,6 +419,7 @@ export default function Configuracoes() {
                     value={clinicaNome} 
                     placeholder="Ex: Clínica PediaCare"
                     onChange={(e) => setClinicaNome(e.target.value)} 
+                    className="transition-all focus:border-primary/30 focus:shadow-sm"
                   />
                 </div>
                 
@@ -427,13 +430,14 @@ export default function Configuracoes() {
                     type="email" 
                     value={email} 
                     onChange={(e) => setEmail(e.target.value)} 
+                    className="transition-all focus:border-primary/30 focus:shadow-sm"
                   />
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="border-t bg-muted/20 py-3">
               <Button 
-                className="bg-turquesa hover:bg-turquesa/90"
+                className="btn-hover"
                 onClick={salvarAlteracoes}
                 disabled={salvando}
               >
@@ -448,15 +452,15 @@ export default function Configuracoes() {
           </Card>
         </TabsContent>
         
-        <TabsContent value="conta">
-          <Card>
-            <CardHeader>
+        <TabsContent value="conta" className="space-y-6">
+          <Card className="animate-fade-in">
+            <CardHeader className="card-header-highlight">
               <CardTitle>Segurança da Conta</CardTitle>
               <CardDescription>
                 Altere sua senha e gerencie as configurações de segurança.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="space-y-4">
                 <div className="grid gap-2">
                   <Label htmlFor="senha-atual">Senha Atual</Label>
@@ -465,6 +469,7 @@ export default function Configuracoes() {
                     type="password" 
                     value={senhaAtual} 
                     onChange={(e) => setSenhaAtual(e.target.value)} 
+                    className="transition-all focus:border-primary/30 focus:shadow-sm"
                   />
                 </div>
                 
@@ -475,6 +480,7 @@ export default function Configuracoes() {
                     type="password" 
                     value={novaSenha} 
                     onChange={(e) => setNovaSenha(e.target.value)} 
+                    className="transition-all focus:border-primary/30 focus:shadow-sm"
                   />
                 </div>
                 
@@ -485,13 +491,14 @@ export default function Configuracoes() {
                     type="password" 
                     value={confirmarSenha} 
                     onChange={(e) => setConfirmarSenha(e.target.value)} 
+                    className="transition-all focus:border-primary/30 focus:shadow-sm"
                   />
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="border-t bg-muted/20 py-3">
               <Button 
-                className="bg-turquesa hover:bg-turquesa/90"
+                className="btn-hover"
                 onClick={alterarSenha}
                 disabled={alterandoSenha}
               >
@@ -505,18 +512,18 @@ export default function Configuracoes() {
             </CardFooter>
           </Card>
           
-          <Card className="mt-6">
-            <CardHeader>
+          <Card className="animate-fade-in">
+            <CardHeader className="card-header-highlight">
               <CardTitle>Gerenciamento da Conta</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full sm:w-auto">
+            <CardContent className="space-y-4 pt-6">
+              <Button variant="outline" className="w-full sm:w-auto btn-hover">
                 Exportar Dados
               </Button>
               
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="w-full sm:w-auto">
+                  <Button variant="destructive" className="w-full sm:w-auto btn-hover">
                     Excluir Conta
                   </Button>
                 </AlertDialogTrigger>
@@ -529,8 +536,8 @@ export default function Configuracoes() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
+                    <AlertDialogCancel className="btn-hover">Cancelar</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90 btn-hover">
                       Excluir
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -541,14 +548,14 @@ export default function Configuracoes() {
         </TabsContent>
         
         <TabsContent value="notificacoes">
-          <Card>
-            <CardHeader>
+          <Card className="animate-fade-in">
+            <CardHeader className="card-header-highlight">
               <CardTitle>Preferências de Notificações</CardTitle>
               <CardDescription>
                 Configure como deseja receber notificações da plataforma.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <p className="font-medium">Notificações por Email</p>
@@ -575,9 +582,9 @@ export default function Configuracoes() {
                 />
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="border-t bg-muted/20 py-3">
               <Button 
-                className="bg-turquesa hover:bg-turquesa/90"
+                className="btn-hover"
                 onClick={salvarPreferencias}
               >
                 Salvar Preferências
@@ -587,41 +594,22 @@ export default function Configuracoes() {
         </TabsContent>
         
         <TabsContent value="aparencia">
-          <Card>
-            <CardHeader>
-              <CardTitle>Aparência</CardTitle>
-              <CardDescription>
-                Personalize a aparência do sistema conforme sua preferência.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Tema</p>
-                    <p className="text-sm text-muted-foreground">
-                      Alternar entre modo claro e modo escuro.
-                    </p>
-                  </div>
-                  <ThemeToggle />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Importar novo componente de aparência */}
+          <AparenciaTab />
         </TabsContent>
         
         <TabsContent value="colaboradores">
-          <Card>
-            <CardHeader>
+          <Card className="animate-fade-in">
+            <CardHeader className="card-header-highlight">
               <CardTitle>Colaboradores</CardTitle>
               <CardDescription>
                 Adicione ou remova usuários com acesso ao seu sistema.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button className="bg-turquesa hover:bg-turquesa/90">
+                  <Button className="btn-hover">
                     Adicionar Colaborador
                   </Button>
                 </DialogTrigger>
@@ -642,6 +630,7 @@ export default function Configuracoes() {
                         placeholder="colaborador@exemplo.com"
                         value={novoColaborador.email}
                         onChange={(e) => setNovoColaborador({...novoColaborador, email: e.target.value})}
+                        className="transition-all focus:border-primary/30 focus:shadow-sm"
                       />
                     </div>
                     
@@ -664,7 +653,7 @@ export default function Configuracoes() {
                     <Button type="button" variant="secondary" onClick={() => setNovoColaborador({email: '', permissao: 'visualizar'})}>
                       Cancelar
                     </Button>
-                    <Button type="submit" onClick={adicionarColaborador}>
+                    <Button type="submit" onClick={adicionarColaborador} className="btn-hover">
                       Enviar Convite
                     </Button>
                   </DialogFooter>
@@ -697,5 +686,3 @@ export default function Configuracoes() {
     </div>
   );
 }
-
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

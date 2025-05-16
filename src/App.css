@@ -7,29 +7,51 @@
 }
 
 body {
-  background-image: 
+  background-image: var(--bg-pattern, 
     radial-gradient(circle at 50% 50%, 
     hsl(var(--primary)/0.03) 0%, 
-    hsl(var(--background)/1) 60%);
+    hsl(var(--background)/1) 60%));
   background-attachment: fixed;
+  transition: background-image 0.5s ease-in-out;
 }
 
 .dark body {
-  background-image: 
+  background-image: var(--bg-pattern,
     radial-gradient(circle at 50% 50%, 
     hsl(var(--primary)/0.08) 0%, 
-    hsl(var(--background)/1) 60%);
+    hsl(var(--background)/1) 60%));
 }
 
+/* Pattern styles for themes */
+body.pattern-dots {
+  --bg-pattern: radial-gradient(circle, hsl(var(--primary)/0.15) 1px, transparent 1px) 0 0 / 20px 20px;
+}
+
+body.pattern-grid {
+  --bg-pattern: linear-gradient(to right, hsl(var(--primary)/0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, hsl(var(--primary)/0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+body.pattern-waves {
+  --bg-pattern: url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21.184 20c.357-.13.72-.264.888-.14.56.293 1.077.927 1.834.585.755-.342.976-.98 1.92-.585.945.395 1.867.664 2.454.266.587-.398.656-.945.505-1.438-.15-.493-.486-.883-.505-1.438-.018-.555.425-.96.76-1.304.335-.345.648-.648.935-1.18.287-.533.418-.853.302-1.531-.116-.678-.646-1.178-1.01-1.745-.362-.567-.3-1.267-.15-1.745.15-.477.464-.98.776-.908.312.071.538.418.72.908.182.49.316.827.576 1.006.259.18.653.218.892.736.238.519.714.638.894 1.006.18.368.24.64.31.702.07.062.286.005.363.326.077.32.098.63.13.992.032.361.139.877.096 1.368-.043.49-.456 1.093-.096 1.368.36.276.756.224.865.737.108.512.43.818.726 1.368.297.55.869.41 1.206.824.337.413.252.577.42.824.168.247.42.42.853.42.432 0 .712-.198.853-.42.141-.223.428-.316.726-.505.297-.189.369-.227.576-.672.207-.445.42-.908.692-1.007.271-.099.538-.172.726.224.188.395.35.505.42.672.07.168.049.301.288.505.238.204.36.18.505.42.145.24.432.653.432 1.045s-.337.945-.432 1.045c-.095.1.05.791.174 1.006.125.214.287.275.363.672.077.396.108.585.302.83.194.245.179.457.577.673.398.215.648.134.909.42.26.286.27.422.577.42.306-.002.78-.148 1.155-.42.376-.272.764-.544 1.155-.42.39.123.797.567 1.155.42.358-.148.765-.267 1.155-.42.39-.154.862-.328 1.01-.754.148-.426.366-.411.577-.83.211-.417.261-.516.505-.683.243-.168.614-.295.82-.606.205-.31.346-.555.577-.606.23-.05.467-.157.726.224.259.38.436.726.577.606.141-.12.444-.38.577-.606.133-.225.26-.224.577-.224.317 0 .553-.17.577-.605.023-.436.141-.726.431-.726.29 0 .918.21 1.01.42.092.212.274.486.432.505.158.019.436-.275.576-.503.14-.229.31-.299.577-.42.267-.12.677-.41.577.09-.1.5-.316 1.025-.144 1.35.171.325.756.47 1.01.42.253-.05.193-.518.432-.505.238.014.574.337.72.504.145.167.258.31.287.505.03.194.232.25.288.394.055.143.1.36.432.504.332.144.715.204.72.504.005.3-.189.671-.145 1.095.044.423.266.801 0 1.095-.266.294-.568.24-.72.504-.152.264-.249.433-.72.504-.47.071-.905-.29-.72.09.184.38.798.605 1.154.504.356-.1.402-.344.72-.09.32.253.458.532.72.09.263-.443.372-.606.866-.606.494 0 .675.165.792.09.117-.074.293-.174.648-.09.354.085.88.072 1.152.09.273.018.316-.127.648-.09.332.037.856.15 1.297.503.441.352.954.486.865.727-.089.241-.455.297-.169.09.287-.207.592-.46.937-.09.345.369.913.664 1.152.602.24-.061.568-.297.648-.09.08.207.218.62.576.727.358.107.763.045 1.154.09.39.046.617.273.647.503.031.23-.174.07-.288 0-.114-.07-.27-.052-.36 0-.09.052-.072.114 0 .2.072.086.034.115 0 .2-.033.086-.313.358-.215.504.098.146.358.054.504.09.146.037.71.21.865.09.155-.12.297-.484.36-.09.063.394.209.565.576.504.368-.06.762-.464.864-.503.103-.039.173-.437.432-.504.26-.068.427-.257.648-.09.22.166.516.368.576.09.061-.278.282-.311.432-.504.15-.194.133-.438.432-.504.298-.066.428.034.576.09.148.056.484.073.72.09.235.016.345.188.504.09.159-.099.114-.377.36-.09.247.287.478.209.792.09.315-.12.475-.315.576-.09.1.225.186.494.576.503.39.01.737-.14.72.09-.017.23-.096.46-.216.504-.12.045-.287-.118-.36 0-.072.118-.066.2-.144.2-.078 0-.112-.028-.288.09-.176.117-.192.275-.36.09-.168-.187-.252-.427-.36-.09-.109.337-.203.334-.432.09-.23-.245-.584-.58-.648-.09-.064.49-.089.628-.36.504-.271-.123-.546-.421-.648-.09-.102.33-.04.725-.36.902-.32.177-.34.137-.504.09-.164-.046-.508-.06-.36.09.148.15.222.413.504.504.281.09.579-.032.72.09.14.12.221.512.36.504.14-.008.39-.4.36.09-.031.49-.274.424-.36.504-.085.08-.272.057-.36.09-.088.032-.221.199-.36.09-.139-.11-.016-.32-.072-.504-.056-.183-.239-.172-.36-.09-.121.081-.245.371-.36.09-.114-.282-.29-.583-.36-.09-.07.493-.187.504-.072.504.115 0 .513-.116.36.09-.153.207-.371.079-.504.09-.133.01-.25.155-.36.09-.11-.066-.398-.195-.36.09.038.284.014.424.144.504.13.08.474.002.36.09-.114.087-.247-.055-.36.09-.113.146.04.611.072.504.032-.107-.147-.4 0-.504.147-.104.332.04.432 0 .1-.04.133-.127.288-.09.155.036.345.146.36.09.016-.057-.311-.165-.216-.09.095.075.372-.048.36.09-.012.137-.17.58-.072.504.098-.077.147-.321.36-.504.213-.183.442-.137.36-.09-.082.046-.607.227-.504.504.103.276.358.68.432.504.074-.176.254-.384.36-.09.106.294.25.359.36.09.11-.27.305-.597.504-.504.199.092.432.266.432.504 0 .238-.233.485-.36.504-.127.02-.434-.142-.36.09.074.232.403.194.504.09.1-.104.36-.194.36-.09 0 .104-.141.394-.072.504.07.11.327-.075.504.09.177.164.286.286.288.504.002.218-.178.33-.288.504-.11.175-.188.246-.072.504.116.258.438.392.576.504.138.112.069.342.072.504.003.162.135.29.216.504.08.213.09.39.072.504-.018.113-.016.345-.072.504-.056.159-.24.42-.216.504.024.084.224-.027.36-.09.136-.063.166-.318.36-.09.194.227.258.523.216.504-.042-.02-.316-.101-.216.09.1.19.272.129.36.09.088-.04.156-.177.288-.09.132.086.244.308.36.09.116-.218.243-.463.36-.09.117.374.146.387.36.09.214-.296.426-.67.576-.504.15.166.264.436.36.09.096-.347.165-.717.36-.504.195.213.397.459.36.504-.037.045-.394-.278-.36.09.034.368.073.561.36.504.287-.057.64-.34.576-.09-.064.25-.712.327-.36.09.352-.237.195-.395.504-.504.31-.11.712-.007.576.09-.136.097-.199.056-.36.09-.161.033-.475.184-.216.504.259.32.678.142.792 0 .114-.142.035-.187.216-.504.181-.317.29-.347.36-.504.07-.157.065-.511.36-.504.295.007.66.339.36.504-.3.165-.622-.26-.36.09.262.35.4.556.72.504.32-.052.557-.498.576-.504.019-.006-.13.283 0 .504.13.22.416.327.504.504.088.177.034.329.216.504.182.174.543.43.504.504-.039.074-.432.017-.36.09.072.073.112.06.36.09.249.03.774.186.648.09-.126-.096-.588-.145-.36.09.228.235.653.448.792.504.14.056.233.042.36.09.127.048.278.177.36.09.082-.087.029-.358.144-.504.115-.146.364-.177.36-.09-.004.087.02.281-.072.504-.092.223-.33.431-.216.504.114.072.288-.073.432-.09.144-.016.346.064.36-.09.014-.154-.207-.302-.072-.504.135-.202.371-.36.576-.504.205-.144.417-.313.576-.504.159-.19.39-.483.36-.09-.03.393-.016.083-.072.504-.056.42-.155.962-.072 1.007.083.046.33-.415.36-.09.03.325.037.729 0 1.008-.037.279-.064.397-.072.504-.008.107.017.508.072.503.055-.004.082-.391.216-.503.134-.112.372-.282.36.09-.012.372-.456.84-.36.504.096-.336.34-.57.36-.504.02.066-.038.254 0 .504.038.25.148.355.36.504.212.15.544.206.576.09.032-.115-.288-.479-.072-.504.216-.025.422.474.432.504.01.03-.377-.286-.072-.09.305.196.618.174.648.09.03-.084-.123-.125-.072-.504.051-.379.25-.591.36-.504.11.087.056.428.072.504.016.076.062-.013.216-.09.154-.078.375-.073.504-.09.129-.018.17-.117.216-.09.046.027-.057.146 0 .09.057-.056.214-.24.072-.09-.142.15-.418.653-.36.503.058-.15-.095-.356.072-.503.167-.148.653-.097.72.09.067.186.006.195.072.503.066.307.218.499.288.503.07.004.097-.195.144-.503.047-.308.091-.498.216-.504.125-.005.251.45.36.09.11.44.184.45.36.09.176-.36.239-.559.36-.504.121.055.234.475.36.504.126.03.223-.299.36-.09.137.209.23.504.36.504.13 0 .356-.294.36-.504.004-.21-.313.294 0 0 .313-.294.772-.168.865 0 .093.168-.17.438-.145.727.025.29.67.802.36.602-.31-.2-.71-.668-.36-.602.35.066.525.366.577.602.052.236-.028.317.144.602.172.285.357.575.648.727.291.152.575.229.792.09.217-.14.144-.252.647-.09.504.16.848.458.937.602.09.144-.1.441.144.602.245.161.746.127.865.09.119-.037.043-.275.36-.09.316.184.688.602 1.08.602.392 0 .753-.318 1.01-.602.257-.285.375-.53.432-.602.056-.073.054.037.288.09.234.053.695.226.72.09.025-.136-.224-.241-.36-.602-.136-.361-.378-.757-.216-.602.162.155.564.53.648.602.084.072-.1.055.144.09s.717.258.792.09c.075-.168-.209-.27-.216-.602-.007-.332.115-.784.36-.602.246.182.335.585.432.602.097.017.189-.302.36-.09.171.211.407.724.648.727.241.003.48-.512.576-.727.096-.214.066-.453.216-.602.15-.15.496-.265.504 0 .008.265-.324.654-.072.727.252.073.606-.554.648-.602.042-.048-.123.304.072.602.195.298.725.395.792.602.067.207-.308.54-.072.727.236.187.56.098.72.09.16-.008.24-.233.432-.09.192.142.375.568.648.602.273.033.626-.237.648-.602.022-.366-.294-.508-.072-.602.222-.094.503.262.576.602.073.34-.049.832.072.727.121-.106.093-.667.36-.602.267.064.606.534.648.602.042.068-.326-.299 0-.602.326-.303.62-.19.793 0 .173.189.144.508.36.602.216.094.556.003.72-.09.165-.093.207-.34.36-.09.153.25.301.801.36.602.059-.2-.105-.733.216-.602.321.13.636.62.648.602.012-.018-.328-.448-.072-.602.256-.155.683.384.72.09.037-.295-.247-.363-.072-.727.174-.364.513-.387.792-.602.28-.214.53-.465.648-.602.119-.137.11-.304.216-.09.106.213.212.538.36.602.148.064.31-.113.432-.09.122.022.27.116.288.09.018-.026-.281-.21-.072-.09.209.12.597.12.721.09.124-.03-.043-.128.144-.09.187.038.674.314.648.09-.026-.224.031-.366-.216-.602-.247-.236-.4-.168-.792-.09-.392.078-.869.247-1.01-.09-.141-.337-.022-.836-.144-.602-.122.234-.16.903-.432.602-.273-.301-.427-1.045-.721-.602-.295.442-.412.754-.936.602-.524-.152-.967-.559-1.225-.602-.258-.043-.23.192-.72.09-.49-.102-1.443-.394-1.585-.09-.142.303.436.712.433.602-.004-.11-.256-.796.144-.602.4.193 1.184.971.648.602-.536-.37-1.607-1.43-.648-.602.958.827 2.462 1.929 1.73.602-.733-1.328-3.173-3.257-.433-.602 2.74 2.655 8.931 8.703 2.594.602-6.337-8.1-25.331-32.42 0 0"/path%3E%3C/svg%3E");
+  background-size: 100px 20px;
+}
+
+/* Enhanced logo effects */
 .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
-  transition: filter 300ms;
+  transition: filter 300ms, transform 300ms;
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.1));
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em hsl(var(--primary)/0.6));
+  transform: scale(1.05);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em hsl(var(--primary)/0.6));
 }
@@ -49,6 +71,7 @@ body {
   }
 }
 
+/* Enhanced card styles */
 .card {
   padding: 2em;
   border-radius: var(--radius);
@@ -56,27 +79,65 @@ body {
   background-color: hsl(var(--card));
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary)/0.05) 0%,
+    transparent 50%,
+    hsl(var(--primary)/0.05) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
 }
 
 .card:hover {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
+.card:hover::after {
+  opacity: 1;
+}
+
 .read-the-docs {
   color: hsl(var(--muted-foreground));
 }
 
-/* Melhorias nos componentes */
-
-/* Botões com efeito de elevação */
+/* Enhanced buttons with elevation */
 .btn-elevated {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
   transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-elevated::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    hsl(var(--primary)/0.2) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .btn-elevated:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.btn-elevated:hover::after {
+  opacity: 0.7;
 }
 
 .btn-elevated:active {
@@ -84,27 +145,290 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Cards com bordas suaves */
+.btn-elevated:active::after {
+  opacity: 0.3;
+}
+
+/* Cards with soft borders */
 .soft-card {
   border-radius: calc(var(--radius) + 2px);
   border: 1px solid hsl(var(--border));
   overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--card)) 0%,
+    hsl(var(--card)) 100%
+  );
+  box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
 }
 
-/* Efeitos de transição */
+.soft-card:hover {
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+  border-color: hsl(var(--primary)/0.2);
+}
+
+/* Enhanced fade transition */
 .fade-transition {
   opacity: 0;
   animation: fadeIn 0.5s forwards;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+    filter: blur(5px);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+    filter: blur(0);
+  }
 }
 
-/* Barra de progresso estilizada */
+/* Enhanced progress bar */
 .progress-bar {
   height: 8px;
   background: linear-gradient(to right, hsl(var(--primary)/0.3), hsl(var(--primary)));
   border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: progressShimmer 2s infinite;
+}
+
+@keyframes progressShimmer {
+  100% {
+    left: 100%;
+  }
+}
+
+/* New Design Elements */
+
+/* Subtle highlights on hover */
+.highlight-hover {
+  position: relative;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.highlight-hover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    circle at var(--x, 50%) var(--y, 50%),
+    hsl(var(--primary)/0.15) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.highlight-hover:hover::before {
+  opacity: 1;
+}
+
+/* Gradient borders */
+.gradient-border {
+  position: relative;
+  background-clip: padding-box;
+  border: 1px solid transparent;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  margin: -1px;
+  border-radius: inherit;
+  background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--secondary)));
+}
+
+/* Medical theme specific styles */
+.medical-icon {
+  color: hsl(var(--primary));
+  filter: drop-shadow(0 0 5px hsl(var(--primary)/0.3));
+  transition: all 0.3s ease;
+}
+
+.medical-icon:hover {
+  color: hsl(var(--primary)/0.8);
+  filter: drop-shadow(0 0 8px hsl(var(--primary)/0.5));
+}
+
+/* Haptic feedback via subtle scaling */
+.haptic-feedback {
+  transition: transform 0.1s ease;
+}
+
+.haptic-feedback:active {
+  transform: scale(0.97);
+}
+
+/* Data visualization enhancements */
+.chart-container {
+  border-radius: var(--radius);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--card)) 0%,
+    hsl(var(--card)) 90%,
+    hsl(var(--primary)/0.1) 100%
+  );
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.chart-container:hover {
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+  border-color: hsl(var(--primary)/0.2);
+}
+
+/* Status indicators with pulse animation */
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.status-indicator.active {
+  background-color: hsl(var(--success));
+  box-shadow: 0 0 0 rgba(var(--success), 0.4);
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.warning {
+  background-color: hsl(var(--warning));
+  box-shadow: 0 0 0 rgba(var(--warning), 0.4);
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.error {
+  background-color: hsl(var(--destructive));
+  box-shadow: 0 0 0 rgba(var(--destructive), 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--ring), 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(var(--ring), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--ring), 0);
+  }
+}
+
+/* Enhanced table styles */
+.enhanced-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+}
+
+.enhanced-table th {
+  background-image: linear-gradient(
+    to bottom,
+    hsl(var(--primary)/0.1),
+    hsl(var(--primary)/0.05)
+  );
+  color: hsl(var(--primary));
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.enhanced-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid hsl(var(--border)/0.5);
+  transition: background-color 0.2s ease;
+}
+
+.enhanced-table tr:last-child td {
+  border-bottom: none;
+}
+
+.enhanced-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.enhanced-table tbody tr:hover td {
+  background-color: hsl(var(--primary)/0.05);
+}
+
+.enhanced-table tbody tr:nth-child(even) {
+  background-color: hsl(var(--muted)/0.3);
+}
+
+/* Content sections with depth */
+.content-section {
+  border-radius: var(--radius);
+  background-color: hsl(var(--card));
+  box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
+  border: 1px solid hsl(var(--border));
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.content-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--secondary)));
+}
+
+/* Navigation highlight effect */
+.nav-highlight {
+  position: relative;
+}
+
+.nav-highlight::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: hsl(var(--primary));
+  transition: width 0.3s ease;
+}
+
+.nav-highlight:hover::after {
+  width: 100%;
+}
+
+.nav-highlight.active::after {
+  width: 100%;
 }
