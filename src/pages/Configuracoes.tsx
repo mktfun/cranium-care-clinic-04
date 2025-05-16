@@ -18,9 +18,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import { Loader2, Download, UserPlus, UserMinus, Check, X, UserX, Mail, Shield, Eye } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import AparenciaTab from "@/components/configuracoes/AparenciaTab";
+import { useNavigate } from "react-router-dom";
 
 interface Usuario {
   id: string;
@@ -30,6 +31,15 @@ interface Usuario {
   avatar_url?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+interface Colaborador {
+  id: string;
+  email: string;
+  status: 'pendente' | 'ativo' | 'recusado';
+  permissao: 'visualizar' | 'editar' | 'admin';
+  nome?: string;
+  created_at: string;
 }
 
 export default function Configuracoes() {
@@ -51,6 +61,15 @@ export default function Configuracoes() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  // Estados para colaboradores
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
+  const [carregandoColaboradores, setCarregandoColaboradores] = useState(false);
+  const [tabColaboradores, setTabColaboradores] = useState<'pendentes' | 'ativos' | 'recusados'>('ativos');
+  const [deletandoColaborador, setDeletandoColaborador] = useState<string | null>(null);
+  const [exportandoDados, setExportandoDados] = useState(false);
+  const [excluindoConta, setExcluindoConta] = useState(false);
 
   // Carregar dados do usuário
   useEffect(() => {
@@ -99,6 +118,44 @@ export default function Configuracoes() {
     }
     
     carregarUsuario();
+  }, []);
+
+  // Carregar colaboradores
+  useEffect(() => {
+    async function carregarColaboradores() {
+      try {
+        setCarregandoColaboradores(true);
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          return;
+        }
+
+        // Aqui seria uma chamada real ao banco de dados para buscar colaboradores
+        // Implementar quando a tabela de colaboradores for criada
+        const { data, error } = await supabase
+          .from('colaboradores')
+          .select('*')
+          .eq('empresa_id', session.user.id);
+          
+        if (error) {
+          console.error("Erro ao carregar colaboradores:", error);
+          return;
+        }
+        
+        if (data) {
+          setColaboradores(data);
+        }
+        
+      } catch (err) {
+        console.error("Erro ao carregar colaboradores:", err);
+      } finally {
+        setCarregandoColaboradores(false);
+      }
+    }
+    
+    carregarColaboradores();
   }, []);
   
   // Salvar alterações do perfil
@@ -210,17 +267,38 @@ export default function Configuracoes() {
         return;
       }
       
-      // Verificar se o bucket existe, se não, criar
-      const { data: bucketData, error: bucketError } = await supabase
+      // Verificar se o bucket existe
+      const { data: bucketList, error: bucketListError } = await supabase
         .storage
-        .getBucket('avatars');
+        .listBuckets();
         
-      if (bucketError && bucketError.message.includes('does not exist')) {
-        // Criar bucket se não existir
-        await supabase.storage.createBucket('avatars', {
-          public: true,
-          fileSizeLimit: 1024 * 1024 * 2 // 2MB
-        });
+      let bucketExists = false;
+      
+      if (bucketListError) {
+        console.error("Erro ao verificar buckets:", bucketListError);
+      } else if (bucketList) {
+        bucketExists = bucketList.some(bucket => bucket.name === 'avatars');
+      }
+      
+      // Se o bucket não existir, criar
+      if (!bucketExists) {
+        try {
+          const { error: createBucketError } = await supabase
+            .storage
+            .createBucket('avatars', {
+              public: true
+            });
+            
+          if (createBucketError) {
+            console.error("Erro ao criar bucket:", createBucketError);
+            toast.error("Erro ao criar área de armazenamento para avatares");
+            return;
+          }
+        } catch (err) {
+          console.error("Erro ao criar bucket:", err);
+          toast.error("Erro ao criar área de armazenamento para avatares");
+          return;
+        }
       }
       
       // Upload do arquivo
@@ -316,10 +394,218 @@ export default function Configuracoes() {
     permissao: 'visualizar' as 'visualizar' | 'editar' | 'admin'
   });
   
+  // Adicionar colaborador
   const adicionarColaborador = async () => {
-    // Implementação futura para adicionar colaboradores
-    toast.success(`Convite enviado para ${novoColaborador.email}`);
-    setNovoColaborador({ email: '', permissao: 'visualizar' });
+    try {
+      if (!novoColaborador.email) {
+        toast.error("O email é obrigatório");
+        return;
+      }
+      
+      // Verificar se usuário está autenticado
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+
+      // Verificar se email já está sendo usado por outro colaborador
+      const { data: colaboradorExistente } = await supabase
+        .from('colaboradores')
+        .select('*')
+        .eq('email', novoColaborador.email)
+        .eq('empresa_id', session.user.id);
+        
+      if (colaboradorExistente && colaboradorExistente.length > 0) {
+        toast.error("Este email já foi convidado");
+        return;
+      }
+
+      // Inserir novo colaborador
+      const { error } = await supabase
+        .from('colaboradores')
+        .insert({
+          email: novoColaborador.email,
+          permissao: novoColaborador.permissao,
+          status: 'pendente',
+          empresa_id: session.user.id,
+          empresa_nome: clinicaNome || 'CraniumCare'
+        });
+        
+      if (error) {
+        throw error;
+      }
+      
+      toast.success(`Convite enviado para ${novoColaborador.email}`);
+      
+      // Recarregar lista de colaboradores
+      const { data: colaboradoresNovos } = await supabase
+        .from('colaboradores')
+        .select('*')
+        .eq('empresa_id', session.user.id);
+        
+      if (colaboradoresNovos) {
+        setColaboradores(colaboradoresNovos);
+      }
+      
+      // Limpar formulário
+      setNovoColaborador({
+        email: '',
+        permissao: 'visualizar'
+      });
+      
+    } catch (err: any) {
+      console.error("Erro ao adicionar colaborador:", err);
+      toast.error(`Erro ao adicionar colaborador: ${err.message}`);
+    }
+  };
+
+  // Remover colaborador
+  const removerColaborador = async (id: string) => {
+    try {
+      setDeletandoColaborador(id);
+      
+      // Verificar se usuário está autenticado
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+
+      // Remover colaborador
+      const { error } = await supabase
+        .from('colaboradores')
+        .delete()
+        .eq('id', id)
+        .eq('empresa_id', session.user.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Atualizar lista de colaboradores
+      setColaboradores(colaboradores.filter(c => c.id !== id));
+      
+      toast.success("Colaborador removido com sucesso");
+      
+    } catch (err: any) {
+      console.error("Erro ao remover colaborador:", err);
+      toast.error(`Erro ao remover colaborador: ${err.message}`);
+    } finally {
+      setDeletandoColaborador(null);
+    }
+  };
+  
+  // Exportar dados
+  const exportarDados = async () => {
+    try {
+      setExportandoDados(true);
+      
+      // Verificar se usuário está autenticado
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+
+      // Buscar dados de pacientes
+      const { data: pacientes, error: pacientesError } = await supabase
+        .from('pacientes')
+        .select('*')
+        .eq('user_id', session.user.id);
+        
+      if (pacientesError) {
+        throw pacientesError;
+      }
+
+      // Buscar dados de medições
+      const { data: medicoes, error: medicoesError } = await supabase
+        .from('medicoes')
+        .select('*')
+        .eq('user_id', session.user.id);
+        
+      if (medicoesError) {
+        throw medicoesError;
+      }
+
+      // Criar objeto com todos os dados
+      const dadosExportados = {
+        usuario: {
+          nome,
+          email,
+          clinicaNome
+        },
+        pacientes,
+        medicoes,
+        dataExportacao: new Date().toISOString()
+      };
+
+      // Converter para JSON
+      const jsonString = JSON.stringify(dadosExportados, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      
+      // Criar link de download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `cranium-care-dados-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpar
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+
+      toast.success("Dados exportados com sucesso!");
+      
+    } catch (err: any) {
+      console.error("Erro ao exportar dados:", err);
+      toast.error(`Erro ao exportar dados: ${err.message}`);
+    } finally {
+      setExportandoDados(false);
+    }
+  };
+  
+  // Excluir conta
+  const excluirConta = async () => {
+    try {
+      setExcluindoConta(true);
+      
+      // Verificar se usuário está autenticado
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+
+      // Remover conta do usuário
+      const { error } = await supabase.auth.admin.deleteUser(
+        session.user.id
+      );
+      
+      if (error) {
+        // Se falhar como admin, tentar método padrão
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) throw signOutError;
+      }
+      
+      toast.success("Conta excluída com sucesso");
+      
+      // Redirecionar para a página inicial
+      navigate("/");
+      
+    } catch (err: any) {
+      console.error("Erro ao excluir conta:", err);
+      toast.error(`Erro ao excluir conta: ${err.message}`);
+    } finally {
+      setExcluindoConta(false);
+    }
   };
   
   // Iniciais para o avatar
@@ -517,8 +803,22 @@ export default function Configuracoes() {
               <CardTitle>Gerenciamento da Conta</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
-              <Button variant="outline" className="w-full sm:w-auto btn-hover">
-                Exportar Dados
+              <Button 
+                variant="outline" 
+                className="w-full sm:w-auto btn-hover"
+                onClick={exportarDados}
+                disabled={exportandoDados}
+              >
+                {exportandoDados ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Exportando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" /> Exportar Dados
+                  </>
+                )}
               </Button>
               
               <AlertDialog>
@@ -537,8 +837,20 @@ export default function Configuracoes() {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel className="btn-hover">Cancelar</AlertDialogCancel>
-                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90 btn-hover">
-                      Excluir
+                    <AlertDialogAction 
+                      className="bg-destructive hover:bg-destructive/90 btn-hover"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        excluirConta();
+                      }}
+                      disabled={excluindoConta}
+                    >
+                      {excluindoConta ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Excluindo...
+                        </>
+                      ) : "Excluir"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -594,7 +906,6 @@ export default function Configuracoes() {
         </TabsContent>
         
         <TabsContent value="aparencia">
-          {/* Importar novo componente de aparência */}
           <AparenciaTab />
         </TabsContent>
         
@@ -610,7 +921,7 @@ export default function Configuracoes() {
               <Dialog>
                 <DialogTrigger asChild>
                   <Button className="btn-hover">
-                    Adicionar Colaborador
+                    <UserPlus className="h-4 w-4 mr-2" /> Adicionar Colaborador
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -659,6 +970,32 @@ export default function Configuracoes() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+
+              <div className="mb-4">
+                <TabsList className="w-full grid grid-cols-3">
+                  <TabsTrigger 
+                    value="ativos" 
+                    className={tabColaboradores === 'ativos' ? 'data-[state=active]:bg-primary' : ''}
+                    onClick={() => setTabColaboradores('ativos')}
+                  >
+                    <Check className="h-4 w-4 mr-2" /> Ativos
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="pendentes" 
+                    className={tabColaboradores === 'pendentes' ? 'data-[state=active]:bg-primary' : ''}
+                    onClick={() => setTabColaboradores('pendentes')}
+                  >
+                    <Mail className="h-4 w-4 mr-2" /> Pendentes
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="recusados" 
+                    className={tabColaboradores === 'recusados' ? 'data-[state=active]:bg-primary' : ''}
+                    onClick={() => setTabColaboradores('recusados')}
+                  >
+                    <X className="h-4 w-4 mr-2" /> Recusados
+                  </TabsTrigger>
+                </TabsList>
+              </div>
               
               <div className="rounded-md border">
                 <Table>
@@ -671,11 +1008,69 @@ export default function Configuracoes() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                        Nenhum colaborador adicionado.
-                      </TableCell>
-                    </TableRow>
+                    {carregandoColaboradores ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-4">
+                          <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ) : colaboradores.filter(c => {
+                      if (tabColaboradores === 'ativos') return c.status === 'ativo';
+                      if (tabColaboradores === 'pendentes') return c.status === 'pendente';
+                      if (tabColaboradores === 'recusados') return c.status === 'recusado';
+                      return false;
+                    }).length > 0 ? (
+                      colaboradores.filter(c => {
+                        if (tabColaboradores === 'ativos') return c.status === 'ativo';
+                        if (tabColaboradores === 'pendentes') return c.status === 'pendente';
+                        if (tabColaboradores === 'recusados') return c.status === 'recusado';
+                        return false;
+                      }).map((colaborador) => (
+                        <TableRow key={colaborador.id}>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <Avatar className="h-7 w-7 mr-3">
+                                <AvatarFallback className="text-xs">
+                                  {colaborador.nome ? obterIniciais(colaborador.nome) : colaborador.email.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span>{colaborador.nome || colaborador.email.split('@')[0]}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{colaborador.email}</TableCell>
+                          <TableCell>
+                            {colaborador.permissao === 'admin' && <Shield className="h-4 w-4 mr-1 inline-block" />}
+                            {colaborador.permissao === 'editar' && <UserPlus className="h-4 w-4 mr-1 inline-block" />}
+                            {colaborador.permissao === 'visualizar' && <Eye className="h-4 w-4 mr-1 inline-block" />}
+                            {colaborador.permissao === 'admin' ? 'Administrador' : 
+                             colaborador.permissao === 'editar' ? 'Editor' : 'Visualizador'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => removerColaborador(colaborador.id)}
+                              disabled={deletandoColaborador === colaborador.id}
+                            >
+                              {deletandoColaborador === colaborador.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <UserX className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                          {tabColaboradores === 'ativos' && "Nenhum colaborador ativo."}
+                          {tabColaboradores === 'pendentes' && "Nenhum convite pendente."}
+                          {tabColaboradores === 'recusados' && "Nenhum convite recusado."}
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
