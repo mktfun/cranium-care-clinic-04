@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { WelcomeTutorialModal } from "@/components/WelcomeTutorialModal";
 import { MobileNavBar } from "@/components/MobileNavBar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LayoutProps {
   title?: string;
@@ -12,23 +13,30 @@ interface LayoutProps {
 
 export default function Layout({ title = "Dashboard" }: LayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
-  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
   
   useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      // Colapsar sidebar automaticamente em tablet
+    // Colapsar sidebar automaticamente em tablet
+    const checkTablet = () => {
       if (window.innerWidth < 1024 && window.innerWidth >= 768) {
         setSidebarCollapsed(true);
       }
     };
     
-    checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
+    checkTablet();
+    window.addEventListener('resize', checkTablet);
     
-    return () => window.removeEventListener('resize', checkIfMobile);
+    return () => window.removeEventListener('resize', checkTablet);
   }, []);
+  
+  // Auto-hide sidebar on mobile when navigating
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarCollapsed(true);
+    }
+  }, [location.pathname, isMobile]);
   
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -38,21 +46,41 @@ export default function Layout({ title = "Dashboard" }: LayoutProps) {
     navigate('/dashboard');
   };
 
+  // Get current page title from path
+  const getCurrentPageTitle = () => {
+    const path = location.pathname;
+    const routeNames: Record<string, string> = {
+      "/dashboard": "Dashboard",
+      "/pacientes": "Pacientes",
+      "/historico": "Histórico",
+      "/relatorios": "Relatórios",
+      "/configuracoes": "Configurações",
+    };
+    
+    if (path.startsWith("/pacientes/") && path.includes("/nova-medicao")) return "Nova Medição";
+    if (path.startsWith("/pacientes/") && path.includes("/relatorio")) return "Relatório";
+    if (path.startsWith("/pacientes/") && path.split('/').length === 3) return "Paciente";
+    
+    return routeNames[path] || title;
+  };
+
   return (
     <div className="h-screen flex overflow-hidden">
-      <Sidebar 
-        className={`fixed left-0 top-0 z-20 h-screen transition-all duration-300 ${
-          isMobile && sidebarCollapsed ? "-translate-x-full" : "translate-x-0"
-        }`}
-        collapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        navigateToDashboard={navigateToDashboard}
-      />
+      {!isMobile && (
+        <Sidebar 
+          className={`fixed left-0 top-0 z-20 h-screen transition-all duration-300 ${
+            isMobile && sidebarCollapsed ? "-translate-x-full" : "translate-x-0"
+          }`}
+          collapsed={sidebarCollapsed}
+          toggleSidebar={toggleSidebar}
+          navigateToDashboard={navigateToDashboard}
+        />
+      )}
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
-        sidebarCollapsed ? "lg:ml-[70px]" : "lg:ml-[250px]"
+        sidebarCollapsed || isMobile ? "lg:ml-[70px]" : "lg:ml-[250px]"
       } ${isMobile ? "ml-0" : ""}`}>
         <Header 
-          title={title}
+          title={getCurrentPageTitle()}
           toggleSidebar={toggleSidebar}
           sidebarCollapsed={sidebarCollapsed}
         />
@@ -60,7 +88,7 @@ export default function Layout({ title = "Dashboard" }: LayoutProps) {
           <Outlet />
         </main>
       </div>
-      {isMobile && <MobileNavBar />}
+      <MobileNavBar />
       <WelcomeTutorialModal />
     </div>
   );
