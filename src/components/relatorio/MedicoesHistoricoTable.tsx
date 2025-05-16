@@ -38,21 +38,21 @@ export function MedicoesHistoricoTable({
   );
   
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-md border shadow-sm">
       <table className="min-w-full border-collapse">
         <thead>
-          <tr className="bg-muted/50">
-            <th className="p-2 text-left text-xs">Data</th>
-            <th className="p-2 text-left text-xs">Idade</th>
-            <th className="p-2 text-left text-xs">Comp.</th>
-            <th className="p-2 text-left text-xs">Larg.</th>
-            <th className="p-2 text-left text-xs">Diag. D</th>
-            <th className="p-2 text-left text-xs">Diag. E</th>
-            <th className="p-2 text-left text-xs">Dif.</th>
-            <th className="p-2 text-left text-xs">CVAI</th>
-            <th className="p-2 text-left text-xs">IC</th>
-            <th className="p-2 text-left text-xs">PC</th>
-            <th className="p-2 text-left text-xs">Status</th>
+          <tr className="bg-primary/10 dark:bg-primary/20 text-primary-foreground">
+            <th className="p-2 text-left text-xs font-medium">Data</th>
+            <th className="p-2 text-left text-xs font-medium">Idade</th>
+            <th className="p-2 text-left text-xs font-medium">Comp.</th>
+            <th className="p-2 text-left text-xs font-medium">Larg.</th>
+            <th className="p-2 text-left text-xs font-medium">Diag. D</th>
+            <th className="p-2 text-left text-xs font-medium">Diag. E</th>
+            <th className="p-2 text-left text-xs font-medium">Dif.</th>
+            <th className="p-2 text-left text-xs font-medium">CVAI</th>
+            <th className="p-2 text-left text-xs font-medium">IC</th>
+            <th className="p-2 text-left text-xs font-medium">PC</th>
+            <th className="p-2 text-left text-xs font-medium">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -63,7 +63,14 @@ export function MedicoesHistoricoTable({
             );
             
             return (
-              <tr key={med.id} className={index % 2 === 0 ? "" : "bg-muted/20"}>
+              <tr 
+                key={med.id} 
+                className={`${
+                  index % 2 === 0 
+                    ? "bg-background" 
+                    : "bg-muted/30"
+                } hover:bg-primary/5 transition-colors`}
+              >
                 <td className="p-2 text-xs">{formatarData(med.data)}</td>
                 <td className="p-2 text-xs">{formatAge(dataNascimento, med.data)}</td>
                 <td className="p-2 text-xs">{med.comprimento}</td>
@@ -78,6 +85,7 @@ export function MedicoesHistoricoTable({
                   <StatusBadge 
                     status={severityLevel} 
                     asymmetryType={asymmetryType} 
+                    showAsymmetryType={true}
                     className="text-xs"
                   />
                 </td>

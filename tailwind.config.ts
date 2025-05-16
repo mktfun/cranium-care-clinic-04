@@ -63,13 +63,36 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Custom colors baseado na paleta fornecida
-        turquesa: "#029daf",
-        vermelho: "#AF5B5B", 
-        offwhite: "#F6F4F3",
-        azul: "#276FBF",
-        azulEscuro: "#183059",
-        textoEscuro: "#232323",
+        // Cores personalizadas baseadas na paleta fornecida, agora com mais harmonia
+        turquesa: {
+          DEFAULT: "#029daf",
+          light: "#33b3c3",
+          dark: "#01778a",
+        },
+        vermelho: {
+          DEFAULT: "#AF5B5B", 
+          light: "#c27a7a",
+          dark: "#8d4848",
+        },
+        offwhite: {
+          DEFAULT: "#F6F4F3", 
+          dark: "#e0dcda",
+        },
+        azul: {
+          DEFAULT: "#276FBF", 
+          light: "#488ad3",
+          dark: "#1e5899",
+        },
+        azulEscuro: {
+          DEFAULT: "#183059", 
+          light: "#2a4980",
+          dark: "#122445",
+        },
+        textoEscuro: {
+          DEFAULT: "#232323", 
+          light: "#3d3d3d",
+          dark: "#1a1a1a",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -102,6 +125,10 @@ export default {
         "slide-out-right": {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(100%)" }
+        },
+        "pulse-gentle": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.85" }
         }
       },
       animation: {
@@ -110,6 +137,35 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "slide-out-right": "slide-out-right 0.3s ease-out",
+        "pulse-gentle": "pulse-gentle 2s ease-in-out infinite",
+      },
+      boxShadow: {
+        'soft': '0 2px 10px -2px rgba(0, 0, 0, 0.08)',
+        'card': '0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            h1: {
+              color: 'hsl(var(--foreground))',
+              fontWeight: '700',
+            },
+            h2: {
+              color: 'hsl(var(--foreground))',
+              fontWeight: '600',
+            },
+            h3: {
+              color: 'hsl(var(--foreground))',
+              fontWeight: '600',
+            },
+            a: {
+              color: 'hsl(var(--primary))',
+              '&:hover': {
+                color: 'hsl(var(--primary)/0.8)',
+              },
+            },
+          },
+        },
       },
     },
   },

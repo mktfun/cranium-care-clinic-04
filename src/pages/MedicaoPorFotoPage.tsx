@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -423,21 +422,21 @@ export default function MedicaoPorFotoPage() {
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Como tirar uma boa foto</CardTitle>
+              <Card className="border-primary/20 shadow-lg">
+                <CardHeader className="bg-card/50">
+                  <CardTitle className="text-card-foreground">Como tirar uma boa foto</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="border rounded-lg overflow-hidden">
+                <CardContent className="space-y-4 pt-4">
+                  <div className="border rounded-lg overflow-hidden shadow-md">
                     <AspectRatio ratio={4/3}>
                       <img 
-                        src="/lovable-uploads/f27417e2-1c2a-43d1-a465-0b99f9dde50a.png" 
+                        src="/lovable-uploads/2d224b4c-3e28-41af-9836-25a55082181a.png" 
                         alt="Exemplo de foto para medição" 
                         className="w-full h-full object-cover"
                       />
                     </AspectRatio>
                   </div>
-                  <ul className="space-y-2 list-disc pl-5">
+                  <ul className="space-y-2 list-disc pl-5 text-muted-foreground">
                     <li>Posicione a cabeça do paciente centralizada no quadro</li>
                     <li>Certifique-se que o topo da cabeça e as orelhas estão visíveis</li>
                     <li>Coloque uma régua ou referência de medida ao lado da cabeça</li>
@@ -450,13 +449,13 @@ export default function MedicaoPorFotoPage() {
                 </CardContent>
               </Card>
               
-              <Card>
-                <CardHeader>
-                  <CardTitle>Captura de Imagem</CardTitle>
+              <Card className="border-primary/20 shadow-lg">
+                <CardHeader className="bg-card/50">
+                  <CardTitle className="text-card-foreground">Captura de Imagem</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-4">
                   <div className="p-12 border-2 border-dashed rounded-lg flex flex-col items-center justify-center bg-muted/30">
-                    <Camera className="h-16 w-16 text-muted-foreground mb-4" />
+                    <Camera className="h-16 w-16 text-primary mb-4" />
                     <p className="text-xl font-medium mb-2">Capture ou faça upload de uma foto</p>
                     <p className="text-muted-foreground mb-6 text-center max-w-md">
                       Posicione a cabeça do paciente centralizada na foto com uma 
@@ -466,8 +465,9 @@ export default function MedicaoPorFotoPage() {
                     <div className="flex flex-col sm:flex-row gap-4 mt-4">
                       <Button 
                         onClick={handleCapturarFoto}
-                        className="bg-turquesa hover:bg-turquesa/90"
+                        variant="default"
                         disabled={uploading || processingImage}
+                        className="shadow-md transition-all hover:shadow-lg"
                       >
                         <Camera className="h-4 w-4 mr-2" />
                         Capturar Foto
@@ -477,7 +477,7 @@ export default function MedicaoPorFotoPage() {
                         <Button 
                           variant="outline"
                           disabled={uploading || processingImage}
-                          className="relative"
+                          className="relative shadow-sm hover:shadow-md transition-all"
                         >
                           <Upload className="h-4 w-4 mr-2" />
                           {uploading ? "Enviando..." : "Fazer Upload"}
@@ -494,8 +494,8 @@ export default function MedicaoPorFotoPage() {
                     
                     {(uploading || processingImage) && (
                       <div className="mt-6 flex flex-col items-center">
-                        <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                        <p>{uploading ? "Enviando imagem..." : "Processando imagem..."}</p>
+                        <Loader2 className="h-6 w-6 animate-spin mb-2 text-primary" />
+                        <p className="text-muted-foreground">{uploading ? "Enviando imagem..." : "Processando imagem..."}</p>
                       </div>
                     )}
                   </div>
@@ -770,7 +770,7 @@ export default function MedicaoPorFotoPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -783,6 +783,7 @@ export default function MedicaoPorFotoPage() {
             variant="ghost" 
             size="icon" 
             onClick={() => navigate(`/pacientes/${id}`)}
+            className="hover:bg-primary/10"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -797,7 +798,7 @@ export default function MedicaoPorFotoPage() {
         </div>
       </div>
       
-      <Separator />
+      <Separator className="bg-primary/20" />
       
       {renderStepContent()}
       
@@ -805,6 +806,7 @@ export default function MedicaoPorFotoPage() {
         <Button 
           variant="outline"
           onClick={() => navigate(`/pacientes/${id}`)}
+          className="border-primary/20 hover:border-primary/40 transition-colors"
         >
           Cancelar
         </Button>
@@ -812,7 +814,7 @@ export default function MedicaoPorFotoPage() {
         {activeStep === 1 && (
           <Button
             onClick={() => navigate(`/pacientes/${id}/nova-medicao`)}
-            className="bg-turquesa hover:bg-turquesa/90"
+            className="shadow-md hover:shadow-lg transition-all"
           >
             Voltar para Medição Manual
           </Button>
