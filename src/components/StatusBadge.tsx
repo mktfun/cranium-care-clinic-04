@@ -96,9 +96,9 @@ export function StatusBadge({
         return "after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-transparent after:via-current after:to-transparent after:opacity-30";
       case "Braquicefalia":
         return "after:content-[''] after:absolute after:left-0 after:top-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-transparent after:via-current after:to-transparent after:opacity-30";
-      case "Escafocefalia":
+      case "Dolicocefalia":
         return "after:content-[''] after:absolute after:left-0 after:top-0 after:right-0 after:bottom-0 after:border-l-2 after:border-r-2 after:border-current after:opacity-20 after:rounded-full";
-      case "Mista":
+      case "Misto":
         return "after:content-[''] after:absolute after:left-1 after:top-1 after:right-1 after:bottom-1 after:border after:border-dashed after:border-current after:opacity-20 after:rounded-full";
       default:
         return "";
