@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
@@ -75,7 +74,6 @@ export default function Layout() {
             isMobile && sidebarCollapsed ? "-translate-x-full" : "translate-x-0"
           }`}
           collapsed={sidebarCollapsed}
-          toggleSidebar={toggleSidebar}
           navigateToDashboard={navigateToDashboard}
         />
       )}
@@ -88,7 +86,6 @@ export default function Layout() {
           sidebarCollapsed={sidebarCollapsed}
         />
         <main className="flex-1 overflow-auto mt-16 pb-20 md:pb-6">
-          {/* Wrapper div with more mobile-friendly padding */}
           <div className="p-3 md:p-6 max-w-7xl mx-auto w-full">
             <Outlet />
           </div>

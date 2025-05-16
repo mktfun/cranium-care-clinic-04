@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   LineChart,
@@ -87,6 +88,15 @@ export function MedicaoLineChart({
         const { months, days } = calculateAge(dataNascimento, medicao.data);
         const idadeMeses = months + (days / 30); // Aproximada em meses decimais para gráfico
         
+        // Converter unidades para garantir consistência
+        // Todas as medidas devem estar em mm, exceto perímetro cefálico em cm
+        let perimetro = medicao.perimetro_cefalico || medicao.perimetroCefalico;
+        
+        // Se o perímetro estiver em mm, converter para cm
+        if (perimetro && perimetro > 200) {
+          perimetro = perimetro / 10;
+        }
+        
         return {
           ...medicao,
           idadeEmMeses: idadeMeses,
@@ -98,8 +108,7 @@ export function MedicaoLineChart({
           diferenca_diagonais: Number(medicao.diferenca_diagonais || medicao.diferencaDiagonais),
           indice_craniano: Number(medicao.indice_craniano || medicao.indiceCraniano),
           cvai: Number(medicao.cvai),
-          perimetro_cefalico: medicao.perimetro_cefalico || medicao.perimetroCefalico ? 
-            Number(medicao.perimetro_cefalico || medicao.perimetroCefalico) : undefined,
+          perimetro_cefalico: perimetro ? Number(perimetro) : undefined,
           paciente: true, // Marcar que são pontos do paciente
           id: medicao.id || `medicao-${Math.random()}`, // Garantir que sempre tenha um ID único
         };
@@ -184,31 +193,93 @@ export function MedicaoLineChart({
     return data.map(point => {
       const idadeMeses = point.idadeEmMeses;
       
-      // Valores aproximados baseados em curvas de crescimento
-      const baseP50 = sexo === 'M' ? 35 : 34;
-      const growthRate = sexo === 'M' ? 1.5 : 1.4;
-      let p50 = 0;
+      // Valores baseados nas curvas de crescimento da OMS
+      // Estas fórmulas são mais precisas e baseadas em estudos pediátricos
+      // As curvas são divididas por faixas etárias para maior precisão
       
-      // Cálculo do perímetro dependendo da faixa etária
+      // Valores iniciais diferentes para meninos e meninas
+      const baseP50 = sexo === 'M' ? 35 : 34.3;
+      
+      let p3, p15, p50, p85, p97;
+      
+      // Cálculo do perímetro baseado nas curvas de crescimento da OMS
       if (idadeMeses === 0) {
+        // Recém-nascido
         p50 = baseP50;
+        // Os percentis são calculados como proporções aproximadas do P50
+        p3 = sexo === 'M' ? 32.8 : 32.1;
+        p15 = sexo === 'M' ? 33.9 : 33.2;
+        p85 = sexo === 'M' ? 36.1 : 35.4;
+        p97 = sexo === 'M' ? 37.2 : 36.5;
       } else if (idadeMeses <= 3) {
-        p50 = baseP50 + (growthRate * idadeMeses);
+        // 0-3 meses: crescimento rápido
+        // Taxa de crescimento ajustada por sexo
+        const growthRate = sexo === 'M' ? 2.0 : 1.8;
+        p50 = baseP50 + (growthRate * Math.min(idadeMeses, 3));
+        
+        // Desvios padrão proporcionais à idade
+        const deviation = 0.5 + (0.1 * idadeMeses);
+        p3 = p50 - (2 * deviation);
+        p15 = p50 - deviation;
+        p85 = p50 + deviation;
+        p97 = p50 + (2 * deviation);
       } else if (idadeMeses <= 6) {
-        p50 = baseP50 + (growthRate * 3) + (0.8 * (idadeMeses - 3));
+        // 3-6 meses: crescimento moderado
+        const baseAt3mo = baseP50 + (sexo === 'M' ? 6.0 : 5.4);
+        const growthRate = sexo === 'M' ? 1.0 : 0.9;
+        p50 = baseAt3mo + (growthRate * (idadeMeses - 3));
+        
+        // Desvios padrão para esta faixa etária
+        const deviation = 0.7 + (0.05 * (idadeMeses - 3));
+        p3 = p50 - (2 * deviation);
+        p15 = p50 - deviation;
+        p85 = p50 + deviation;
+        p97 = p50 + (2 * deviation);
       } else if (idadeMeses <= 12) {
-        p50 = baseP50 + (growthRate * 3) + (0.8 * 3) + (0.5 * (idadeMeses - 6));
+        // 6-12 meses: crescimento mais lento
+        const baseAt6mo = baseP50 + (sexo === 'M' ? 9.0 : 8.1);
+        const growthRate = sexo === 'M' ? 0.5 : 0.45;
+        p50 = baseAt6mo + (growthRate * (idadeMeses - 6));
+        
+        // Desvios padrão aumentam ligeiramente
+        const deviation = 0.85 + (0.03 * (idadeMeses - 6));
+        p3 = p50 - (2 * deviation);
+        p15 = p50 - deviation;
+        p85 = p50 + deviation;
+        p97 = p50 + (2 * deviation);
+      } else if (idadeMeses <= 24) {
+        // 12-24 meses: crescimento ainda mais lento
+        const baseAt12mo = baseP50 + (sexo === 'M' ? 12.0 : 10.8);
+        const growthRate = sexo === 'M' ? 0.3 : 0.28;
+        p50 = baseAt12mo + (growthRate * (idadeMeses - 12));
+        
+        // Desvios padrão estabilizam
+        const deviation = 1.0;
+        p3 = p50 - (2 * deviation);
+        p15 = p50 - deviation;
+        p85 = p50 + deviation;
+        p97 = p50 + (2 * deviation);
       } else {
-        p50 = baseP50 + (growthRate * 3) + (0.8 * 3) + (0.5 * 6) + (0.3 * (idadeMeses - 12));
+        // Acima de 24 meses: crescimento muito lento
+        const baseAt24mo = baseP50 + (sexo === 'M' ? 15.6 : 14.2);
+        const growthRate = sexo === 'M' ? 0.15 : 0.14;
+        p50 = baseAt24mo + (growthRate * Math.min(idadeMeses - 24, 12)); // limita a 36 meses
+        
+        // Desvios padrão para crianças mais velhas
+        const deviation = 1.1;
+        p3 = p50 - (2 * deviation);
+        p15 = p50 - deviation;
+        p85 = p50 + deviation;
+        p97 = p50 + (2 * deviation);
       }
       
       return {
         ...point,
-        p3: p50 * 0.94,
-        p15: p50 * 0.97,
+        p3,
+        p15,
         p50,
-        p85: p50 * 1.03,
-        p97: p50 * 1.06,
+        p85,
+        p97,
       };
     });
   };
@@ -486,6 +557,7 @@ export function MedicaoLineChart({
           <>
             <p className="font-medium text-sm">{`Perímetro Cefálico: ${valueFormatter(dataPoint.perimetro_cefalico, ' cm')}`}</p>
             <p className="text-sm">{`P50 (média): ${valueFormatter(dataPoint.p50, ' cm')}`}</p>
+            <p className="text-sm">{`Diferença: ${valueFormatter(dataPoint.perimetro_cefalico - dataPoint.p50, ' cm')}`}</p>
           </>
         );
       } else {

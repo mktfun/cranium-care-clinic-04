@@ -1,12 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { 
-  ChevronsLeft, 
-  ChevronsRight, 
   LayoutDashboard, 
   Users, 
   Calendar, 
@@ -22,11 +19,10 @@ import { toast } from "sonner";
 interface SidebarProps {
   className?: string;
   collapsed?: boolean;
-  toggleSidebar?: () => void;
   navigateToDashboard?: () => void;
 }
 
-export function Sidebar({ className, collapsed = false, toggleSidebar, navigateToDashboard }: SidebarProps) {
+export function Sidebar({ className, collapsed = false, navigateToDashboard }: SidebarProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [clinicaNome, setClinicaNome] = useState("CraniumCare");
   const [carregando, setCarregando] = useState(false);
@@ -134,17 +130,8 @@ export function Sidebar({ className, collapsed = false, toggleSidebar, navigateT
           </div>
         )}
         
-        {!isMobile && (
-          <Button variant="ghost" onClick={toggleSidebar} className="p-1.5 hover:bg-sidebar-accent">
-            {collapsed ? 
-              <ChevronsRight className="h-5 w-5" /> : 
-              <ChevronsLeft className="h-5 w-5" />
-            }
-          </Button>
-        )}
-        
         {isMobile && (
-          <Button variant="ghost" onClick={toggleSidebar} className="p-1.5 hover:bg-sidebar-accent">
+          <Button variant="ghost" className="p-1.5 hover:bg-sidebar-accent">
             <X className="h-5 w-5" />
           </Button>
         )}

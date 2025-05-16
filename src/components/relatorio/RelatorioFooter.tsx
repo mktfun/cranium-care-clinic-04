@@ -15,18 +15,22 @@ export function RelatorioFooter({ onVoltar, dataCriacao = new Date() }: Relatori
   
   useEffect(() => {
     async function fetchUserInfo() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from('usuarios')
-          .select('nome, clinica_nome')
-          .eq('id', user.id)
-          .single();
-          
-        if (data) {
-          setProfissionalNome(data.nome || "Dr. Exemplo");
-          setClinicaNome(data.clinica_nome || "CraniumCare");
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('usuarios')
+            .select('nome, clinica_nome')
+            .eq('id', user.id)
+            .single();
+              
+          if (data) {
+            setProfissionalNome(data.nome || "Dr. Exemplo");
+            setClinicaNome(data.clinica_nome || "CraniumCare");
+          }
         }
+      } catch (error) {
+        console.error("Erro ao carregar dados do usuário:", error);
       }
     }
     

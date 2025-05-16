@@ -1,7 +1,10 @@
+
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, Download, Printer } from "lucide-react";
 import { toast } from "sonner";
 import html2pdf from 'html2pdf.js';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RelatorioHeaderProps {
   pacienteNome: string;
@@ -24,6 +27,35 @@ export function RelatorioHeader({
   hideControls = false,
   relatorioElementId // Receber o ID como prop
 }: RelatorioHeaderProps) {
+  const [profissionalNome, setProfissionalNome] = useState<string>("Dr. Exemplo");
+  const [clinicaNome, setClinicaNome] = useState<string>("CraniumCare");
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+
+  useEffect(() => {
+    const carregarDadosUsuario = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          const { data } = await supabase
+            .from('usuarios')
+            .select('nome, clinica_nome, avatar_url')
+            .eq('id', user.id)
+            .single();
+          
+          if (data) {
+            setProfissionalNome(data.nome || "Dr. Exemplo");
+            setClinicaNome(data.clinica_nome || "CraniumCare");
+            setAvatarUrl(data.avatar_url || "");
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados do usuário:", error);
+      }
+    };
+
+    carregarDadosUsuario();
+  }, []);
 
   const handleExportarPDF = () => {
     if (!relatorioElementId) {
@@ -40,15 +72,26 @@ export function RelatorioHeader({
 
     // Clonar o elemento para evitar modificações no original e remover botões de controle
     const elementToExport = element.cloneNode(true) as HTMLElement;
-    const controlsInClone = elementToExport.querySelector('.print\:hidden'); // Seleciona o div dos botões no clone
-    if (controlsInClone && controlsInClone.parentNode) {
-      controlsInClone.parentNode.removeChild(controlsInClone); // Remove o div dos botões do clone
-    }
+    
+    // Corrigido o seletor CSS
+    const controlsElements = elementToExport.querySelectorAll('.print\\:hidden');
+    controlsElements.forEach(control => {
+      if (control.parentNode) {
+        control.parentNode.removeChild(control);
+      }
+    });
     
     // Adicionar um título visível no PDF que pode estar oculto na tela
     const pdfTitleElement = document.createElement('div');
+    
+    // Avatar do profissional (se disponível)
+    const avatarHtml = avatarUrl ? 
+      `<img src="${avatarUrl}" alt="Profissional" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;" />` :
+      '';
+
     pdfTitleElement.innerHTML = `
       <div style="text-align: center; margin-bottom: 20px; padding-top: 20px;">
+        ${avatarHtml}
         <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">
           ${modoConsolidado ? 'Relatório Consolidado de Avaliações Cranianas' : 'Relatório de Avaliação Craniana'}
         </h1>
@@ -57,7 +100,7 @@ export function RelatorioHeader({
           ${!modoConsolidado && dataFormatada ? ` • Data da Avaliação: ${dataFormatada}` : ''}
         </p>
         <p style="font-size: 12px; color: #555; margin-top: 4px;">
-          Clínica: CraniumCare Clinic
+          Profissional: ${profissionalNome} • Clínica: ${clinicaNome}
         </p>
       </div>
     `;
@@ -149,11 +192,10 @@ export function RelatorioHeader({
             {dataFormatada && ` Data: ${dataFormatada}`}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Profissional: Dr. Exemplo • Clínica: CraniumCare
+            Profissional: {profissionalNome} • Clínica: {clinicaNome}
           </p>
         </div>
       </div>
     </>
   );
 }
-
