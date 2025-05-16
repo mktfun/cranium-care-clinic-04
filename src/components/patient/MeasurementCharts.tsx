@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronUp, ChevronDown, ZoomIn, ZoomOut, ArrowLeftRight } from "lucide-react";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";  // Added missing import
 
 interface MeasurementChartsProps {
   medicoes: any[];

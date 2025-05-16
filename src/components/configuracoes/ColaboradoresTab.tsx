@@ -26,48 +26,38 @@ export function ColaboradoresTab() {
   const [exibirFormulario, setExibirFormulario] = useState(false);
   const isMobile = useIsMobile();
 
-  // Carregar colaboradores ou usar dados mockados se não houver tabela no Supabase
+  // Usar dados mockados sempre
   useEffect(() => {
     const fetchColaboradores = async () => {
       setCarregando(true);
       try {
-        // Tentativa de carregar da tabela colaboradores (se existir)
-        const { data, error } = await supabase
-          .from("colaboradores")
-          .select("*");
-        
-        if (error) {
-          console.error("Erro ao carregar colaboradores ou tabela não existe:", error);
-          // Use dados mockados se houver erro
-          setColaboradores([
-            { 
-              id: "1", 
-              nome: "Admin Principal", 
-              email: "admin@exemplo.com", 
-              permissao: "admin", 
-              status: "ativo" 
-            },
-            { 
-              id: "2", 
-              nome: "Maria Silva", 
-              email: "maria@exemplo.com", 
-              permissao: "editor", 
-              status: "ativo" 
-            },
-            { 
-              id: "3", 
-              nome: "João Pereira", 
-              email: "joao@exemplo.com", 
-              permissao: "visualizador", 
-              status: "pendente" 
-            }
-          ]);
-        } else {
-          setColaboradores(data as Colaborador[]);
-        }
+        // Usar dados mockados
+        setColaboradores([
+          { 
+            id: "1", 
+            nome: "Admin Principal", 
+            email: "admin@exemplo.com", 
+            permissao: "admin", 
+            status: "ativo" 
+          },
+          { 
+            id: "2", 
+            nome: "Maria Silva", 
+            email: "maria@exemplo.com", 
+            permissao: "editor", 
+            status: "ativo" 
+          },
+          { 
+            id: "3", 
+            nome: "João Pereira", 
+            email: "joao@exemplo.com", 
+            permissao: "visualizador", 
+            status: "pendente" 
+          }
+        ]);
       } catch (error) {
         console.error("Erro:", error);
-        // Use dados mockados se houver erro
+        // Use dados mockados em caso de erro
         setColaboradores([
           { 
             id: "1", 
@@ -252,7 +242,7 @@ export function ColaboradoresTab() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 ml-auto items-center">
-                  <Badge variant={colaborador.status === "ativo" ? "success" : colaborador.status === "pendente" ? "outline" : "destructive"}>
+                  <Badge variant={colaborador.status === "ativo" ? "secondary" : colaborador.status === "pendente" ? "outline" : "destructive"}>
                     {colaborador.status === "ativo" ? "Ativo" : colaborador.status === "pendente" ? "Pendente" : "Inativo"}
                   </Badge>
                   
