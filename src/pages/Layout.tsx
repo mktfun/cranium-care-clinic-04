@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
-import { WelcomeTutorialModal } from "@/components/WelcomeTutorialModal"; // Importar o modal
+import { WelcomeTutorialModal } from "@/components/WelcomeTutorialModal";
+import { MobileNavBar } from "@/components/MobileNavBar";
 
 interface LayoutProps {
   title?: string;
@@ -16,6 +18,10 @@ export default function Layout({ title = "Dashboard" }: LayoutProps) {
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
+      // Colapsar sidebar automaticamente em tablet
+      if (window.innerWidth < 1024 && window.innerWidth >= 768) {
+        setSidebarCollapsed(true);
+      }
     };
     
     checkIfMobile();
@@ -50,12 +56,12 @@ export default function Layout({ title = "Dashboard" }: LayoutProps) {
           toggleSidebar={toggleSidebar}
           sidebarCollapsed={sidebarCollapsed}
         />
-        <main className="flex-1 overflow-auto p-4 md:p-6 mt-16">
+        <main className="flex-1 overflow-auto p-3 md:p-6 mt-16 pb-20 md:pb-6">
           <Outlet />
         </main>
       </div>
-      <WelcomeTutorialModal /> {/* Renderizar o modal aqui */}
+      {isMobile && <MobileNavBar />}
+      <WelcomeTutorialModal />
     </div>
   );
 }
-

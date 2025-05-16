@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 
@@ -15,6 +15,7 @@ interface MobileChartViewProps {
 
 export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medicoes }: MobileChartViewProps) {
   const [currentChartIndex, setCurrentChartIndex] = useState(0);
+  const [chartHeight, setChartHeight] = useState(320);
   
   // Define chart types available
   const chartTypes = [
@@ -52,19 +53,39 @@ export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medico
   const prevChart = () => {
     setCurrentChartIndex((prev) => (prev === 0 ? chartTypes.length - 1 : prev - 1));
   };
+
+  const increaseHeight = () => {
+    setChartHeight(prev => Math.min(prev + 50, 550));
+  };
+
+  const decreaseHeight = () => {
+    setChartHeight(prev => Math.max(prev - 50, 200));
+  };
   
   const currentChart = chartTypes[currentChartIndex];
 
   return (
     <Card className="h-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{currentChart.title}</CardTitle>
-        <CardDescription>{currentChart.description}</CardDescription>
+      <CardHeader className="pb-1">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg">{currentChart.title}</CardTitle>
+            <CardDescription className="text-xs line-clamp-2">{currentChart.description}</CardDescription>
+          </div>
+          <div className="flex space-x-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={decreaseHeight}>
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={increaseHeight}>
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="h-[350px]">
+      <CardContent className="p-2 pt-0">
+        <div className="touch-auto overflow-x-auto overflow-y-hidden pb-2" style={{ height: chartHeight }}>
           {currentChart.id === "pacientesMedicoes" && (
-            <PacientesMedicoesChart altura={320} />
+            <PacientesMedicoesChart altura={chartHeight - 10} />
           )}
           
           {currentChart.id === "indiceCraniano" && medicoes && medicoes.length > 0 && (
@@ -75,7 +96,7 @@ export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medico
               tipoGrafico="indiceCraniano"
               sexoPaciente={sexoPaciente || ""}
               linhaCorTheme="rose"
-              altura={320}
+              altura={chartHeight - 10}
             />
           )}
           
@@ -87,7 +108,7 @@ export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medico
               tipoGrafico="cvai"
               sexoPaciente={sexoPaciente || ""}
               linhaCorTheme="amber"
-              altura={320}
+              altura={chartHeight - 10}
             />
           )}
           
@@ -99,7 +120,7 @@ export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medico
               tipoGrafico="diagonais"
               sexoPaciente={sexoPaciente || ""}
               linhaCorTheme="purple"
-              altura={320}
+              altura={chartHeight - 10}
             />
           )}
           
@@ -111,22 +132,22 @@ export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medico
               tipoGrafico="perimetro"
               sexoPaciente={sexoPaciente || ""}
               linhaCorTheme="green"
-              altura={320}
+              altura={chartHeight - 10}
             />
           )}
           
           {medicoes && medicoes.length === 0 && currentChart.id !== "pacientesMedicoes" && (
             <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">Não há medições disponíveis</p>
+              <p className="text-muted-foreground text-sm">Não há medições disponíveis</p>
             </div>
           )}
         </div>
         
-        <div className="flex justify-between mt-4">
-          <Button variant="outline" size="sm" onClick={prevChart}>
+        <div className="flex justify-between mt-3">
+          <Button variant="outline" size="sm" onClick={prevChart} className="px-2 py-1 h-8 text-xs">
             <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
           </Button>
-          <Button variant="outline" size="sm" onClick={nextChart}>
+          <Button variant="outline" size="sm" onClick={nextChart} className="px-2 py-1 h-8 text-xs">
             Próximo <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
