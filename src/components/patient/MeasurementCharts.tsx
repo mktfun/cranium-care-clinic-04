@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronUp, ChevronDown, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronUp, ChevronDown, ZoomIn, ZoomOut, ArrowLeftRight } from "lucide-react";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -17,6 +17,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
   const [activeChartTab, setActiveChartTab] = useState("indiceCraniano");
   const [chartsExpanded, setChartsExpanded] = useState(true);
   const [chartHeight, setChartHeight] = useState(400);
+  const [scrollMode, setScrollMode] = useState<"free" | "locked">("free");
   const isMobile = useIsMobile();
 
   const toggleChartsExpanded = () => {
@@ -29,6 +30,10 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
 
   const decreaseHeight = () => {
     setChartHeight(prev => Math.max(prev - 50, 250));
+  };
+  
+  const toggleScrollMode = () => {
+    setScrollMode(prev => prev === "free" ? "locked" : "free");
   };
 
   if (medicoes.length === 0) {
@@ -55,6 +60,9 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                 </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={increaseHeight}>
                   <ZoomIn className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleScrollMode} title={scrollMode === "free" ? "Bloquear scroll" : "Liberar scroll"}>
+                  <ArrowLeftRight className="h-3.5 w-3.5" />
                 </Button>
               </>
             )}
@@ -103,7 +111,12 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                   <p><strong>Normal:</strong> 76-80% | <strong>Alto:</strong> &gt;80% (braquicefalia) | <strong>Baixo:</strong> &lt;76% (dolicocefalia)</p>
                 </div>
                 )}
-                <div className="touch-auto overflow-x-auto overflow-y-hidden">
+                <div 
+                  className={cn(
+                    "overflow-y-hidden",
+                    scrollMode === "free" ? "touch-auto overflow-x-auto" : "overflow-x-hidden touch-none"
+                  )}
+                >
                   <MedicaoLineChart 
                     titulo="Evolução do Índice Craniano" 
                     medicoes={medicoes}
@@ -131,7 +144,12 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                   <p><strong>Normal:</strong> &lt;3.5% | <strong>Leve:</strong> 3.5-6.25% | <strong>Moderada:</strong> 6.25-8.5% | <strong>Severa:</strong> &gt;8.5%</p>
                 </div>
                 )}
-                <div className="touch-auto overflow-x-auto overflow-y-hidden">
+                <div 
+                  className={cn(
+                    "overflow-y-hidden",
+                    scrollMode === "free" ? "touch-auto overflow-x-auto" : "overflow-x-hidden touch-none"
+                  )}
+                >
                   <MedicaoLineChart 
                     titulo="Evolução da Plagiocefalia (CVAI)" 
                     medicoes={medicoes}
@@ -159,7 +177,12 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                   <p><strong>Ideal:</strong> diferença &lt;3mm | Redução da diferença indica melhora na simetria.</p>
                 </div>
                 )}
-                <div className="touch-auto overflow-x-auto overflow-y-hidden">
+                <div 
+                  className={cn(
+                    "overflow-y-hidden",
+                    scrollMode === "free" ? "touch-auto overflow-x-auto" : "overflow-x-hidden touch-none"
+                  )}
+                >
                   <MedicaoLineChart 
                     titulo="Evolução das Diagonais" 
                     medicoes={medicoes}
@@ -187,7 +210,12 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                   <p>Valores dentro dos percentis 3-97 são normais. Extremos podem indicar condições que requerem investigação.</p>
                 </div>
                 )}
-                <div className="touch-auto overflow-x-auto overflow-y-hidden">
+                <div 
+                  className={cn(
+                    "overflow-y-hidden",
+                    scrollMode === "free" ? "touch-auto overflow-x-auto" : "overflow-x-hidden touch-none"
+                  )}
+                >
                   <MedicaoLineChart 
                     titulo="Evolução do Perímetro Cefálico"
                     medicoes={medicoes}

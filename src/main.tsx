@@ -28,7 +28,21 @@ const addGlobalStyles = () => {
     /* Ajuste de espaço para o menu de navegação móvel */
     @media (max-width: 767px) {
       body {
-        padding-bottom: env(safe-area-inset-bottom, 70px);
+        padding-bottom: env(safe-area-inset-bottom, 80px);
+      }
+      
+      /* Corrigir problemas de responsividade em telas menores */
+      .mobile-container {
+        width: 100% !important;
+        padding: 0.5rem !important;
+        overflow-x: hidden;
+      }
+      
+      /* Melhorar visualização de tabelas em mobile */
+      table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
       }
     }
     
@@ -105,6 +119,22 @@ const addGlobalStyles = () => {
     
     .animate-fade-in {
       animation: fade-in 0.2s ease-out forwards;
+    }
+    
+    /* Fix para problemas de overflow em Cards */
+    .card {
+      max-width: 100%;
+    }
+    
+    /* Correção para dropdown menus na tela branca */
+    .select-content,
+    [data-radix-popper-content-wrapper] {
+      z-index: 999;
+      background-color: var(--popover);
+      color: var(--popover-foreground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
   `;
   document.head.appendChild(style);
