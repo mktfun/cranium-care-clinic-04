@@ -1,49 +1,34 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, Maximize, MinusCircle, PlusCircle } from "lucide-react";
-import { MedicaoLineChart } from "@/components/MedicaoLineChart";
+import { ChevronLeft, ChevronRight, RotateCcw, Maximize, MinusCircle, PlusCircle, ArrowLeftRight } from "lucide-react";
 import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 import { cn } from "@/lib/utils";
+import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
 
-interface MobileChartViewProps {
-  paciente?: any;
-  dataNascimento?: string;
-  sexoPaciente?: string;
-  medicoes?: any[];
-}
-
-export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medicoes }: MobileChartViewProps) {
+export function MobileChartView() {
   const [currentChartIndex, setCurrentChartIndex] = useState(0);
   const [chartHeight, setChartHeight] = useState(300);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [scrollMode, setScrollMode] = useState<"free" | "locked">("free");
   
-  // Define chart types available
+  // Define chart types available - now with clinic-relevant metrics only
   const chartTypes = [
     {
       id: "pacientesMedicoes",
-      title: "Evolução de Pacientes e Medições",
+      title: "Pacientes x Medições",
       description: "Comparativo entre pacientes registrados e medições realizadas"
     },
     {
-      id: "indiceCraniano",
-      title: "Índice Craniano",
-      description: "Evolução do Índice Craniano"
+      id: "medicoesPorDia",
+      title: "Medições por Dia",
+      description: "Frequência de medições nos últimos 7 dias"
     },
     {
-      id: "cvai",
-      title: "Plagiocefalia (CVAI)",
-      description: "Evolução da Plagiocefalia"
-    },
-    {
-      id: "diagonais",
-      title: "Diagonais",
-      description: "Evolução das Diagonais"
-    },
-    {
-      id: "perimetro",
-      title: "Perímetro Cefálico",
-      description: "Evolução do Perímetro Cefálico"
+      id: "statusDistribuicao",
+      title: "Status dos Pacientes",
+      description: "Distribuição de pacientes por status de avaliação"
     }
   ];
   
@@ -75,13 +60,17 @@ export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medico
       setChartHeight(300);
     }
   };
+
+  const toggleScrollMode = () => {
+    setScrollMode(prev => prev === "free" ? "locked" : "free");
+  };
   
   const currentChart = chartTypes[currentChartIndex];
 
   return (
     <Card className={cn(
       "h-full transition-all duration-300", 
-      isFullscreen && "fixed inset-4 z-50 bg-card/95 backdrop-blur-sm"
+      isFullscreen && "fixed inset-0 z-50 bg-card/95 backdrop-blur-sm"
     )}>
       <CardHeader className="pb-1">
         <div className="flex justify-between items-start">
@@ -99,6 +88,9 @@ export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medico
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={resetZoom}>
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleScrollMode} title={scrollMode === "free" ? "Bloquear scroll" : "Liberar scroll"}>
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleFullscreen}>
               <Maximize className="h-3.5 w-3.5" />
             </Button>
@@ -108,7 +100,8 @@ export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medico
       <CardContent className="p-2 pt-0">
         <div 
           className={cn(
-            "touch-auto overflow-x-auto overflow-y-hidden pb-2 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent",
+            "transition-all duration-200 overflow-y-hidden pb-2",
+            scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent" : "overflow-x-hidden touch-none",
             isFullscreen && "pb-8"
           )}
           style={{ height: chartHeight }}
@@ -117,58 +110,12 @@ export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medico
             <PacientesMedicoesChart altura={chartHeight - 10} />
           )}
           
-          {currentChart.id === "indiceCraniano" && medicoes && medicoes.length > 0 && (
-            <MedicaoLineChart 
-              titulo="Evolução do Índice Craniano" 
-              medicoes={medicoes}
-              dataNascimento={dataNascimento || ""}
-              tipoGrafico="indiceCraniano"
-              sexoPaciente={sexoPaciente || ""}
-              linhaCorTheme="rose"
-              altura={chartHeight - 10}
-            />
+          {currentChart.id === "medicoesPorDia" && (
+            <MedicoesPorDiaChart altura={chartHeight - 10} />
           )}
           
-          {currentChart.id === "cvai" && medicoes && medicoes.length > 0 && (
-            <MedicaoLineChart 
-              titulo="Evolução da Plagiocefalia (CVAI)" 
-              medicoes={medicoes}
-              dataNascimento={dataNascimento || ""}
-              tipoGrafico="cvai"
-              sexoPaciente={sexoPaciente || ""}
-              linhaCorTheme="amber"
-              altura={chartHeight - 10}
-            />
-          )}
-          
-          {currentChart.id === "diagonais" && medicoes && medicoes.length > 0 && (
-            <MedicaoLineChart 
-              titulo="Evolução das Diagonais" 
-              medicoes={medicoes}
-              dataNascimento={dataNascimento || ""}
-              tipoGrafico="diagonais"
-              sexoPaciente={sexoPaciente || ""}
-              linhaCorTheme="purple"
-              altura={chartHeight - 10}
-            />
-          )}
-          
-          {currentChart.id === "perimetro" && medicoes && medicoes.length > 0 && (
-            <MedicaoLineChart 
-              titulo="Evolução do Perímetro Cefálico" 
-              medicoes={medicoes}
-              dataNascimento={dataNascimento || ""}
-              tipoGrafico="perimetro"
-              sexoPaciente={sexoPaciente || ""}
-              linhaCorTheme="green"
-              altura={chartHeight - 10}
-            />
-          )}
-          
-          {medicoes && medicoes.length === 0 && currentChart.id !== "pacientesMedicoes" && (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground text-sm">Não há medições disponíveis</p>
-            </div>
+          {currentChart.id === "statusDistribuicao" && (
+            <StatusDistribuicaoChart altura={chartHeight - 10} />
           )}
         </div>
         
@@ -189,5 +136,40 @@ export function MobileChartView({ paciente, dataNascimento, sexoPaciente, medico
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// New component for status distribution chart
+function StatusDistribuicaoChart({ altura = 300 }: { altura?: number }) {
+  // Using recharts for consistency with other charts
+  const statusData = [
+    { name: 'Normal', valor: 65, fill: '#10b981' },
+    { name: 'Leve', valor: 20, fill: '#f59e0b' },
+    { name: 'Moderado', valor: 10, fill: '#f97316' },
+    { name: 'Severo', valor: 5, fill: '#ef4444' },
+  ];
+
+  return (
+    <div className="flex flex-col items-center justify-center w-full h-full">
+      <div className="w-full max-w-md">
+        {statusData.map((item) => (
+          <div key={item.name} className="mb-3">
+            <div className="flex justify-between text-xs mb-1">
+              <span>{item.name}</span>
+              <span className="font-medium">{item.valor}%</span>
+            </div>
+            <div className="w-full bg-muted/30 rounded-full h-2.5">
+              <div 
+                className="h-2.5 rounded-full" 
+                style={{ width: `${item.valor}%`, backgroundColor: item.fill }}
+              />
+            </div>
+          </div>
+        ))}
+        <div className="text-xs text-center text-muted-foreground mt-4">
+          Distribuição dos pacientes por severidade na avaliação craniana
+        </div>
+      </div>
+    </div>
   );
 }

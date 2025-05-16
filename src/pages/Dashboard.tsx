@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { MobileChartView } from "@/components/MobileChartView";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
 
 interface TrendData {
   value: number;
@@ -337,6 +338,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
+      {/* Stats Cards - Responsive Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div onClick={() => navigate("/pacientes")} className="cursor-pointer">
           <StatsCard
@@ -378,23 +380,27 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Charts Section - Responsive View Switch */}
+      {/* Charts Section - Responsive View */}
       {isMobileView ? (
-        // Mobile View - Carousel of Charts
-        <MobileChartView />
+        // Mobile View - Carousel of Clinic-Relevant Charts
+        <div className="mt-6">
+          <MobileChartView />
+        </div>
       ) : (
-        // Desktop View - Grid Layout
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        // Desktop View - Grid Layout with Clinic-Relevant Charts
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
           <div className="md:col-span-2">
             <PacientesMedicoesChart altura={350} />
           </div>
           <div className="space-y-6">
+            <MedicoesPorDiaChart altura={165} />
             <UrgentTasksCard />
           </div>
         </div>
       )}
 
-      <div>
+      {/* Featured Patients Section */}
+      <div className="mt-6">
         <h3 className="text-lg font-medium mb-4">Pacientes em Destaque</h3>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {pacientes.length > 0 ? (

@@ -7,11 +7,7 @@ import { WelcomeTutorialModal } from "@/components/WelcomeTutorialModal";
 import { MobileNavBar } from "@/components/MobileNavBar";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-interface LayoutProps {
-  title?: string;
-}
-
-export default function Layout({ title = "Dashboard" }: LayoutProps) {
+export default function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -55,13 +51,20 @@ export default function Layout({ title = "Dashboard" }: LayoutProps) {
       "/historico": "Histórico",
       "/relatorios": "Relatórios",
       "/configuracoes": "Configurações",
+      "/tarefas": "Tarefas",
+      "/notificacoes": "Notificações",
+      "/perfil": "Perfil",
     };
     
     if (path.startsWith("/pacientes/") && path.includes("/nova-medicao")) return "Nova Medição";
+    if (path.startsWith("/pacientes/") && path.includes("/medicao-por-foto")) return "Medição por Foto";
     if (path.startsWith("/pacientes/") && path.includes("/relatorio")) return "Relatório";
-    if (path.startsWith("/pacientes/") && path.split('/').length === 3) return "Paciente";
+    if (path.startsWith("/pacientes/") && path.includes("/prontuario")) return "Prontuário";
+    if (path.startsWith("/pacientes/") && path.includes("/historico")) return "Histórico do Paciente";
+    if (path.startsWith("/pacientes/") && path.split('/').length === 3) return "Detalhes do Paciente";
+    if (path === "/pacientes/registro") return "Novo Paciente";
     
-    return routeNames[path] || title;
+    return routeNames[path] || "Dashboard";
   };
 
   return (
@@ -84,8 +87,11 @@ export default function Layout({ title = "Dashboard" }: LayoutProps) {
           toggleSidebar={toggleSidebar}
           sidebarCollapsed={sidebarCollapsed}
         />
-        <main className="flex-1 overflow-auto p-3 md:p-6 mt-16 pb-20 md:pb-6">
-          <Outlet />
+        <main className="flex-1 overflow-auto mt-16 pb-20 md:pb-6">
+          {/* Wrapper div with more mobile-friendly padding */}
+          <div className="p-3 md:p-6 max-w-7xl mx-auto w-full">
+            <Outlet />
+          </div>
         </main>
       </div>
       <MobileNavBar />

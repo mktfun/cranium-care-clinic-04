@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronUp, ChevronDown, ZoomIn, ZoomOut, ArrowLeftRight } from "lucide-react";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";  // Added missing import
+import { cn } from "@/lib/utils";
 
 interface MeasurementChartsProps {
   medicoes: any[];
@@ -95,7 +95,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
               <TabsTrigger value="indiceCraniano" className={isMobile ? "text-xs py-1" : ""}>Índ. Craniano</TabsTrigger>
               <TabsTrigger value="cvai" className={isMobile ? "text-xs py-1" : ""}>Plagiocefalia</TabsTrigger>
               <TabsTrigger value="diagonais" className={isMobile ? "text-xs py-1" : ""}>Diagonais</TabsTrigger>
-              <TabsTrigger value="perimetro" className={isMobile ? "text-xs py-1" : ""}>Perimetro</TabsTrigger>
+              <TabsTrigger value="perimetro" className={isMobile ? "text-xs py-1" : ""}>Perímetro</TabsTrigger>
             </TabsList>
             
             <TabsContent value="indiceCraniano" className="mt-0">
@@ -115,7 +115,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                 <div 
                   className={cn(
                     "overflow-y-hidden",
-                    scrollMode === "free" ? "touch-auto overflow-x-auto" : "overflow-x-hidden touch-none"
+                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent" : "overflow-x-hidden touch-none"
                   )}
                 >
                   <MedicaoLineChart 
@@ -148,7 +148,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                 <div 
                   className={cn(
                     "overflow-y-hidden",
-                    scrollMode === "free" ? "touch-auto overflow-x-auto" : "overflow-x-hidden touch-none"
+                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent" : "overflow-x-hidden touch-none"
                   )}
                 >
                   <MedicaoLineChart 
@@ -181,7 +181,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                 <div 
                   className={cn(
                     "overflow-y-hidden",
-                    scrollMode === "free" ? "touch-auto overflow-x-auto" : "overflow-x-hidden touch-none"
+                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent" : "overflow-x-hidden touch-none"
                   )}
                 >
                   <MedicaoLineChart 
@@ -214,7 +214,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                 <div 
                   className={cn(
                     "overflow-y-hidden",
-                    scrollMode === "free" ? "touch-auto overflow-x-auto" : "overflow-x-hidden touch-none"
+                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent" : "overflow-x-hidden touch-none"
                   )}
                 >
                   <MedicaoLineChart 

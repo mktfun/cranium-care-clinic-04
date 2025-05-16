@@ -19,6 +19,14 @@ export function MobileNavBar() {
     return location.pathname === path;
   };
 
+  // Add a function to handle navigation with touch feedback
+  const handleNavigation = (path: string) => {
+    // Only navigate if we're not already on this page
+    if (location.pathname !== path) {
+      navigate(path);
+    }
+  };
+
   const navItems = [
     {
       icon: LayoutDashboard,
@@ -51,13 +59,13 @@ export function MobileNavBar() {
   
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg z-50 pb-safe">
-      <div className="flex justify-between items-center p-1">
+      <div className="flex justify-between items-center p-1 max-w-screen-lg mx-auto">
         {navItems.map((item) => (
           <button
             key={item.path}
-            onClick={() => navigate(item.path)}
+            onClick={() => handleNavigation(item.path)}
             className={cn(
-              "flex flex-col items-center justify-center py-2 px-1 w-full rounded-md transition-all duration-200",
+              "flex flex-col items-center justify-center py-3 px-1 w-full rounded-md transition-all duration-200 active:scale-95",
               isActive(item.path) 
                 ? "text-primary bg-primary/5" 
                 : "text-muted-foreground hover:text-foreground"
