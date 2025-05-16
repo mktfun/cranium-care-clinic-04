@@ -77,6 +77,35 @@ const addGlobalStyles = () => {
         display: none;
       }
     }
+    
+    /* Animations for mobile navigation */
+    @keyframes scale-in {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    
+    .animate-scale-in {
+      animation: scale-in 0.2s ease-out forwards;
+    }
+    
+    .animate-fade-in {
+      animation: fade-in 0.2s ease-out forwards;
+    }
   `;
   document.head.appendChild(style);
 };

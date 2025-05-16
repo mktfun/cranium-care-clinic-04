@@ -9,7 +9,6 @@ import {
   BarChart,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { motion } from "framer-motion";
 
 export function MobileNavBar() {
   const location = useLocation();
@@ -65,18 +64,13 @@ export function MobileNavBar() {
             )}
           >
             {isActive(item.path) ? (
-              <motion.div 
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                className="relative"
-              >
+              <div className="relative animate-scale-in">
                 <item.icon className="h-5 w-5 mb-1" />
-                <motion.div 
-                  className="absolute -bottom-1 left-1/2 w-1 h-1 bg-primary rounded-full"
-                  initial={{ opacity: 0, x: "-50%" }}
-                  animate={{ opacity: 1, x: "-50%" }}
+                <div 
+                  className="absolute -bottom-1 left-1/2 w-1 h-1 bg-primary rounded-full animate-fade-in"
+                  style={{ transform: 'translateX(-50%)' }}
                 />
-              </motion.div>
+              </div>
             ) : (
               <item.icon className="h-5 w-5 mb-1 opacity-85" />
             )}
