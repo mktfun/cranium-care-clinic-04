@@ -9,6 +9,7 @@ import {
   BarChart,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { motion } from "framer-motion";
 
 export function MobileNavBar() {
   const location = useLocation();
@@ -59,14 +60,26 @@ export function MobileNavBar() {
             className={cn(
               "flex flex-col items-center justify-center py-2 px-1 w-full rounded-md transition-all duration-200",
               isActive(item.path) 
-                ? "text-primary bg-primary/5 scale-105" 
+                ? "text-primary bg-primary/5" 
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <item.icon className={cn(
-              "transition-all duration-200",
-              isActive(item.path) ? "h-5 w-5 mb-1" : "h-5 w-5"
-            )} />
+            {isActive(item.path) ? (
+              <motion.div 
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                className="relative"
+              >
+                <item.icon className="h-5 w-5 mb-1" />
+                <motion.div 
+                  className="absolute -bottom-1 left-1/2 w-1 h-1 bg-primary rounded-full"
+                  initial={{ opacity: 0, x: "-50%" }}
+                  animate={{ opacity: 1, x: "-50%" }}
+                />
+              </motion.div>
+            ) : (
+              <item.icon className="h-5 w-5 mb-1 opacity-85" />
+            )}
             <span className={cn(
               "text-[10px] font-medium transition-all duration-200",
               isActive(item.path) ? "opacity-100" : "opacity-85"

@@ -42,6 +42,33 @@ interface Colaborador {
   created_at: string;
 }
 
+// Mock data for colaboradores since the table doesn't exist in the database
+const mockColaboradores: Colaborador[] = [
+  {
+    id: "1",
+    email: "colaborador1@exemplo.com",
+    status: 'ativo',
+    permissao: 'visualizar',
+    nome: "João Silva",
+    created_at: new Date().toISOString()
+  },
+  {
+    id: "2",
+    email: "colaborador2@exemplo.com",
+    status: 'pendente',
+    permissao: 'editar',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: "3",
+    email: "colaborador3@exemplo.com",
+    status: 'recusado',
+    permissao: 'admin',
+    nome: "Maria Santos",
+    created_at: new Date().toISOString()
+  }
+];
+
 export default function Configuracoes() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [nome, setNome] = useState("");
@@ -63,7 +90,7 @@ export default function Configuracoes() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Estados para colaboradores
+  // Estados para colaboradores - usando mock data
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [carregandoColaboradores, setCarregandoColaboradores] = useState(false);
   const [tabColaboradores, setTabColaboradores] = useState<'pendentes' | 'ativos' | 'recusados'>('ativos');
@@ -120,37 +147,21 @@ export default function Configuracoes() {
     carregarUsuario();
   }, []);
 
-  // Carregar colaboradores
+  // Carregar colaboradores - usando mock data
   useEffect(() => {
     async function carregarColaboradores() {
       try {
         setCarregandoColaboradores(true);
         
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session?.user) {
-          return;
-        }
-
-        // Aqui seria uma chamada real ao banco de dados para buscar colaboradores
-        // Implementar quando a tabela de colaboradores for criada
-        const { data, error } = await supabase
-          .from('colaboradores')
-          .select('*')
-          .eq('empresa_id', session.user.id);
-          
-        if (error) {
-          console.error("Erro ao carregar colaboradores:", error);
-          return;
-        }
-        
-        if (data) {
-          setColaboradores(data);
-        }
+        // Simular carregamento
+        setTimeout(() => {
+          // Filtrar colaboradores conforme a aba selecionada
+          setColaboradores(mockColaboradores);
+          setCarregandoColaboradores(false);
+        }, 500);
         
       } catch (err) {
         console.error("Erro ao carregar colaboradores:", err);
-      } finally {
         setCarregandoColaboradores(false);
       }
     }
@@ -394,7 +405,7 @@ export default function Configuracoes() {
     permissao: 'visualizar' as 'visualizar' | 'editar' | 'admin'
   });
   
-  // Adicionar colaborador
+  // Adicionar colaborador - usando mock data
   const adicionarColaborador = async () => {
     try {
       if (!novoColaborador.email) {
@@ -402,52 +413,25 @@ export default function Configuracoes() {
         return;
       }
       
-      // Verificar se usuário está autenticado
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        toast.error("Usuário não autenticado");
-        return;
-      }
-
       // Verificar se email já está sendo usado por outro colaborador
-      const { data: colaboradorExistente } = await supabase
-        .from('colaboradores')
-        .select('*')
-        .eq('email', novoColaborador.email)
-        .eq('empresa_id', session.user.id);
-        
-      if (colaboradorExistente && colaboradorExistente.length > 0) {
+      const colaboradorExistente = colaboradores.find(c => c.email === novoColaborador.email);
+      if (colaboradorExistente) {
         toast.error("Este email já foi convidado");
         return;
       }
 
-      // Inserir novo colaborador
-      const { error } = await supabase
-        .from('colaboradores')
-        .insert({
-          email: novoColaborador.email,
-          permissao: novoColaborador.permissao,
-          status: 'pendente',
-          empresa_id: session.user.id,
-          empresa_nome: clinicaNome || 'CraniumCare'
-        });
-        
-      if (error) {
-        throw error;
-      }
+      // Simular adição de colaborador (mock)
+      const novoColab: Colaborador = {
+        id: `${Date.now()}`,
+        email: novoColaborador.email,
+        permissao: novoColaborador.permissao,
+        status: 'pendente',
+        created_at: new Date().toISOString()
+      };
+      
+      setColaboradores([...colaboradores, novoColab]);
       
       toast.success(`Convite enviado para ${novoColaborador.email}`);
-      
-      // Recarregar lista de colaboradores
-      const { data: colaboradoresNovos } = await supabase
-        .from('colaboradores')
-        .select('*')
-        .eq('empresa_id', session.user.id);
-        
-      if (colaboradoresNovos) {
-        setColaboradores(colaboradoresNovos);
-      }
       
       // Limpar formulário
       setNovoColaborador({
@@ -461,39 +445,23 @@ export default function Configuracoes() {
     }
   };
 
-  // Remover colaborador
+  // Remover colaborador - usando mock data
   const removerColaborador = async (id: string) => {
     try {
       setDeletandoColaborador(id);
       
-      // Verificar se usuário está autenticado
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        toast.error("Usuário não autenticado");
-        return;
-      }
-
-      // Remover colaborador
-      const { error } = await supabase
-        .from('colaboradores')
-        .delete()
-        .eq('id', id)
-        .eq('empresa_id', session.user.id);
+      // Simular tempo de processamento
+      setTimeout(() => {
+        // Atualizar lista de colaboradores
+        setColaboradores(colaboradores.filter(c => c.id !== id));
+        setDeletandoColaborador(null);
         
-      if (error) {
-        throw error;
-      }
-      
-      // Atualizar lista de colaboradores
-      setColaboradores(colaboradores.filter(c => c.id !== id));
-      
-      toast.success("Colaborador removido com sucesso");
+        toast.success("Colaborador removido com sucesso");
+      }, 500);
       
     } catch (err: any) {
       console.error("Erro ao remover colaborador:", err);
       toast.error(`Erro ao remover colaborador: ${err.message}`);
-    } finally {
       setDeletandoColaborador(null);
     }
   };
@@ -1081,3 +1049,4 @@ export default function Configuracoes() {
     </div>
   );
 }
+
