@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatusBadge } from "@/components/StatusBadge";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { ResponsiveTable } from "@/components/ui/responsive-container";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 
 interface MedicoesHistoricoTableProps {
   medicoes: any[];
@@ -12,7 +12,7 @@ interface MedicoesHistoricoTableProps {
 }
 
 export function MedicoesHistoricoTable({ medicoes, dataNascimento }: MedicoesHistoricoTableProps) {
-  const isMobile = useIsMobile();
+  const isSmallScreen = useIsMobileOrTabletPortrait();
   
   const formatData = (dataString: string) => {
     const data = new Date(dataString);
@@ -30,7 +30,7 @@ export function MedicoesHistoricoTable({ medicoes, dataNascimento }: MedicoesHis
           <TableRow>
             <TableHead>Data</TableHead>
             <TableHead>Idade</TableHead>
-            <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>Perímetro</TableHead>
+            <TableHead className={isSmallScreen ? "hidden sm:table-cell" : ""}>Perímetro</TableHead>
             <TableHead>Índice Craniano</TableHead>
             <TableHead>CVAI</TableHead>
             <TableHead className="text-right">Status</TableHead>
@@ -44,7 +44,7 @@ export function MedicoesHistoricoTable({ medicoes, dataNascimento }: MedicoesHis
               <TableRow key={medicao.id || `medicao-${Math.random()}`}>
                 <TableCell className="whitespace-nowrap">{formatData(medicao.data)}</TableCell>
                 <TableCell className="whitespace-nowrap">{formatAge(dataNascimento, medicao.data)}</TableCell>
-                <TableCell className={`whitespace-nowrap ${isMobile ? "hidden sm:table-cell" : ""}`}>
+                <TableCell className={`whitespace-nowrap ${isSmallScreen ? "hidden sm:table-cell" : ""}`}>
                   {medicao.perimetro_cefalico ? `${medicao.perimetro_cefalico} mm` : '-'}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">{medicao.indice_craniano.toFixed(1)}%</TableCell>

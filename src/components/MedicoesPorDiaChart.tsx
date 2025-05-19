@@ -1,10 +1,9 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 
 // Função para obter os últimos 7 dias em formato DD/MM
 const obterUltimosSeteDias = () => {
@@ -33,10 +32,10 @@ interface MedicoesPorDiaChartProps {
 export function MedicoesPorDiaChart({ altura = 350 }: MedicoesPorDiaChartProps) {
   const [dados, setDados] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const isMobile = useIsMobile();
+  const isSmallScreen = useIsMobileOrTabletPortrait();
   
   // Ajustar altura do gráfico com base no dispositivo
-  const chartHeight = isMobile ? Math.min(altura, 200) : altura;
+  const chartHeight = isSmallScreen ? Math.min(altura, 200) : altura;
   
   useEffect(() => {
     async function carregarDados() {
@@ -98,7 +97,7 @@ export function MedicoesPorDiaChart({ altura = 350 }: MedicoesPorDiaChartProps) 
   
   // Formatar rótulos para dispositivos móveis
   const formatXAxisTick = (value: string) => {
-    if (isMobile) {
+    if (isSmallScreen) {
       // Em dispositivos móveis, mostrar apenas o dia
       return value.split('/')[0];
     }
@@ -124,35 +123,35 @@ export function MedicoesPorDiaChart({ altura = 350 }: MedicoesPorDiaChartProps) 
               data={dados}
               margin={{ 
                 top: 5, 
-                right: isMobile ? 5 : 30, 
-                left: isMobile ? -15 : -20, 
-                bottom: isMobile ? 0 : 5 
+                right: isSmallScreen ? 5 : 30, 
+                left: isSmallScreen ? -15 : -20, 
+                bottom: isSmallScreen ? 0 : 5 
               }}
             >
               <XAxis 
                 dataKey="dia" 
                 stroke="#888888" 
-                fontSize={isMobile ? 10 : 12} 
+                fontSize={isSmallScreen ? 10 : 12} 
                 tickLine={false} 
                 axisLine={false}
                 tickFormatter={formatXAxisTick}
-                tickMargin={isMobile ? 2 : 5}
+                tickMargin={isSmallScreen ? 2 : 5}
               />
               <YAxis
                 stroke="#888888"
-                fontSize={isMobile ? 10 : 12}
+                fontSize={isSmallScreen ? 10 : 12}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(value) => `${value}`}
-                width={isMobile ? 20 : 30}
+                width={isSmallScreen ? 20 : 30}
                 allowDecimals={false}
               />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'var(--background)', 
                   borderColor: 'var(--border)',
-                  fontSize: isMobile ? '12px' : '14px',
-                  padding: isMobile ? '4px' : '8px',
+                  fontSize: isSmallScreen ? '12px' : '14px',
+                  padding: isSmallScreen ? '4px' : '8px',
                   borderRadius: '4px'
                 }}
               />
@@ -161,7 +160,7 @@ export function MedicoesPorDiaChart({ altura = 350 }: MedicoesPorDiaChartProps) 
                 fill="#276FBF" 
                 radius={[4, 4, 0, 0]} 
                 name="Medições"
-                barSize={isMobile ? 20 : 30}
+                barSize={isSmallScreen ? 20 : 30}
               />
             </BarChart>
           </ResponsiveContainer>

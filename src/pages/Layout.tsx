@@ -5,18 +5,18 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { WelcomeTutorialModal } from "@/components/WelcomeTutorialModal";
 import { MobileNavBar } from "@/components/MobileNavBar";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 
 export default function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
-  const isMobile = useIsMobile();
+  const isSmallScreen = useIsMobileOrTabletPortrait();
   const navigate = useNavigate();
   const location = useLocation();
   
   useEffect(() => {
     // Colapsar sidebar automaticamente em tablet e mobile
     const checkScreenSize = () => {
-      if (window.innerWidth < 1024) {
+      if (window.innerWidth < 1024 || (window.innerWidth >= 600 && window.innerWidth <= 900 && window.innerHeight > window.innerWidth)) {
         setSidebarCollapsed(true);
       } else {
         setSidebarCollapsed(false);
@@ -31,10 +31,10 @@ export default function Layout() {
   
   // Auto-hide sidebar on mobile when navigating
   useEffect(() => {
-    if (isMobile) {
+    if (isSmallScreen) {
       setSidebarCollapsed(true);
     }
-  }, [location.pathname, isMobile]);
+  }, [location.pathname, isSmallScreen]);
   
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -71,7 +71,7 @@ export default function Layout() {
 
   return (
     <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
-      {!isMobile && (
+      {!isSmallScreen && (
         <Sidebar 
           className={`fixed left-0 top-0 z-20 h-screen transition-all duration-300 ${
             sidebarCollapsed ? "lg:-translate-x-[180px]" : "translate-x-0"
@@ -81,8 +81,8 @@ export default function Layout() {
         />
       )}
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
-        sidebarCollapsed || isMobile ? "lg:ml-[70px]" : "lg:ml-[250px]"
-      } ${isMobile ? "ml-0" : ""}`}>
+        sidebarCollapsed || isSmallScreen ? "lg:ml-[70px]" : "lg:ml-[250px]"
+      } ${isSmallScreen ? "ml-0" : ""}`}>
         <Header 
           title={getCurrentPageTitle()}
           toggleSidebar={toggleSidebar}
@@ -94,7 +94,7 @@ export default function Layout() {
           </div>
         </main>
       </div>
-      <MobileNavBar />
+      {isSmallScreen && <MobileNavBar />}
       <WelcomeTutorialModal />
     </div>
   );

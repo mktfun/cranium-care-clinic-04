@@ -1,6 +1,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 
 interface ResponsiveContainerProps {
   className?: string;
@@ -15,6 +16,8 @@ export function ResponsiveContainer({
   allowHorizontalScroll = true,
   minWidth = "500px" 
 }: ResponsiveContainerProps) {
+  const isSmallScreen = useIsMobileOrTabletPortrait();
+  
   return (
     <div 
       className={cn(
@@ -59,6 +62,8 @@ export function ResponsiveChart({
   height?: number;
   mobileHeight?: number;
 }) {
+  const isSmallScreen = useIsMobileOrTabletPortrait();
+  
   // Use mobile height if provided, otherwise fallback to 70% of standard height
   const actualMobileHeight = mobileHeight || Math.round(height * 0.7);
   

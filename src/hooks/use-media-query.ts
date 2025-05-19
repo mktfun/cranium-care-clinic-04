@@ -18,3 +18,17 @@ export function useMediaQuery(query: string): boolean {
 
   return matches;
 }
+
+export function useTabletPortraitQuery(): boolean {
+  return useMediaQuery("(min-width: 600px) and (max-width: 900px) and (orientation: portrait)");
+}
+
+export function useMobileQuery(maxWidth: number = 768): boolean {
+  return useMediaQuery(`(max-width: ${maxWidth}px)`);
+}
+
+export function useMobileOrTabletPortraitQuery(): boolean {
+  const isMobile = useMobileQuery();
+  const isTabletPortrait = useTabletPortraitQuery();
+  return isMobile || isTabletPortrait;
+}

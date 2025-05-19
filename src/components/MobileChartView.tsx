@@ -6,12 +6,14 @@ import { ChevronLeft, ChevronRight, RotateCcw, Maximize, MinusCircle, PlusCircle
 import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 import { cn } from "@/lib/utils";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
+import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 
 export function MobileChartView() {
   const [currentChartIndex, setCurrentChartIndex] = useState(0);
   const [chartHeight, setChartHeight] = useState(300);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [scrollMode, setScrollMode] = useState<"free" | "locked">("free");
+  const isMobileOrTablet = useIsMobileOrTabletPortrait();
   
   // Define chart types available - now with clinic-relevant metrics only
   const chartTypes = [
