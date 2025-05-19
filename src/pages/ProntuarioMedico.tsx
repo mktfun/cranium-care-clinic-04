@@ -14,6 +14,8 @@ import { HistoricoMedicoTab } from "@/components/prontuario/HistoricoMedicoTab";
 import { ConsultasTab } from "@/components/prontuario/ConsultasTab";
 import { AvaliacoesCraniaisTab } from "@/components/prontuario/AvaliacoesCraniaisTab";
 import { NovoProntuarioDialog } from "@/components/prontuario/NovoProntuarioDialog";
+import { AnimatedProntuarioSelect } from "@/components/prontuario/AnimatedProntuarioSelect";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Prontuario } from "@/types";
 
 export default function ProntuarioMedico() {
@@ -23,6 +25,8 @@ export default function ProntuarioMedico() {
   const [prontuario, setProntuario] = useState<Prontuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("dados-pessoais");
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     async function fetchData() {
@@ -161,27 +165,36 @@ export default function ProntuarioMedico() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <Tabs defaultValue="dados-pessoais" className="w-full">
-                <div className="px-6">
-                  <TabsList className="w-full justify-start">
-                    <TabsTrigger value="dados-pessoais" className="flex items-center gap-1">
-                      <User className="h-4 w-4" />
-                      Dados Pessoais
-                    </TabsTrigger>
-                    <TabsTrigger value="historico-medico" className="flex items-center gap-1">
-                      <FileText className="h-4 w-4" />
-                      Histórico Médico
-                    </TabsTrigger>
-                    <TabsTrigger value="consultas" className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      Consultas
-                    </TabsTrigger>
-                    <TabsTrigger value="avaliacoes-craniais" className="flex items-center gap-1">
-                      <FileText className="h-4 w-4" />
-                      Avaliações Craniais
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                {isMobile ? (
+                  <div className="p-4">
+                    <AnimatedProntuarioSelect
+                      value={activeTab}
+                      onChange={setActiveTab}
+                    />
+                  </div>
+                ) : (
+                  <div className="px-6">
+                    <TabsList className="w-full justify-start">
+                      <TabsTrigger value="dados-pessoais" className="flex items-center gap-1">
+                        <User className="h-4 w-4" />
+                        Dados Pessoais
+                      </TabsTrigger>
+                      <TabsTrigger value="historico-medico" className="flex items-center gap-1">
+                        <FileText className="h-4 w-4" />
+                        Histórico Médico
+                      </TabsTrigger>
+                      <TabsTrigger value="consultas" className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        Consultas
+                      </TabsTrigger>
+                      <TabsTrigger value="avaliacoes-craniais" className="flex items-center gap-1">
+                        <FileText className="h-4 w-4" />
+                        Avaliações Craniais
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+                )}
                 <Separator className="my-0" />
                 <TabsContent value="dados-pessoais" className="p-6">
                   <DadosPessoaisTab paciente={paciente} prontuario={prontuario} />
