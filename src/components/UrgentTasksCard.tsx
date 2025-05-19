@@ -186,7 +186,7 @@ export function UrgentTasksCard() {
   };
 
   return (
-    <Card className="h-full">
+    <Card className="h-full max-h-[350px] overflow-y-auto flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center">
           <Clock className="h-5 w-5 mr-2 text-amber-500" />
@@ -194,7 +194,7 @@ export function UrgentTasksCard() {
         </CardTitle>
         <CardDescription>Tarefas que precisam de atenção imediata</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex justify-center items-center text-muted-foreground py-6">
             <Loader2 className="h-6 w-6 animate-spin mr-2" />
@@ -288,7 +288,7 @@ export function UrgentTasksCard() {
               );
             })}
             
-            <div className="text-center pt-2">
+            <div className="text-center pt-2 pb-1">
               <Button
                 variant="outline"
                 onClick={() => navigate("/tarefas")}
