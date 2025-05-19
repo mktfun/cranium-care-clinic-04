@@ -20,7 +20,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatsCard
           title="Pacientes"
-          value="132"
+          value={132}
           description="Total de pacientes registrados"
           icon={<Users className="w-4 h-4 text-blue-600" />}
           trend={{
@@ -31,7 +31,7 @@ export default function Dashboard() {
         />
         <StatsCard
           title="Medições"
-          value="547"
+          value={547}
           description="Total de medições realizadas"
           icon={<BarChart3 className="w-4 h-4 text-emerald-600" />}
           trend={{
@@ -42,7 +42,7 @@ export default function Dashboard() {
         />
         <StatsCard
           title="Tarefas"
-          value="23"
+          value={23}
           description="Tarefas em andamento"
           icon={<CalendarCheck className="w-4 h-4 text-amber-600" />}
           trend={{
@@ -83,7 +83,6 @@ export default function Dashboard() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <PacienteCard
-          id="1"
           nome="Ana Clara Silva"
           idade="6 meses"
           sexo="F"
@@ -92,7 +91,6 @@ export default function Dashboard() {
           ultimaMedicao="18/05/2023"
         />
         <PacienteCard
-          id="2"
           nome="Lucas Oliveira"
           idade="3 meses"
           sexo="M"
@@ -101,7 +99,6 @@ export default function Dashboard() {
           ultimaMedicao="20/05/2023"
         />
         <PacienteCard
-          id="3"
           nome="Sofia Cardoso"
           idade="8 meses"
           sexo="F"
@@ -110,7 +107,6 @@ export default function Dashboard() {
           ultimaMedicao="15/05/2023"
         />
         <PacienteCard
-          id="4"
           nome="Pedro Santos"
           idade="5 meses"
           sexo="M"
