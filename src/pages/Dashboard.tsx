@@ -16,6 +16,7 @@ import { MobileChartView } from "@/components/MobileChartView";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TrendData {
   value: number;
@@ -43,7 +44,7 @@ export default function Dashboard() {
   const [pacientesAlertaMesAtual, setPacientesAlertaMesAtual] = useState(0);
   const [trendPacientesAlerta, setTrendPacientesAlerta] = useState<TrendData | undefined>(undefined);
   const [percentualPacientesAlerta, setPercentualPacientesAlerta] = useState(0);
-  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleResize = () => {
@@ -380,12 +381,7 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Section - Responsive View */}
-      {isMobileView ? (
-        // Mobile View - Carousel of Clinic-Relevant Charts
-        <div className="mt-6">
-          <MobileChartView />
-        </div>
-      ) : (
+      {!isMobile ? (
         // Desktop View - Grid Layout with Clinic-Relevant Charts
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
           <div className="md:col-span-2">
@@ -396,7 +392,7 @@ export default function Dashboard() {
             <UrgentTasksCard />
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Featured Patients Section */}
       <div className="mt-6">

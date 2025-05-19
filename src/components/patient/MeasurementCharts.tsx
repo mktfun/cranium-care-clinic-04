@@ -7,6 +7,7 @@ import { ChevronUp, ChevronDown, ZoomIn, ZoomOut, ArrowLeftRight } from "lucide-
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { ProntuarioSelect } from "@/components/prontuario/ProntuarioSelect";
 
 interface MeasurementChartsProps {
   medicoes: any[];
@@ -43,6 +44,13 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
   if (medicoes.length === 0) {
     return null;
   }
+  
+  const chartOptions = [
+    { value: "indiceCraniano", label: "Índ. Craniano" },
+    { value: "cvai", label: "Plagiocefalia" },
+    { value: "diagonais", label: "Diagonais" },
+    { value: "perimetro", label: "Perímetro" }
+  ];
 
   return (
     <Card>
@@ -99,15 +107,29 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
       
       <CardContent className={chartsExpanded ? "transition-all duration-300 ease-in-out p-2 pt-0" : "h-0 overflow-hidden transition-all duration-300 ease-in-out"}>
         {chartsExpanded && (
-          <Tabs defaultValue={activeChartTab} value={activeChartTab} onValueChange={setActiveChartTab} className="w-full">
-            <TabsList className="mb-4 flex flex-wrap">
-              <TabsTrigger value="indiceCraniano" className={isMobile ? "text-xs py-1 px-2" : ""}>Índ. Craniano</TabsTrigger>
-              <TabsTrigger value="cvai" className={isMobile ? "text-xs py-1 px-2" : ""}>Plagiocefalia</TabsTrigger>
-              <TabsTrigger value="diagonais" className={isMobile ? "text-xs py-1 px-2" : ""}>Diagonais</TabsTrigger>
-              <TabsTrigger value="perimetro" className={isMobile ? "text-xs py-1 px-2" : ""}>Perímetro</TabsTrigger>
-            </TabsList>
+          <div className="w-full">
+            {isMobile ? (
+              <div className="mb-4">
+                <ProntuarioSelect
+                  value={activeChartTab}
+                  onChange={setActiveChartTab}
+                  options={chartOptions}
+                  placeholder="Selecione um parâmetro"
+                  className="w-full"
+                />
+              </div>
+            ) : (
+              <Tabs defaultValue={activeChartTab} value={activeChartTab} onValueChange={setActiveChartTab} className="w-full">
+                <TabsList className="mb-4 flex flex-wrap">
+                  <TabsTrigger value="indiceCraniano" className={isMobile ? "text-xs py-1 px-2" : ""}>Índ. Craniano</TabsTrigger>
+                  <TabsTrigger value="cvai" className={isMobile ? "text-xs py-1 px-2" : ""}>Plagiocefalia</TabsTrigger>
+                  <TabsTrigger value="diagonais" className={isMobile ? "text-xs py-1 px-2" : ""}>Diagonais</TabsTrigger>
+                  <TabsTrigger value="perimetro" className={isMobile ? "text-xs py-1 px-2" : ""}>Perímetro</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
             
-            <TabsContent value="indiceCraniano" className="mt-0">
+            <div className={activeChartTab === "indiceCraniano" ? "block" : "hidden"}>
               <div className="space-y-4">
                 {!isMobile && (
                 <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/20 dark:bg-gray-800/30">
@@ -138,9 +160,9 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                   />
                 </div>
               </div>
-            </TabsContent>
+            </div>
             
-            <TabsContent value="cvai" className="mt-0">
+            <div className={activeChartTab === "cvai" ? "block" : "hidden"}>
               <div className="space-y-4">
                 {!isMobile && (
                 <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/20 dark:bg-gray-800/30">
@@ -171,9 +193,9 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                   />
                 </div>
               </div>
-            </TabsContent>
+            </div>
             
-            <TabsContent value="diagonais" className="mt-0">
+            <div className={activeChartTab === "diagonais" ? "block" : "hidden"}>
               <div className="space-y-4">
                 {!isMobile && (
                 <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/20 dark:bg-gray-800/30">
@@ -204,9 +226,9 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                   />
                 </div>
               </div>
-            </TabsContent>
+            </div>
             
-            <TabsContent value="perimetro" className="mt-0">
+            <div className={activeChartTab === "perimetro" ? "block" : "hidden"}>
               <div className="space-y-4">
                 {!isMobile && (
                 <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/20 dark:bg-gray-800/30">
@@ -237,8 +259,8 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                   />
                 </div>
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
