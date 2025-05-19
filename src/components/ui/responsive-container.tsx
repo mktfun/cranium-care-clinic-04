@@ -1,4 +1,3 @@
-
 import React from "react";
 import { cn } from "@/lib/utils";
 import { useIsMobile, useBreakpoint } from "@/hooks/use-mobile";
@@ -77,7 +76,7 @@ export function ResponsiveTable({
       "w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent", 
       className
     )}>
-      <div className={cn("min-w-[500px]")} style={{ minWidth }}>
+      <div style={{ minWidth }}>
         {showColumnsBreakpoint ? (
           <ResponsiveColumnsProvider 
             breakpoint={breakpoint} 

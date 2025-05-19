@@ -19,7 +19,7 @@ export default function Dashboard() {
       id: "1",
       nome: "Ana Clara Silva",
       dataNascimento: "2023-11-19", // 6 meses atrás
-      idadeEmMeses: 6,
+      idadeEmMeses: 6, // Changed from string to number
       ultimaMedicao: {
         data: "2023-05-18",
         status: "moderada" as const,
@@ -30,7 +30,7 @@ export default function Dashboard() {
       id: "2",
       nome: "Lucas Oliveira",
       dataNascimento: "2024-02-19", // 3 meses atrás
-      idadeEmMeses: 3,
+      idadeEmMeses: 3, // Changed from string to number
       ultimaMedicao: {
         data: "2023-05-20",
         status: "leve" as const,
@@ -41,7 +41,7 @@ export default function Dashboard() {
       id: "3",
       nome: "Sofia Cardoso",
       dataNascimento: "2023-09-19", // 8 meses atrás
-      idadeEmMeses: 8,
+      idadeEmMeses: 8, // Changed from string to number
       ultimaMedicao: {
         data: "2023-05-15",
         status: "moderada" as const,
@@ -52,7 +52,7 @@ export default function Dashboard() {
       id: "4",
       nome: "Pedro Santos",
       dataNascimento: "2023-12-19", // 5 meses atrás
-      idadeEmMeses: 5,
+      idadeEmMeses: 5, // Changed from string to number
       ultimaMedicao: {
         data: "2023-05-19",
         status: "leve" as const,
