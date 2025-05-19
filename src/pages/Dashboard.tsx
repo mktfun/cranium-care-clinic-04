@@ -47,17 +47,6 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobileView(window.innerWidth < 768);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
-  useEffect(() => {
     async function carregarDados() {
       try {
         setCarregando(true);
