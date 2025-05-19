@@ -110,27 +110,26 @@ export default function ProntuarioMedico() {
   
   return (
     <div className="space-y-6 animate-fade-in p-4 md:p-6">
-      {/* Cabeçalho */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate(`/pacientes/${id}`)}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h2 className="text-3xl font-bold">{paciente.nome}</h2>
-            <p className="text-muted-foreground">
-              {idadeAtual} • Nasc.: {formatarData(paciente.data_nascimento)}
-            </p>
-          </div>
+      {/* Cabeçalho centralizado com apenas uma seta */}
+      <div className="flex flex-col items-center mb-2">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate(`/pacientes/${id}`)}
+          className="mb-2"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
+        <div className="text-center">
+          <h2 className="text-3xl font-bold">{paciente.nome}</h2>
+          <p className="text-muted-foreground">
+            {idadeAtual} • Nasc.: {formatarData(paciente.data_nascimento)}
+          </p>
         </div>
-        
+
         {!prontuario && (
           <Button 
-            className="flex items-center gap-2 bg-turquesa hover:bg-turquesa/90"
+            className="flex items-center gap-2 bg-turquesa hover:bg-turquesa/90 mt-4"
             onClick={() => setIsDialogOpen(true)}
           >
             <FilePlus className="h-4 w-4" />
