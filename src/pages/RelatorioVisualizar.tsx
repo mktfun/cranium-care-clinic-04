@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react"; // Adicionar useRef
+
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { formatAge } from "@/lib/age-utils";
@@ -14,6 +15,9 @@ import { RelatorioFooter } from "@/components/relatorio/RelatorioFooter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileReportControls } from "@/components/relatorio/MobileReportControls";
+import { cn } from "@/lib/utils";
 
 export default function RelatorioVisualizar() {
   const { id, medicaoId } = useParams<{ id: string, medicaoId: string }>();
@@ -22,7 +26,12 @@ export default function RelatorioVisualizar() {
   const [medicoes, setMedicoes] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [modoConsolidado, setModoConsolidado] = useState(false);
-  const relatorioRef = useRef<HTMLDivElement>(null); // Criar a ref
+  const relatorioRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  
+  // Estados para controle de zoom e tela cheia
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   useEffect(() => {
     async function fetchPacienteData() {
@@ -70,6 +79,41 @@ export default function RelatorioVisualizar() {
     
     fetchPacienteData();
   }, [id, navigate]);
+  
+  // Funções para controle de zoom e tela cheia
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.1, 2));
+  };
+  
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.1, 0.5));
+  };
+  
+  const handleResetZoom = () => {
+    setZoomLevel(1);
+  };
+  
+  const handleFullscreen = () => {
+    setIsFullscreen(prev => !prev);
+    
+    if (!isFullscreen) {
+      // Scroll to top when entering fullscreen
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+  
+  // Efeito para bloquear scroll da página quando em tela cheia
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreen]);
   
   if (carregando) {
     return (
@@ -140,7 +184,12 @@ export default function RelatorioVisualizar() {
     : { asymmetryType: "Normal" as AsymmetryType, severityLevel: "normal" as SeverityLevel };
   
   const handleVoltar = () => {
-    navigate(`/pacientes/${id}`);
+    if (isFullscreen) {
+      setIsFullscreen(false);
+      setZoomLevel(1);
+    } else {
+      navigate(`/pacientes/${id}`);
+    }
   };
 
   const handleToggleModo = () => {
@@ -148,164 +197,189 @@ export default function RelatorioVisualizar() {
   };
 
   return (
-    // Adicionar a ref e um ID ao div principal do relatório
-    <div ref={relatorioRef} id="relatorio-para-exportar" className="space-y-6 animate-fade-in max-w-4xl mx-auto print:mx-0 bg-white p-4 print:p-0">
-      <RelatorioHeader 
-        pacienteNome={paciente.nome}
-        idadeAtual={idadeAtual}
-        dataFormatada={medicao?.data ? formatarData(medicao.data) : undefined}
-        modoConsolidado={modoConsolidado}
-        onModoChange={handleToggleModo}
-        onVoltar={handleVoltar}
-        relatorioElementId="relatorio-para-exportar" // Passar o ID para o header
-      />
-      
-      {/* ... (restante do conteúdo do relatório como estava) */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <PacienteDadosCard 
-          nome={paciente.nome}
+    <div 
+      className={cn(
+        "animate-fade-in transition-all duration-300 print:p-0",
+        isFullscreen 
+          ? "fixed inset-0 z-50 bg-background overflow-y-auto" 
+          : "space-y-6 max-w-4xl mx-auto print:mx-0 bg-white p-4"
+      )}
+      style={{
+        transform: isMobile ? `scale(${zoomLevel})` : 'none',
+        transformOrigin: 'top center'
+      }}
+    >
+      <div 
+        ref={relatorioRef} 
+        id="relatorio-para-exportar" 
+        className={cn(
+          isFullscreen ? "pb-16" : ""
+        )}
+      >
+        <RelatorioHeader 
+          pacienteNome={paciente.nome}
           idadeAtual={idadeAtual}
-          dataNascimentoFormatada={formatarData(paciente.data_nascimento)}
-          sexo={paciente.sexo}
+          dataFormatada={medicao?.data ? formatarData(medicao.data) : undefined}
+          modoConsolidado={modoConsolidado}
+          onModoChange={handleToggleModo}
+          onVoltar={handleVoltar}
+          relatorioElementId="relatorio-para-exportar"
         />
         
-        {!modoConsolidado && medicao && (
-          <ResumoAvaliacaoCard 
-            dataFormatada={formatarData(medicao.data)}
-            idadeNaAvaliacao={formatAge(paciente.data_nascimento, medicao.data)}
-            severityLevel={severityLevel}
-            asymmetryType={asymmetryType}
+        {isMobile && (
+          <MobileReportControls 
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onReset={handleResetZoom}
+            onFullscreen={handleFullscreen}
+            isFullscreen={isFullscreen}
           />
         )}
-      </div>
-      
-      {modoConsolidado ? (
+        
+        <div className="grid gap-6 md:grid-cols-2">
+          <PacienteDadosCard 
+            nome={paciente.nome}
+            idadeAtual={idadeAtual}
+            dataNascimentoFormatada={formatarData(paciente.data_nascimento)}
+            sexo={paciente.sexo}
+          />
+          
+          {!modoConsolidado && medicao && (
+            <ResumoAvaliacaoCard 
+              dataFormatada={formatarData(medicao.data)}
+              idadeNaAvaliacao={formatAge(paciente.data_nascimento, medicao.data)}
+              severityLevel={severityLevel}
+              asymmetryType={asymmetryType}
+            />
+          )}
+        </div>
+        
+        {modoConsolidado ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Medições</CardTitle>
+              <CardDescription>Evolução cronológica das avaliações</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MedicoesHistoricoTable 
+                medicoes={todasMedicoes}
+                dataNascimento={paciente.data_nascimento}
+              />
+            </CardContent>
+          </Card>
+        ) : medicao ? (
+          <ParametrosCraniaisCard 
+            dataFormatada={formatarData(medicao.data)}
+            comprimento={medicao.comprimento}
+            largura={medicao.largura}
+            indiceCraniano={medicao.indice_craniano}
+            diagonalD={medicao.diagonal_d}
+            diagonalE={medicao.diagonal_e}
+            diferencaDiagonais={medicao.diferenca_diagonais}
+            cvai={medicao.cvai}
+            perimetroCefalico={medicao.perimetro_cefalico}
+          />
+        ) : null}
+        
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Evolução do Índice Craniano</CardTitle>
+                <CardDescription>
+                  O Índice Craniano mede a proporção entre largura e comprimento do crânio. 
+                  Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% 
+                  indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  <MedicaoLineChart 
+                    titulo="" 
+                    descricao="" 
+                    altura={350} 
+                    medicoes={medicoes}
+                    dataNascimento={paciente.data_nascimento}
+                    tipoGrafico="indiceCraniano"
+                    linhaCorTheme="rose"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Evolução da Plagiocefalia</CardTitle>
+                <CardDescription>
+                  O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana.
+                  Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa.
+                  A área verde representa a faixa de normalidade.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  <MedicaoLineChart 
+                    titulo="" 
+                    descricao="" 
+                    altura={350} 
+                    medicoes={medicoes}
+                    dataNascimento={paciente.data_nascimento}
+                    tipoGrafico="cvai"
+                    linhaCorTheme="amber"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
+                <CardDescription>
+                  O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte 
+                  mais protuberante do occipital. As linhas coloridas representam os percentis de referência 
+                  para {paciente.sexo === "M" ? "meninos" : "meninas"} da mesma idade,
+                  sendo P50 a média populacional.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  <MedicaoLineChart 
+                    titulo="" 
+                    descricao="" 
+                    altura={350} 
+                    medicoes={medicoes}
+                    dataNascimento={paciente.data_nascimento}
+                    tipoGrafico="perimetro"
+                    linhaCorTheme="blue"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        
+        {medicao && (
+          <RecomendacoesCard 
+            recomendacoes={medicao.recomendacoes}
+            severityLevel={severityLevel}
+          />
+        )}
+        
         <Card>
           <CardHeader>
             <CardTitle>Histórico de Medições</CardTitle>
-            <CardDescription>Evolução cronológica das avaliações</CardDescription>
+            <CardDescription>Todas as medições realizadas para este paciente</CardDescription>
           </CardHeader>
           <CardContent>
             <MedicoesHistoricoTable 
-              medicoes={todasMedicoes}
+              medicoes={medicoes}
               dataNascimento={paciente.data_nascimento}
             />
           </CardContent>
         </Card>
-      ) : medicao ? (
-        <ParametrosCraniaisCard 
-          dataFormatada={formatarData(medicao.data)}
-          comprimento={medicao.comprimento}
-          largura={medicao.largura}
-          indiceCraniano={medicao.indice_craniano}
-          diagonalD={medicao.diagonal_d}
-          diagonalE={medicao.diagonal_e}
-          diferencaDiagonais={medicao.diferenca_diagonais}
-          cvai={medicao.cvai}
-          perimetroCefalico={medicao.perimetro_cefalico}
-        />
-      ) : null}
-      
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução do Índice Craniano</CardTitle>
-              <CardDescription>
-                O Índice Craniano mede a proporção entre largura e comprimento do crânio. 
-                Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% 
-                indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <MedicaoLineChart 
-                  titulo="" 
-                  descricao="" 
-                  altura={350} 
-                  medicoes={medicoes}
-                  dataNascimento={paciente.data_nascimento}
-                  tipoGrafico="indiceCraniano"
-                  linhaCorTheme="rose"
-                />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução da Plagiocefalia</CardTitle>
-              <CardDescription>
-                O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana.
-                Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa.
-                A área verde representa a faixa de normalidade.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <MedicaoLineChart 
-                  titulo="" 
-                  descricao="" 
-                  altura={350} 
-                  medicoes={medicoes}
-                  dataNascimento={paciente.data_nascimento}
-                  tipoGrafico="cvai"
-                  linhaCorTheme="amber"
-                />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
-              <CardDescription>
-                O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte 
-                mais protuberante do occipital. As linhas coloridas representam os percentis de referência 
-                para {paciente.sexo === "M" ? "meninos" : "meninas"} da mesma idade,
-                sendo P50 a média populacional.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <MedicaoLineChart 
-                  titulo="" 
-                  descricao="" 
-                  altura={350} 
-                  sexoPaciente={paciente.sexo}
-                  medicoes={medicoes}
-                  dataNascimento={paciente.data_nascimento}
-                  tipoGrafico="perimetro"
-                  linhaCorTheme="blue"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        
+        <RelatorioFooter onVoltar={handleVoltar} />
       </div>
-      
-      {medicao && (
-        <RecomendacoesCard 
-          recomendacoes={medicao.recomendacoes}
-          severityLevel={severityLevel}
-        />
-      )}
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Medições</CardTitle>
-          <CardDescription>Todas as medições realizadas para este paciente</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <MedicoesHistoricoTable 
-            medicoes={medicoes}
-            dataNascimento={paciente.data_nascimento}
-          />
-        </CardContent>
-      </Card>
-      
-      <RelatorioFooter onVoltar={handleVoltar} />
     </div>
   );
 }
-
