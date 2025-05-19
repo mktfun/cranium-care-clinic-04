@@ -3,9 +3,9 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, RotateCcw, Maximize, MinusCircle, PlusCircle, ArrowLeftRight } from "lucide-react";
+import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 import { cn } from "@/lib/utils";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
-import { PediatricClinicalChart } from "@/components/PediatricClinicalChart";
 
 export function MobileChartView() {
   const [currentChartIndex, setCurrentChartIndex] = useState(0);
@@ -13,17 +13,12 @@ export function MobileChartView() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [scrollMode, setScrollMode] = useState<"free" | "locked">("free");
   
-  // Chart types defined - optimized for pediatric clinic context
+  // Define chart types available - now with clinic-relevant metrics only
   const chartTypes = [
     {
-      id: "statusDistribuicao",
-      title: "Status dos Pacientes",
-      description: "Distribuição de pacientes por severidade na avaliação craniana"
-    },
-    {
-      id: "idadeDistribuicao",
-      title: "Pacientes por Idade",
-      description: "Distribuição de pacientes por faixa etária"
+      id: "pacientesMedicoes",
+      title: "Pacientes x Medições",
+      description: "Comparativo entre pacientes registrados e medições realizadas"
     },
     {
       id: "medicoesPorDia",
@@ -31,9 +26,9 @@ export function MobileChartView() {
       description: "Frequência de medições nos últimos 7 dias"
     },
     {
-      id: "generoDistribuicao",
-      title: "Distribuição por Gênero",
-      description: "Distribuição de pacientes por gênero"
+      id: "statusDistribuicao",
+      title: "Status dos Pacientes",
+      description: "Distribuição de pacientes por status de avaliação"
     }
   ];
   
@@ -111,20 +106,16 @@ export function MobileChartView() {
           )}
           style={{ height: chartHeight }}
         >
-          {currentChart.id === "statusDistribuicao" && (
-            <PediatricClinicalChart altura={chartHeight - 10} tipo="status" />
-          )}
-          
-          {currentChart.id === "idadeDistribuicao" && (
-            <PediatricClinicalChart altura={chartHeight - 10} tipo="idade" />
+          {currentChart.id === "pacientesMedicoes" && (
+            <PacientesMedicoesChart altura={chartHeight - 10} />
           )}
           
           {currentChart.id === "medicoesPorDia" && (
             <MedicoesPorDiaChart altura={chartHeight - 10} />
           )}
           
-          {currentChart.id === "generoDistribuicao" && (
-            <PediatricClinicalChart altura={chartHeight - 10} tipo="sexo" />
+          {currentChart.id === "statusDistribuicao" && (
+            <StatusDistribuicaoChart altura={chartHeight - 10} />
           )}
         </div>
         
@@ -145,5 +136,40 @@ export function MobileChartView() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// New component for status distribution chart
+function StatusDistribuicaoChart({ altura = 300 }: { altura?: number }) {
+  // Using recharts for consistency with other charts
+  const statusData = [
+    { name: 'Normal', valor: 65, fill: '#10b981' },
+    { name: 'Leve', valor: 20, fill: '#f59e0b' },
+    { name: 'Moderado', valor: 10, fill: '#f97316' },
+    { name: 'Severo', valor: 5, fill: '#ef4444' },
+  ];
+
+  return (
+    <div className="flex flex-col items-center justify-center w-full h-full">
+      <div className="w-full max-w-md">
+        {statusData.map((item) => (
+          <div key={item.name} className="mb-3">
+            <div className="flex justify-between text-xs mb-1">
+              <span>{item.name}</span>
+              <span className="font-medium">{item.valor}%</span>
+            </div>
+            <div className="w-full bg-muted/30 rounded-full h-2.5">
+              <div 
+                className="h-2.5 rounded-full" 
+                style={{ width: `${item.valor}%`, backgroundColor: item.fill }}
+              />
+            </div>
+          </div>
+        ))}
+        <div className="text-xs text-center text-muted-foreground mt-4">
+          Distribuição dos pacientes por severidade na avaliação craniana
+        </div>
+      </div>
+    </div>
   );
 }

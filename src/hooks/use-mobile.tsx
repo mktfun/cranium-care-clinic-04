@@ -1,14 +1,14 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 export function useIsMobile(breakpoint: number = 768) {
   const [isMobile, setIsMobile] = useState<boolean>(false);
   
-  const checkIfMobile = useCallback(() => {
-    setIsMobile(window.innerWidth < breakpoint);
-  }, [breakpoint]);
-  
   useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < breakpoint);
+    };
+    
     // Verificar imediatamente
     checkIfMobile();
     
@@ -17,7 +17,7 @@ export function useIsMobile(breakpoint: number = 768) {
     
     // Cleanup
     return () => window.removeEventListener('resize', checkIfMobile);
-  }, [checkIfMobile]);
+  }, [breakpoint]);
   
   return isMobile;
 }
@@ -42,101 +42,4 @@ export function useBreakpoint() {
   }, []);
   
   return breakpoint;
-}
-
-// Hook para verificar se o dispositivo é realmente um dispositivo touch
-export function useTouchDevice() {
-  const [isTouch, setIsTouch] = useState<boolean>(false);
-  
-  useEffect(() => {
-    const detectTouch = () => {
-      setIsTouch(
-        'ontouchstart' in window || 
-        navigator.maxTouchPoints > 0 || 
-        (navigator as any).msMaxTouchPoints > 0
-      );
-    };
-    
-    detectTouch();
-  }, []);
-  
-  return isTouch;
-}
-
-// Hook para detectar a orientação do dispositivo
-export function useDeviceOrientation() {
-  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
-  
-  useEffect(() => {
-    const checkOrientation = () => {
-      if (window.innerHeight > window.innerWidth) {
-        setOrientation('portrait');
-      } else {
-        setOrientation('landscape');
-      }
-    };
-    
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', checkOrientation);
-    
-    return () => {
-      window.removeEventListener('resize', checkOrientation);
-      window.removeEventListener('orientationchange', checkOrientation);
-    };
-  }, []);
-  
-  return orientation;
-}
-
-// Hook para calcular a altura segura da tela em dispositivos móveis
-// Isso é útil para lidar com as barras de navegação e notch
-export function useSafeAreaInsets() {
-  const [insets, setInsets] = useState({
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  });
-  
-  useEffect(() => {
-    // Tenta obter os valores CSS para áreas seguras quando disponível
-    if (typeof window !== 'undefined' && window.CSS && window.CSS.supports) {
-      try {
-        const root = document.documentElement;
-        const computedStyle = getComputedStyle(root);
-        
-        setInsets({
-          top: parseInt(computedStyle.getPropertyValue('--sat') || '0', 10),
-          right: parseInt(computedStyle.getPropertyValue('--sar') || '0', 10),
-          bottom: parseInt(computedStyle.getPropertyValue('--sab') || '0', 10),
-          left: parseInt(computedStyle.getPropertyValue('--sal') || '0', 10)
-        });
-        
-        // Cria um MutationObserver para monitorar mudanças nas variáveis CSS
-        const observer = new MutationObserver(() => {
-          const style = getComputedStyle(root);
-          setInsets({
-            top: parseInt(style.getPropertyValue('--sat') || '0', 10),
-            right: parseInt(style.getPropertyValue('--sar') || '0', 10),
-            bottom: parseInt(style.getPropertyValue('--sab') || '0', 10),
-            left: parseInt(style.getPropertyValue('--sal') || '0', 10)
-          });
-        });
-        
-        observer.observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ['style']
-        });
-        
-        return () => observer.disconnect();
-      } catch (e) {
-        console.warn('Erro ao obter os safe area insets:', e);
-      }
-    }
-    // Fallback para valores padrão se não for possível obter os valores CSS
-    return () => {};
-  }, []);
-  
-  return insets;
 }
