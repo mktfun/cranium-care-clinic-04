@@ -7,14 +7,14 @@ export type ToasterToast = {
   title?: string;
   description?: string;
   action?: React.ReactNode;
-  variant?: "default" | "destructive" | "success";
+  variant?: "default" | "destructive" | "success" | "warning";
 };
 
 // Interface for toast options
 export type ToastOptions = {
   title?: React.ReactNode;
   description?: React.ReactNode;
-  variant?: "default" | "destructive" | "success";
+  variant?: "default" | "destructive" | "success" | "warning";
   [key: string]: any;
 };
 
@@ -51,6 +51,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           });
         } else if (variant === "success") {
           return sonnerToast.success(title as string, {
+            description,
+            ...props,
+          });
+        } else if (variant === "warning") {
+          return sonnerToast.warning(title as string, {
             description,
             ...props,
           });
@@ -91,6 +96,11 @@ export const toast = (options: ToastOptions) => {
     });
   } else if (variant === "success") {
     return sonnerToast.success(title as string, {
+      description,
+      ...props,
+    });
+  } else if (variant === "warning") {
+    return sonnerToast.warning(title as string, {
       description,
       ...props,
     });

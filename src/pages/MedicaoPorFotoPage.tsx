@@ -337,7 +337,7 @@ export default function MedicaoPorFotoPage() {
         toast({
           title: "Erro no perímetro cefálico",
           description: `${validation.message} - Ajuste a calibração ou corrija o valor manualmente na próxima tela.`,
-          variant: "warning",
+          variant: "destructive",
         });
       }
     }
