@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { formatAge } from "@/lib/age-utils";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface PacienteCardProps {
   paciente: {
@@ -55,46 +56,82 @@ export function PacienteCard({ paciente }: PacienteCardProps) {
   const truncateName = (name: string) => {
     return name.length > 20 ? name.substring(0, 20) + '...' : name;
   };
+
+  // Get initials for avatar
+  const getInitials = () => {
+    return paciente.nome
+      .split(' ')
+      .map(part => part.charAt(0))
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
+
+  // Get background color based on status
+  const getStatusColor = () => {
+    if (!paciente.ultimaMedicao) return 'bg-muted';
+    
+    switch (paciente.ultimaMedicao.status) {
+      case 'normal': return 'bg-green-100';
+      case 'leve': return 'bg-yellow-50';
+      case 'moderada': return 'bg-orange-50';
+      case 'severa': return 'bg-red-50';
+      default: return 'bg-card';
+    }
+  };
   
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-2">
+    <Card className={cn(
+      "h-full group transition-all duration-300 hover:shadow-md relative overflow-hidden border-primary/10 hover:border-primary/30",
+      getStatusColor()
+    )}>
+      {/* Animated gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      
+      <CardHeader className="pb-2 relative">
         <div className="flex justify-between items-start gap-2">
-          <CardTitle 
-            className="text-lg truncate" 
-            title={paciente.nome.length > 20 ? paciente.nome : undefined}
-          >
-            {truncateName(paciente.nome)}
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Avatar className="w-8 h-8 transition-transform group-hover:scale-110">
+              <AvatarFallback className="bg-primary/10 text-primary/90 text-xs">
+                {getInitials()}
+              </AvatarFallback>
+            </Avatar>
+            <CardTitle 
+              className="text-lg truncate transition-colors group-hover:text-primary/90" 
+              title={paciente.nome.length > 20 ? paciente.nome : undefined}
+            >
+              {truncateName(paciente.nome)}
+            </CardTitle>
+          </div>
           {paciente.ultimaMedicao ? (
             <StatusBadge 
               status={paciente.ultimaMedicao.status} 
               asymmetryType={paciente.ultimaMedicao.asymmetryType as any}
-              className="flex-shrink-0"
+              className="flex-shrink-0 transition-transform group-hover:scale-105"
             />
           ) : (
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md flex-shrink-0">
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md flex-shrink-0 transition-all group-hover:bg-muted/80">
               Sem medição
             </span>
           )}
         </div>
-        <div className="text-sm text-muted-foreground flex flex-wrap gap-1">
+        <div className="text-sm text-muted-foreground flex flex-wrap gap-1 transition-colors group-hover:text-foreground/70">
           <span className="whitespace-nowrap">{idadeAtual}</span>
           <span className="mx-1 hidden xs:inline">•</span> 
           <span className="whitespace-nowrap">Nasc.: {formatarData(paciente.dataNascimento)}</span>
         </div>
       </CardHeader>
-      <CardContent className="pb-2">
+      <CardContent className="pb-2 relative">
         <div className="flex items-center mt-1 gap-2">
-          <Calendar className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground truncate">
+          <Calendar className="h-4 w-4 flex-shrink-0 text-muted-foreground group-hover:text-primary/70 transition-colors" />
+          <span className="text-sm text-muted-foreground truncate group-hover:text-foreground/70 transition-colors">
             {paciente.ultimaMedicao 
               ? <>Última: {formatarData(paciente.ultimaMedicao.data)}</>
               : <>Sem medições</>
             }
             {diferencaDias && diferencaDias > 30 && (
               <span className={cn(
-                "ml-2 text-destructive font-medium",
+                "ml-2 font-medium transition-all",
                 diferencaDias > 60 ? "text-destructive" : "text-amber-600"
               )}>
                 ({diferencaDias} dias)
@@ -103,8 +140,11 @@ export function PacienteCard({ paciente }: PacienteCardProps) {
           </span>
         </div>
       </CardContent>
-      <CardFooter>
-        <Button asChild className="w-full bg-turquesa hover:bg-turquesa/90 h-9">
+      <CardFooter className="relative">
+        <Button 
+          asChild 
+          className="w-full bg-turquesa hover:bg-turquesa/90 h-9 transition-all duration-300 hover:shadow-md group-hover:translate-y-[-2px]"
+        >
           <Link to={`/pacientes/${paciente.id}`}>Ver detalhes</Link>
         </Button>
       </CardFooter>

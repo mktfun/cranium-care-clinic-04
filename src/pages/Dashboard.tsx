@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -279,22 +280,22 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 animate-fade-in p-4 md:p-6">
       <div>
-        <h2 className="text-3xl font-bold">Olá, {usuario?.nome.split(" ")[0] || "Doutor(a)"}</h2>
+        <h2 className="text-3xl font-bold transition-all duration-300 hover:text-primary">Olá, {usuario?.nome.split(" ")[0] || "Doutor(a)"}</h2>
         <p className="text-muted-foreground">
           Bem-vindo(a) de volta ao painel da {clinicaNome}. Confira o resumo dos seus pacientes.
         </p>
       </div>
 
       {/* Quick Actions Section */}
-      <Card className="mb-6">
+      <Card className="mb-6 border-primary/10 hover:border-primary/30 transition-all duration-300 group">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium">Ações Rápidas</CardTitle>
+          <CardTitle className="text-lg font-medium group-hover:text-primary/90 transition-colors">Ações Rápidas</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
             <Button 
               onClick={() => navigate('/pacientes/registro')}
-              className="bg-turquesa hover:bg-turquesa/90"
+              className="bg-turquesa hover:bg-turquesa/90 transition-all duration-300 hover:shadow-md transform hover:translate-y-[-2px]"
             >
               <Plus className="h-4 w-4 mr-2" />
               Novo Paciente
@@ -303,6 +304,7 @@ export default function Dashboard() {
               <Button 
                 onClick={() => handleQuickAction(pacientes[0]?.id)}
                 variant="outline"
+                className="transition-all duration-300 hover:border-primary/60 hover:bg-primary/5"
               >
                 <Camera className="h-4 w-4 mr-2" />
                 Nova Medição
@@ -320,6 +322,7 @@ export default function Dashboard() {
             <Button 
               onClick={() => navigate('/historico')}
               variant="outline"
+              className="transition-all duration-300 hover:border-primary/60 hover:bg-primary/5"
             >
               Ver Histórico
             </Button>
@@ -381,11 +384,16 @@ export default function Dashboard() {
             <UrgentTasksCard />
           </div>
         </div>
-      ) : null}
+      ) : (
+        // Mobile View - Only show UrgentTasksCard, hide charts
+        <div className="mt-6">
+          <UrgentTasksCard />
+        </div>
+      )}
 
       {/* Featured Patients Section */}
       <div className="mt-6">
-        <h3 className="text-lg font-medium mb-4">Pacientes em Destaque</h3>
+        <h3 className="text-lg font-medium mb-4 transition-colors hover:text-primary/90">Pacientes em Destaque</h3>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {pacientes.length > 0 ? (
             pacientes.slice(0,4).map((paciente) => (

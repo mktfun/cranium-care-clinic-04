@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ChevronDown } from "lucide-react";
 
 interface Option {
   value: string;
@@ -41,19 +42,33 @@ export function ConfiguracoesSelect({
         onValueChange={onChange}
         disabled={disabled}
       >
-        <SelectTrigger className="w-full transition-all duration-300 border-primary/20 hover:border-primary/60 focus:ring-primary/30">
-          <SelectValue placeholder={placeholder} />
+        <SelectTrigger 
+          className="w-full relative group overflow-hidden transition-all duration-300 border-primary/20 hover:border-primary/80 focus:ring-primary/40 bg-card hover:bg-card/90 shadow-sm hover:shadow"
+        >
+          <SelectValue 
+            placeholder={placeholder} 
+            className="transition-all duration-300"
+          />
+          <span className="absolute inset-y-0 right-3 flex items-center pointer-events-none group-hover:text-primary transition-colors">
+            <ChevronDown className="h-4 w-4 transition-transform duration-300 group-data-[state=open]:rotate-180" />
+          </span>
         </SelectTrigger>
-        <SelectContent className="animate-scale-in border-primary/20 bg-card shadow-md">
-          {options.map((option) => (
-            <SelectItem 
-              key={option.value} 
-              value={option.value}
-              className="transition-colors duration-200 hover:bg-primary/10 focus:bg-primary/10"
-            >
-              {option.label}
-            </SelectItem>
-          ))}
+        <SelectContent 
+          className="animate-scale-in border-primary/20 bg-card/95 backdrop-blur-sm shadow-md rounded-md overflow-hidden"
+          position="popper"
+          sideOffset={5}
+        >
+          <div className="max-h-[300px] overflow-y-auto p-1">
+            {options.map((option) => (
+              <SelectItem 
+                key={option.value} 
+                value={option.value}
+                className="rounded-sm my-0.5 transition-colors duration-200 hover:bg-primary/10 focus:bg-primary/15 data-[state=checked]:bg-primary/20 data-[state=checked]:font-medium cursor-pointer"
+              >
+                {option.label}
+              </SelectItem>
+            ))}
+          </div>
         </SelectContent>
       </Select>
     </div>
