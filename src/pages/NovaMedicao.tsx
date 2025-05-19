@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { toast } from "@/hooks/use-toast";
 import { formatAgeHeader } from "@/lib/age-utils";
-import { getCranialStatus } from "@/lib/cranial-utils";
+import { getCranialStatus, validatePerimetroCefalico } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Check, ArrowLeft } from "lucide-react";
 
@@ -34,6 +34,7 @@ export default function NovaMedicao() {
   const [indiceCraniano, setIndiceCraniano] = useState<number | null>(null);
   const [diferencaDiagonais, setDiferencaDiagonais] = useState<number | null>(null);
   const [cvai, setCvai] = useState<number | null>(null);
+  const [perimetroError, setPerimetroError] = useState<string | null>(null);
   
   useEffect(() => {
     async function loadPacienteData() {
@@ -118,6 +119,21 @@ export default function NovaMedicao() {
     }
   }, [comprimento, largura, diagonalD, diagonalE]);
   
+  // Validar o perímetro cefálico quando o valor muda
+  useEffect(() => {
+    if (perimetroCefalico && paciente) {
+      const valor = Number(perimetroCefalico);
+      const resultado = validatePerimetroCefalico(valor, paciente.data_nascimento);
+      if (!resultado.isValid) {
+        setPerimetroError(resultado.message || null);
+      } else {
+        setPerimetroError(null);
+      }
+    } else {
+      setPerimetroError(null);
+    }
+  }, [perimetroCefalico, paciente]);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -134,6 +150,21 @@ export default function NovaMedicao() {
       toast({
         title: "Erro",
         description: "Preencha todas as medidas obrigatórias e a data.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validar perímetro cefálico
+    const perimetroValidation = validatePerimetroCefalico(
+      Number(perimetroCefalico),
+      paciente.data_nascimento
+    );
+    
+    if (!perimetroValidation.isValid) {
+      toast({
+        title: "Erro no perímetro cefálico",
+        description: perimetroValidation.message,
         variant: "destructive",
       });
       return;
@@ -335,7 +366,11 @@ export default function NovaMedicao() {
                   required
                   value={perimetroCefalico}
                   onChange={(e) => setPerimetroCefalico(e.target.value)}
+                  className={perimetroError ? "border-red-500" : ""}
                 />
+                {perimetroError && (
+                  <p className="text-sm text-red-500">{perimetroError}</p>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -369,7 +404,11 @@ export default function NovaMedicao() {
                 </div>
               )}
               
-              <Button type="submit" className="w-full bg-turquesa hover:bg-turquesa/90">
+              <Button 
+                type="submit" 
+                className="w-full bg-turquesa hover:bg-turquesa/90"
+                disabled={!!perimetroError}
+              >
                 <Check className="h-4 w-4 mr-2" />
                 Salvar e Gerar Relatório
               </Button>

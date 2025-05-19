@@ -32,3 +32,18 @@ export function useIsMobileOrTabletPortrait(): boolean {
   const isTabletPortrait = useTabletPortraitQuery();
   return isMobile || isTabletPortrait;
 }
+
+// Funções para diferentes dispositivos e faixa etária para limites de perímetro cefálico
+export function useSizeLimits(idade: number): { min: number, max: number } {
+  if (idade <= 6) {
+    return { min: 320, max: 440 }; // 0-6 meses (mm)
+  } else if (idade <= 12) {
+    return { min: 400, max: 490 }; // 6-12 meses
+  } else if (idade <= 24) {
+    return { min: 450, max: 520 }; // 1-2 anos
+  } else if (idade <= 60) {
+    return { min: 480, max: 550 }; // 2-5 anos
+  } else {
+    return { min: 500, max: 650 }; // > 5 anos
+  }
+}
