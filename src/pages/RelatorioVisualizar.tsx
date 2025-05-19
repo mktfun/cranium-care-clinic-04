@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"; // Adicionar useRef
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { formatAge } from "@/lib/age-utils";
@@ -14,6 +14,11 @@ import { RelatorioFooter } from "@/components/relatorio/RelatorioFooter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ResponsiveReportChart } from "@/components/relatorio/ResponsiveReportChart";
+import { MobileChartNavigator } from "@/components/relatorio/MobileChartNavigator";
+import { Button } from "@/components/ui/button";
+import { LayoutGrid, Menu } from "lucide-react";
 
 export default function RelatorioVisualizar() {
   const { id, medicaoId } = useParams<{ id: string, medicaoId: string }>();
@@ -22,7 +27,9 @@ export default function RelatorioVisualizar() {
   const [medicoes, setMedicoes] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [modoConsolidado, setModoConsolidado] = useState(false);
-  const relatorioRef = useRef<HTMLDivElement>(null); // Criar a ref
+  const [modoSimplificado, setModoSimplificado] = useState(false);
+  const relatorioRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     async function fetchPacienteData() {
@@ -73,7 +80,6 @@ export default function RelatorioVisualizar() {
   
   if (carregando) {
     return (
-      // ... (código de carregamento existente)
       <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Skeleton className="h-10 w-64" />
@@ -92,7 +98,6 @@ export default function RelatorioVisualizar() {
   
   if (!paciente) {
     return (
-      // ... (código de paciente não encontrado existente)
       <div className="flex flex-col items-center justify-center h-full py-12">
         <p className="text-lg mb-4">Paciente não encontrado</p>
         <button 
@@ -115,7 +120,6 @@ export default function RelatorioVisualizar() {
   
   if (!medicao && !modoConsolidado && medicoes.length === 0) {
     return (
-      // ... (código de nenhuma medição encontrada existente)
       <div className="flex flex-col items-center justify-center h-full py-12">
         <p className="text-lg mb-4">Nenhuma medição encontrada para este paciente</p>
         <button 
@@ -146,9 +150,65 @@ export default function RelatorioVisualizar() {
   const handleToggleModo = () => {
     setModoConsolidado(!modoConsolidado);
   };
+  
+  const handleToggleModoSimplificado = () => {
+    setModoSimplificado(!modoSimplificado);
+  };
+  
+  // Prepare chart items for mobile navigation
+  const chartItems = [
+    {
+      id: "indiceCraniano",
+      title: "Evolução do Índice Craniano",
+      description: "O Índice Craniano mede a proporção entre largura e comprimento do crânio. A área verde representa a faixa de normalidade.",
+      content: (
+        <MedicaoLineChart 
+          titulo="" 
+          descricao="" 
+          altura={300} 
+          medicoes={medicoes}
+          dataNascimento={paciente.data_nascimento}
+          tipoGrafico="indiceCraniano"
+          linhaCorTheme="rose"
+        />
+      )
+    },
+    {
+      id: "cvai",
+      title: "Evolução da Plagiocefalia",
+      description: "O índice CVAI mede o grau de assimetria craniana. A área verde representa a faixa de normalidade.",
+      content: (
+        <MedicaoLineChart 
+          titulo="" 
+          descricao="" 
+          altura={300} 
+          medicoes={medicoes}
+          dataNascimento={paciente.data_nascimento}
+          tipoGrafico="cvai"
+          linhaCorTheme="amber"
+        />
+      )
+    },
+    {
+      id: "perimetro",
+      title: "Evolução do Perímetro Cefálico",
+      description: "O perímetro cefálico é o contorno da cabeça. As linhas coloridas representam os percentis de referência.",
+      content: (
+        <MedicaoLineChart 
+          titulo="" 
+          descricao="" 
+          altura={300} 
+          sexoPaciente={paciente.sexo}
+          medicoes={medicoes}
+          dataNascimento={paciente.data_nascimento}
+          tipoGrafico="perimetro"
+          linhaCorTheme="blue"
+        />
+      )
+    }
+  ];
 
   return (
-    // Adicionar a ref e um ID ao div principal do relatório
     <div ref={relatorioRef} id="relatorio-para-exportar" className="space-y-6 animate-fade-in max-w-4xl mx-auto print:mx-0 bg-white p-4 print:p-0">
       <RelatorioHeader 
         pacienteNome={paciente.nome}
@@ -157,10 +217,33 @@ export default function RelatorioVisualizar() {
         modoConsolidado={modoConsolidado}
         onModoChange={handleToggleModo}
         onVoltar={handleVoltar}
-        relatorioElementId="relatorio-para-exportar" // Passar o ID para o header
+        relatorioElementId="relatorio-para-exportar"
       />
       
-      {/* ... (restante do conteúdo do relatório como estava) */}
+      {/* Botão para alternar modo simplificado no mobile */}
+      {isMobile && (
+        <div className="flex justify-end mb-2 print:hidden">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleToggleModoSimplificado}
+            className="flex items-center gap-1"
+          >
+            {modoSimplificado ? (
+              <>
+                <LayoutGrid className="h-4 w-4 mr-1" />
+                Visualização Completa
+              </>
+            ) : (
+              <>
+                <Menu className="h-4 w-4 mr-1" />
+                Visualização Simples
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+      
       <div className="grid gap-6 md:grid-cols-2">
         <PacienteDadosCard 
           nome={paciente.nome}
@@ -207,81 +290,74 @@ export default function RelatorioVisualizar() {
       ) : null}
       
       <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução do Índice Craniano</CardTitle>
-              <CardDescription>
-                O Índice Craniano mede a proporção entre largura e comprimento do crânio. 
+        {isMobile && !modoSimplificado ? (
+          // Mobile chart navigator
+          <MobileChartNavigator
+            charts={chartItems}
+            defaultHeight={300}
+          />
+        ) : (
+          // Desktop or simplified mobile view with all charts
+          <div className="grid grid-cols-1 gap-6">
+            <ResponsiveReportChart
+              title="Evolução do Índice Craniano"
+              description="O Índice Craniano mede a proporção entre largura e comprimento do crânio. 
                 Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% 
-                indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <MedicaoLineChart 
-                  titulo="" 
-                  descricao="" 
-                  altura={350} 
-                  medicoes={medicoes}
-                  dataNascimento={paciente.data_nascimento}
-                  tipoGrafico="indiceCraniano"
-                  linhaCorTheme="rose"
-                />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução da Plagiocefalia</CardTitle>
-              <CardDescription>
-                O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana.
+                indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade."
+              defaultHeight={350}
+              mobileHeight={250}
+            >
+              <MedicaoLineChart 
+                titulo="" 
+                descricao="" 
+                altura={isMobile ? 250 : 350} 
+                medicoes={medicoes}
+                dataNascimento={paciente.data_nascimento}
+                tipoGrafico="indiceCraniano"
+                linhaCorTheme="rose"
+              />
+            </ResponsiveReportChart>
+            
+            <ResponsiveReportChart
+              title="Evolução da Plagiocefalia"
+              description="O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana.
                 Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa.
-                A área verde representa a faixa de normalidade.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <MedicaoLineChart 
-                  titulo="" 
-                  descricao="" 
-                  altura={350} 
-                  medicoes={medicoes}
-                  dataNascimento={paciente.data_nascimento}
-                  tipoGrafico="cvai"
-                  linhaCorTheme="amber"
-                />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
-              <CardDescription>
-                O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte 
+                A área verde representa a faixa de normalidade."
+              defaultHeight={350}
+              mobileHeight={250}
+            >
+              <MedicaoLineChart 
+                titulo="" 
+                descricao="" 
+                altura={isMobile ? 250 : 350} 
+                medicoes={medicoes}
+                dataNascimento={paciente.data_nascimento}
+                tipoGrafico="cvai"
+                linhaCorTheme="amber"
+              />
+            </ResponsiveReportChart>
+            
+            <ResponsiveReportChart
+              title="Evolução do Perímetro Cefálico"
+              description="O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte 
                 mais protuberante do occipital. As linhas coloridas representam os percentis de referência 
-                para {paciente.sexo === "M" ? "meninos" : "meninas"} da mesma idade,
-                sendo P50 a média populacional.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <MedicaoLineChart 
-                  titulo="" 
-                  descricao="" 
-                  altura={350} 
-                  sexoPaciente={paciente.sexo}
-                  medicoes={medicoes}
-                  dataNascimento={paciente.data_nascimento}
-                  tipoGrafico="perimetro"
-                  linhaCorTheme="blue"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                para meninos ou meninas da mesma idade, sendo P50 a média populacional."
+              defaultHeight={350}
+              mobileHeight={250}
+            >
+              <MedicaoLineChart 
+                titulo="" 
+                descricao="" 
+                altura={isMobile ? 250 : 350} 
+                sexoPaciente={paciente.sexo}
+                medicoes={medicoes}
+                dataNascimento={paciente.data_nascimento}
+                tipoGrafico="perimetro"
+                linhaCorTheme="blue"
+              />
+            </ResponsiveReportChart>
+          </div>
+        )}
       </div>
       
       {medicao && (
@@ -308,4 +384,3 @@ export default function RelatorioVisualizar() {
     </div>
   );
 }
-
