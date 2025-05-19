@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { 
   Card, 
@@ -22,6 +21,8 @@ import { Loader2, Download, UserPlus, UserMinus, Check, X, UserX, Mail, Shield, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import AparenciaTab from "@/components/configuracoes/AparenciaTab";
 import { useNavigate } from "react-router-dom";
+import { ConfiguracoesTab } from "@/components/configuracoes/ConfiguracoesTab";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface Usuario {
   id: string;
@@ -89,6 +90,8 @@ export default function Configuracoes() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const navigate = useNavigate();
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [activeTab, setActiveTab] = useState("perfil");
 
   // Estados para colaboradores - usando mock data
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
@@ -598,14 +601,18 @@ export default function Configuracoes() {
     <div className="space-y-6 animate-fade-in">
       <h2 className="text-3xl font-bold tracking-tight">Configurações</h2>
       
-      <Tabs defaultValue="perfil" className="space-y-6">
-        <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
-          <TabsTrigger value="perfil">Perfil</TabsTrigger>
-          <TabsTrigger value="conta">Conta</TabsTrigger>
-          <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
-          <TabsTrigger value="aparencia">Aparência</TabsTrigger>
-          <TabsTrigger value="colaboradores">Colaboradores</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        {isMobile ? (
+          <ConfiguracoesTab value={activeTab} onChange={setActiveTab} />
+        ) : (
+          <TabsList className="grid grid-cols-5 w-full">
+            <TabsTrigger value="perfil">Perfil</TabsTrigger>
+            <TabsTrigger value="conta">Conta</TabsTrigger>
+            <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
+            <TabsTrigger value="aparencia">Aparência</TabsTrigger>
+            <TabsTrigger value="colaboradores">Colaboradores</TabsTrigger>
+          </TabsList>
+        )}
         
         <TabsContent value="perfil" className="space-y-6">
           <Card className="animate-fade-in">
@@ -1049,4 +1056,3 @@ export default function Configuracoes() {
     </div>
   );
 }
-
