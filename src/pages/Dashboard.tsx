@@ -13,6 +13,54 @@ import { PatientTasks } from "@/components/PatientTasks";
 export default function Dashboard() {
   const isMobile = useIsMobile();
 
+  // Dados de pacientes formatados para o componente PacienteCard
+  const pacientesMock = [
+    {
+      id: "1",
+      nome: "Ana Clara Silva",
+      dataNascimento: "2023-11-19", // 6 meses atrás
+      idadeEmMeses: 6,
+      ultimaMedicao: {
+        data: "2023-05-18",
+        status: "moderada" as const,
+        asymmetryType: "plagiocefalia" as const
+      }
+    },
+    {
+      id: "2",
+      nome: "Lucas Oliveira",
+      dataNascimento: "2024-02-19", // 3 meses atrás
+      idadeEmMeses: 3,
+      ultimaMedicao: {
+        data: "2023-05-20",
+        status: "leve" as const,
+        asymmetryType: "plagiocefalia" as const
+      }
+    },
+    {
+      id: "3",
+      nome: "Sofia Cardoso",
+      dataNascimento: "2023-09-19", // 8 meses atrás
+      idadeEmMeses: 8,
+      ultimaMedicao: {
+        data: "2023-05-15",
+        status: "moderada" as const,
+        asymmetryType: "braquicefalia" as const
+      }
+    },
+    {
+      id: "4",
+      nome: "Pedro Santos",
+      dataNascimento: "2023-12-19", // 5 meses atrás
+      idadeEmMeses: 5,
+      ultimaMedicao: {
+        data: "2023-05-19",
+        status: "leve" as const,
+        asymmetryType: "mista" as const
+      }
+    }
+  ];
+
   return (
     <div>
       <h1 className="text-2xl md:text-3xl font-semibold mb-6">Dashboard</h1>
@@ -82,38 +130,9 @@ export default function Dashboard() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <PacienteCard
-          nome="Ana Clara Silva"
-          idade="6 meses"
-          sexo="F"
-          statusPlagio="moderado"
-          statusBraq="normal"
-          ultimaMedicao="18/05/2023"
-        />
-        <PacienteCard
-          nome="Lucas Oliveira"
-          idade="3 meses"
-          sexo="M"
-          statusPlagio="leve"
-          statusBraq="normal"
-          ultimaMedicao="20/05/2023"
-        />
-        <PacienteCard
-          nome="Sofia Cardoso"
-          idade="8 meses"
-          sexo="F"
-          statusPlagio="normal"
-          statusBraq="moderado"
-          ultimaMedicao="15/05/2023"
-        />
-        <PacienteCard
-          nome="Pedro Santos"
-          idade="5 meses"
-          sexo="M"
-          statusPlagio="leve"
-          statusBraq="leve"
-          ultimaMedicao="19/05/2023"
-        />
+        {pacientesMock.map((paciente) => (
+          <PacienteCard key={paciente.id} paciente={paciente} />
+        ))}
       </div>
     </div>
   );
