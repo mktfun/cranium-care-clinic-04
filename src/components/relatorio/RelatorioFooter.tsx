@@ -1,15 +1,20 @@
 
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 
 interface RelatorioFooterProps {
   onVoltar: () => void;
   dataCriacao?: Date;
+  onExportPDF?: () => void;
 }
 
-export function RelatorioFooter({ onVoltar, dataCriacao = new Date() }: RelatorioFooterProps) {
+export function RelatorioFooter({ 
+  onVoltar, 
+  dataCriacao = new Date(),
+  onExportPDF 
+}: RelatorioFooterProps) {
   const [clinicaNome, setClinicaNome] = useState<string>("CraniumCare");
   const [profissionalNome, setProfissionalNome] = useState<string>("Dr. Exemplo");
   
@@ -39,14 +44,25 @@ export function RelatorioFooter({ onVoltar, dataCriacao = new Date() }: Relatori
 
   return (
     <>
-      <div className="print:hidden">
-        <Button variant="outline" onClick={onVoltar} className="mr-2">
+      <div className="print:hidden flex flex-wrap gap-2">
+        <Button variant="outline" onClick={onVoltar} size="sm">
           <ChevronLeft className="h-4 w-4 mr-2" /> Voltar
         </Button>
+        
+        {onExportPDF && (
+          <Button 
+            variant="default" 
+            onClick={onExportPDF} 
+            size="sm"
+            className="bg-turquesa hover:bg-turquesa/90"
+          >
+            <Download className="h-4 w-4 mr-2" /> Exportar PDF
+          </Button>
+        )}
       </div>
       
-      <div className="text-center border-t pt-4 text-xs text-muted-foreground mt-8 print:block hidden">
-        <p>Este relatório foi gerado pelo sistema CraniumCare em {dataCriacao.toLocaleDateString('pt-BR')}</p>
+      <div className="text-center border-t pt-4 text-xs text-muted-foreground mt-8 hidden print:block">
+        <p>Relatório gerado pelo sistema CraniumCare em {dataCriacao.toLocaleDateString('pt-BR')}</p>
         <p>Profissional responsável: {profissionalNome} • Clínica: {clinicaNome}</p>
         <p>Uso exclusivamente clínico</p>
       </div>

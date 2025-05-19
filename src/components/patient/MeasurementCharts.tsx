@@ -37,6 +37,9 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
     setScrollMode(prev => prev === "free" ? "locked" : "free");
   };
 
+  // Ajustar altura com base no dispositivo
+  const effectiveChartHeight = isMobile ? Math.min(chartHeight, window.innerHeight * 0.6) : chartHeight;
+
   if (medicoes.length === 0) {
     return null;
   }
@@ -56,13 +59,19 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
           <div className="flex items-center space-x-1">
             {isMobile && (
               <>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={decreaseHeight}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={decreaseHeight} title="Diminuir altura">
                   <ZoomOut className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={increaseHeight}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={increaseHeight} title="Aumentar altura">
                   <ZoomIn className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleScrollMode} title={scrollMode === "free" ? "Bloquear scroll" : "Liberar scroll"}>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7" 
+                  onClick={toggleScrollMode} 
+                  title={scrollMode === "free" ? "Bloquear scroll" : "Liberar scroll"}
+                >
                   <ArrowLeftRight className="h-3.5 w-3.5" />
                 </Button>
               </>
@@ -92,10 +101,10 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
         {chartsExpanded && (
           <Tabs defaultValue={activeChartTab} value={activeChartTab} onValueChange={setActiveChartTab} className="w-full">
             <TabsList className="mb-4 flex flex-wrap">
-              <TabsTrigger value="indiceCraniano" className={isMobile ? "text-xs py-1" : ""}>Índ. Craniano</TabsTrigger>
-              <TabsTrigger value="cvai" className={isMobile ? "text-xs py-1" : ""}>Plagiocefalia</TabsTrigger>
-              <TabsTrigger value="diagonais" className={isMobile ? "text-xs py-1" : ""}>Diagonais</TabsTrigger>
-              <TabsTrigger value="perimetro" className={isMobile ? "text-xs py-1" : ""}>Perímetro</TabsTrigger>
+              <TabsTrigger value="indiceCraniano" className={isMobile ? "text-xs py-1 px-2" : ""}>Índ. Craniano</TabsTrigger>
+              <TabsTrigger value="cvai" className={isMobile ? "text-xs py-1 px-2" : ""}>Plagiocefalia</TabsTrigger>
+              <TabsTrigger value="diagonais" className={isMobile ? "text-xs py-1 px-2" : ""}>Diagonais</TabsTrigger>
+              <TabsTrigger value="perimetro" className={isMobile ? "text-xs py-1 px-2" : ""}>Perímetro</TabsTrigger>
             </TabsList>
             
             <TabsContent value="indiceCraniano" className="mt-0">
@@ -115,7 +124,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                 <div 
                   className={cn(
                     "overflow-y-hidden",
-                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent" : "overflow-x-hidden touch-none"
+                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent momentum-scroll" : "overflow-x-hidden touch-none"
                   )}
                 >
                   <MedicaoLineChart 
@@ -125,7 +134,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                     tipoGrafico="indiceCraniano"
                     sexoPaciente={sexoPaciente}
                     linhaCorTheme="rose"
-                    altura={isMobile ? chartHeight : 400}
+                    altura={effectiveChartHeight}
                   />
                 </div>
               </div>
@@ -148,7 +157,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                 <div 
                   className={cn(
                     "overflow-y-hidden",
-                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent" : "overflow-x-hidden touch-none"
+                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent momentum-scroll" : "overflow-x-hidden touch-none"
                   )}
                 >
                   <MedicaoLineChart 
@@ -158,7 +167,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                     tipoGrafico="cvai"
                     sexoPaciente={sexoPaciente}
                     linhaCorTheme="amber"
-                    altura={isMobile ? chartHeight : 400}
+                    altura={effectiveChartHeight}
                   />
                 </div>
               </div>
@@ -181,7 +190,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                 <div 
                   className={cn(
                     "overflow-y-hidden",
-                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent" : "overflow-x-hidden touch-none"
+                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent momentum-scroll" : "overflow-x-hidden touch-none"
                   )}
                 >
                   <MedicaoLineChart 
@@ -191,7 +200,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                     tipoGrafico="diagonais"
                     sexoPaciente={sexoPaciente}
                     linhaCorTheme="purple"
-                    altura={isMobile ? chartHeight : 400}
+                    altura={effectiveChartHeight}
                   />
                 </div>
               </div>
@@ -214,7 +223,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                 <div 
                   className={cn(
                     "overflow-y-hidden",
-                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent" : "overflow-x-hidden touch-none"
+                    scrollMode === "free" ? "touch-auto overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent momentum-scroll" : "overflow-x-hidden touch-none"
                   )}
                 >
                   <MedicaoLineChart 
@@ -224,7 +233,7 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                     tipoGrafico="perimetro"
                     sexoPaciente={sexoPaciente}
                     linhaCorTheme="green"
-                    altura={isMobile ? chartHeight : 400}
+                    altura={effectiveChartHeight}
                   />
                 </div>
               </div>

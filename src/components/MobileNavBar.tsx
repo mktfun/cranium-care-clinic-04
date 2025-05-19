@@ -55,6 +55,7 @@ export function MobileNavBar() {
     }
   ];
   
+  // Só renderize em dispositivos móveis
   if (!isMobile) return null;
   
   return (
@@ -65,11 +66,12 @@ export function MobileNavBar() {
             key={item.path}
             onClick={() => handleNavigation(item.path)}
             className={cn(
-              "flex flex-col items-center justify-center py-3 px-1 w-full rounded-md transition-all duration-200 active:scale-95",
+              "flex flex-col items-center justify-center py-3 px-1 w-full rounded-md transition-all duration-200 active:scale-95 touch-action-manipulation",
               isActive(item.path) 
                 ? "text-primary bg-primary/5" 
                 : "text-muted-foreground hover:text-foreground"
             )}
+            aria-label={item.label}
           >
             {isActive(item.path) ? (
               <div className="relative animate-scale-in">

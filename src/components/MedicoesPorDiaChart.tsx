@@ -4,6 +4,7 @@ import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recha
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Função para obter os últimos 7 dias em formato DD/MM
 const obterUltimosSeteDias = () => {
@@ -32,6 +33,10 @@ interface MedicoesPorDiaChartProps {
 export function MedicoesPorDiaChart({ altura = 350 }: MedicoesPorDiaChartProps) {
   const [dados, setDados] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
+  
+  // Ajustar altura do gráfico com base no dispositivo
+  const chartHeight = isMobile ? Math.min(altura, 200) : altura;
   
   useEffect(() => {
     async function carregarDados() {
@@ -91,42 +96,72 @@ export function MedicoesPorDiaChart({ altura = 350 }: MedicoesPorDiaChartProps) 
     });
   };
   
+  // Formatar rótulos para dispositivos móveis
+  const formatXAxisTick = (value: string) => {
+    if (isMobile) {
+      // Em dispositivos móveis, mostrar apenas o dia
+      return value.split('/')[0];
+    }
+    return value;
+  };
+  
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Medições Realizadas</CardTitle>
-        <CardDescription>
-          Medições por dia nos últimos 7 dias
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">Medições Realizadas</CardTitle>
+        <CardDescription className="text-sm">
+          Últimos 7 dias
         </CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex justify-center items-center h-[350px]">
+          <div className="flex justify-center items-center" style={{height: chartHeight}}>
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={altura}>
-            <BarChart data={dados}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <BarChart 
+              data={dados}
+              margin={{ 
+                top: 5, 
+                right: isMobile ? 5 : 30, 
+                left: isMobile ? -15 : -20, 
+                bottom: isMobile ? 0 : 5 
+              }}
+            >
               <XAxis 
                 dataKey="dia" 
                 stroke="#888888" 
-                fontSize={12} 
+                fontSize={isMobile ? 10 : 12} 
                 tickLine={false} 
                 axisLine={false}
+                tickFormatter={formatXAxisTick}
+                tickMargin={isMobile ? 2 : 5}
               />
               <YAxis
                 stroke="#888888"
-                fontSize={12}
+                fontSize={isMobile ? 10 : 12}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(value) => `${value}`}
+                width={isMobile ? 20 : 30}
+                allowDecimals={false}
               />
-              <Tooltip />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'var(--background)', 
+                  borderColor: 'var(--border)',
+                  fontSize: isMobile ? '12px' : '14px',
+                  padding: isMobile ? '4px' : '8px',
+                  borderRadius: '4px'
+                }}
+              />
               <Bar 
                 dataKey="medicoes" 
                 fill="#276FBF" 
                 radius={[4, 4, 0, 0]} 
                 name="Medições"
+                barSize={isMobile ? 20 : 30}
               />
             </BarChart>
           </ResponsiveContainer>

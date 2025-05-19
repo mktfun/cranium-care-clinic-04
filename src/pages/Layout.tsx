@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
@@ -13,17 +14,19 @@ export default function Layout() {
   const location = useLocation();
   
   useEffect(() => {
-    // Colapsar sidebar automaticamente em tablet
-    const checkTablet = () => {
-      if (window.innerWidth < 1024 && window.innerWidth >= 768) {
+    // Colapsar sidebar automaticamente em tablet e mobile
+    const checkScreenSize = () => {
+      if (window.innerWidth < 1024) {
         setSidebarCollapsed(true);
+      } else {
+        setSidebarCollapsed(false);
       }
     };
     
-    checkTablet();
-    window.addEventListener('resize', checkTablet);
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
     
-    return () => window.removeEventListener('resize', checkTablet);
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
   
   // Auto-hide sidebar on mobile when navigating
@@ -67,11 +70,11 @@ export default function Layout() {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden">
+    <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
       {!isMobile && (
         <Sidebar 
           className={`fixed left-0 top-0 z-20 h-screen transition-all duration-300 ${
-            isMobile && sidebarCollapsed ? "-translate-x-full" : "translate-x-0"
+            sidebarCollapsed ? "lg:-translate-x-[180px]" : "translate-x-0"
           }`}
           collapsed={sidebarCollapsed}
           navigateToDashboard={navigateToDashboard}

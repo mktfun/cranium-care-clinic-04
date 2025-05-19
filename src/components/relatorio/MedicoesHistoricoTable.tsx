@@ -3,6 +3,8 @@ import { formatAge } from "@/lib/age-utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getCranialStatus } from "@/lib/cranial-utils";
+import { ResponsiveTable } from "@/components/ui/responsive-container";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MedicoesHistoricoTableProps {
   medicoes: any[];
@@ -10,6 +12,8 @@ interface MedicoesHistoricoTableProps {
 }
 
 export function MedicoesHistoricoTable({ medicoes, dataNascimento }: MedicoesHistoricoTableProps) {
+  const isMobile = useIsMobile();
+  
   const formatData = (dataString: string) => {
     const data = new Date(dataString);
     return data.toLocaleDateString('pt-BR');
@@ -20,16 +24,16 @@ export function MedicoesHistoricoTable({ medicoes, dataNascimento }: MedicoesHis
   }
   
   return (
-    <div className="overflow-x-auto">
+    <ResponsiveTable>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Data</TableHead>
             <TableHead>Idade</TableHead>
-            <TableHead>Perímetro</TableHead>
+            <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>Perímetro</TableHead>
             <TableHead>Índice Craniano</TableHead>
             <TableHead>CVAI</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -38,12 +42,14 @@ export function MedicoesHistoricoTable({ medicoes, dataNascimento }: MedicoesHis
             
             return (
               <TableRow key={medicao.id || `medicao-${Math.random()}`}>
-                <TableCell>{formatData(medicao.data)}</TableCell>
-                <TableCell>{formatAge(dataNascimento, medicao.data)}</TableCell>
-                <TableCell>{medicao.perimetro_cefalico ? `${medicao.perimetro_cefalico} mm` : '-'}</TableCell>
-                <TableCell>{medicao.indice_craniano.toFixed(1)}%</TableCell>
-                <TableCell>{medicao.cvai.toFixed(1)}%</TableCell>
-                <TableCell>
+                <TableCell className="whitespace-nowrap">{formatData(medicao.data)}</TableCell>
+                <TableCell className="whitespace-nowrap">{formatAge(dataNascimento, medicao.data)}</TableCell>
+                <TableCell className={`whitespace-nowrap ${isMobile ? "hidden sm:table-cell" : ""}`}>
+                  {medicao.perimetro_cefalico ? `${medicao.perimetro_cefalico} mm` : '-'}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">{medicao.indice_craniano.toFixed(1)}%</TableCell>
+                <TableCell className="whitespace-nowrap">{medicao.cvai.toFixed(1)}%</TableCell>
+                <TableCell className="text-right whitespace-nowrap">
                   <StatusBadge 
                     status={severityLevel}
                     asymmetryType={asymmetryType}
@@ -54,6 +60,6 @@ export function MedicoesHistoricoTable({ medicoes, dataNascimento }: MedicoesHis
           })}
         </TableBody>
       </Table>
-    </div>
+    </ResponsiveTable>
   );
 }
