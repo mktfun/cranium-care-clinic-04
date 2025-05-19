@@ -108,7 +108,7 @@ export default function Dashboard() {
             <PacientesMedicoesChart />
           </div>
           <div>
-            <PatientTasks />
+            <PatientTasks patientId="1" />
           </div>
         </div>
       )}
@@ -116,7 +116,7 @@ export default function Dashboard() {
       {isMobile && (
         <div className="grid grid-cols-1 gap-6 mb-6">
           <MobileChartView />
-          <PatientTasks />
+          <PatientTasks patientId="1" />
         </div>
       )}
       

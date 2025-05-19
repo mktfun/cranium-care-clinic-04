@@ -77,7 +77,7 @@ export function ResponsiveTable({
       "w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent", 
       className
     )}>
-      <div className={cn("min-w-[500px]", className)} style={{ minWidth }}>
+      <div className={cn("min-w-[500px]")} style={{ minWidth }}>
         {showColumnsBreakpoint ? (
           <ResponsiveColumnsProvider 
             breakpoint={breakpoint} 
