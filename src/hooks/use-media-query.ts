@@ -27,7 +27,7 @@ export function useMobileQuery(maxWidth: number = 768): boolean {
   return useMediaQuery(`(max-width: ${maxWidth}px)`);
 }
 
-export function useMobileOrTabletPortraitQuery(): boolean {
+export function useIsMobileOrTabletPortrait(): boolean {
   const isMobile = useMobileQuery();
   const isTabletPortrait = useTabletPortraitQuery();
   return isMobile || isTabletPortrait;

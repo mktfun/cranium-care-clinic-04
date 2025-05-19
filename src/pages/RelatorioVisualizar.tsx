@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"; // Adicionar useRef
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { formatAge } from "@/lib/age-utils";
@@ -14,6 +14,7 @@ import { RelatorioFooter } from "@/components/relatorio/RelatorioFooter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsMobileOrTabletPortrait } from "@/hooks/use-media-query";
 
 export default function RelatorioVisualizar() {
   const { id, medicaoId } = useParams<{ id: string, medicaoId: string }>();
@@ -22,7 +23,8 @@ export default function RelatorioVisualizar() {
   const [medicoes, setMedicoes] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [modoConsolidado, setModoConsolidado] = useState(false);
-  const relatorioRef = useRef<HTMLDivElement>(null); // Criar a ref
+  const relatorioRef = useRef<HTMLDivElement>(null);
+  const isMobileOrTablet = useIsMobileOrTabletPortrait();
   
   useEffect(() => {
     async function fetchPacienteData() {
@@ -73,7 +75,6 @@ export default function RelatorioVisualizar() {
   
   if (carregando) {
     return (
-      // ... (código de carregamento existente)
       <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Skeleton className="h-10 w-64" />
@@ -92,7 +93,6 @@ export default function RelatorioVisualizar() {
   
   if (!paciente) {
     return (
-      // ... (código de paciente não encontrado existente)
       <div className="flex flex-col items-center justify-center h-full py-12">
         <p className="text-lg mb-4">Paciente não encontrado</p>
         <button 
@@ -115,7 +115,6 @@ export default function RelatorioVisualizar() {
   
   if (!medicao && !modoConsolidado && medicoes.length === 0) {
     return (
-      // ... (código de nenhuma medição encontrada existente)
       <div className="flex flex-col items-center justify-center h-full py-12">
         <p className="text-lg mb-4">Nenhuma medição encontrada para este paciente</p>
         <button 
@@ -148,8 +147,11 @@ export default function RelatorioVisualizar() {
   };
 
   return (
-    // Adicionar a ref e um ID ao div principal do relatório
-    <div ref={relatorioRef} id="relatorio-para-exportar" className="space-y-6 animate-fade-in max-w-4xl mx-auto print:mx-0 bg-white p-4 print:p-0">
+    <div 
+      ref={relatorioRef} 
+      id="relatorio-para-exportar" 
+      className="space-y-6 animate-fade-in max-w-4xl mx-auto print:mx-0 bg-background p-4 print:p-0"
+    >
       <RelatorioHeader 
         pacienteNome={paciente.nome}
         idadeAtual={idadeAtual}
@@ -157,10 +159,9 @@ export default function RelatorioVisualizar() {
         modoConsolidado={modoConsolidado}
         onModoChange={handleToggleModo}
         onVoltar={handleVoltar}
-        relatorioElementId="relatorio-para-exportar" // Passar o ID para o header
+        relatorioElementId="relatorio-para-exportar"
       />
       
-      {/* ... (restante do conteúdo do relatório como estava) */}
       <div className="grid gap-6 md:grid-cols-2">
         <PacienteDadosCard 
           nome={paciente.nome}
@@ -308,4 +309,3 @@ export default function RelatorioVisualizar() {
     </div>
   );
 }
-

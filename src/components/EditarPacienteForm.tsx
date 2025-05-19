@@ -43,18 +43,41 @@ export function EditarPacienteForm({ paciente, onSuccess }: EditarPacienteFormPr
   useEffect(() => {
     if (paciente) {
       // Format responsaveis for display if it's an array
-      let responsaveisValue = paciente.responsaveis;
-      if (Array.isArray(responsaveisValue)) {
-        responsaveisValue = responsaveisValue
-          .map(r => `${r.nome}${r.telefone ? ` - Tel: ${r.telefone}` : ''}${r.email ? ` - Email: ${r.email}` : ''}${r.parentesco ? ` (${r.parentesco})` : ''}`)
-          .join('\n');
+      let responsaveisValue = "";
+      
+      if (paciente.responsaveis) {
+        if (Array.isArray(paciente.responsaveis)) {
+          responsaveisValue = paciente.responsaveis
+            .map(r => {
+              if (typeof r === 'object' && r !== null) {
+                const nome = r.nome || '';
+                const telefone = r.telefone ? ` - Tel: ${r.telefone}` : '';
+                const email = r.email ? ` - Email: ${r.email}` : '';
+                const parentesco = r.parentesco ? ` (${r.parentesco})` : '';
+                return `${nome}${telefone}${email}${parentesco}`;
+              } else {
+                return String(r);
+              }
+            })
+            .join('\n');
+        } else if (typeof paciente.responsaveis === 'string') {
+          responsaveisValue = paciente.responsaveis;
+        } else if (typeof paciente.responsaveis === 'object' && paciente.responsaveis !== null) {
+          // Handle case where it's a single object
+          const r = paciente.responsaveis;
+          const nome = r.nome || '';
+          const telefone = r.telefone ? ` - Tel: ${r.telefone}` : '';
+          const email = r.email ? ` - Email: ${r.email}` : '';
+          const parentesco = r.parentesco ? ` (${r.parentesco})` : '';
+          responsaveisValue = `${nome}${telefone}${email}${parentesco}`;
+        }
       }
 
       form.reset({
         nome: paciente.nome || "",
         data_nascimento: paciente.data_nascimento || "",
         sexo: paciente.sexo || "",
-        responsaveis: responsaveisValue || "",
+        responsaveis: responsaveisValue,
       });
     }
   }, [paciente, form]);
