@@ -40,6 +40,19 @@ export default function MedicaoPorFotoPage() {
     measurementMode,
     setMeasurementMode,
     perimetroError,
+    // Novos modos
+    apMode,
+    setApMode,
+    bpMode,
+    setBpMode,
+    pdMode,
+    setPdMode,
+    peMode,
+    setPeMode,
+    tragusEMode,
+    setTragusEMode,
+    tragusDMode,
+    setTragusDMode,
     handleCapturarFoto,
     handleUploadFoto,
     handleImageClick,
@@ -168,6 +181,18 @@ export default function MedicaoPorFotoPage() {
                 handleImageClick={handleImageClick}
                 calculateMeasurements={calculateMeasurements}
                 setMeasurements={setMeasurements}
+                apMode={apMode}
+                setApMode={setApMode}
+                bpMode={bpMode}
+                setBpMode={setBpMode}
+                pdMode={pdMode}
+                setPdMode={setPdMode}
+                peMode={peMode}
+                setPeMode={setPeMode}
+                tragusEMode={tragusEMode}
+                setTragusEMode={setTragusEMode}
+                tragusDMode={tragusDMode}
+                setTragusDMode={setTragusDMode}
               />
               
               <MeasurementResultsCard

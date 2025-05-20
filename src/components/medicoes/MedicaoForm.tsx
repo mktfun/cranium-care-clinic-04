@@ -20,6 +20,18 @@ type MedicaoFormProps = {
   setDiagonalE: (value: string) => void;
   perimetroCefalico: string;
   setPerimetroCefalico: (value: string) => void;
+  ap: string;
+  setAP: (value: string) => void;
+  bp: string;
+  setBP: (value: string) => void;
+  pd: string;
+  setPD: (value: string) => void;
+  pe: string;
+  setPE: (value: string) => void;
+  tragusE: string;
+  setTragusE: (value: string) => void;
+  tragusD: string;
+  setTragusD: (value: string) => void;
   observacoes: string;
   setObservacoes: (value: string) => void;
   indiceCraniano: number | null;
@@ -41,6 +53,18 @@ export default function MedicaoForm({
   setDiagonalE,
   perimetroCefalico,
   setPerimetroCefalico,
+  ap,
+  setAP,
+  bp,
+  setBP,
+  pd,
+  setPD,
+  pe,
+  setPE,
+  tragusE,
+  setTragusE,
+  tragusD,
+  setTragusD,
   observacoes,
   setObservacoes,
   indiceCraniano,
@@ -117,6 +141,70 @@ export default function MedicaoForm({
             {perimetroError && (
               <p className="text-sm text-red-500">{perimetroError}</p>
             )}
+          </div>
+
+          {/* Novas medidas adicionadas */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="ap">AP (mm)</Label>
+              <Input
+                id="ap"
+                type="number"
+                value={ap}
+                onChange={(e) => setAP(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bp">BP (mm)</Label>
+              <Input
+                id="bp"
+                type="number"
+                value={bp}
+                onChange={(e) => setBP(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="pd">PD (mm)</Label>
+              <Input
+                id="pd"
+                type="number"
+                value={pd}
+                onChange={(e) => setPD(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pe">PE (mm)</Label>
+              <Input
+                id="pe"
+                type="number"
+                value={pe}
+                onChange={(e) => setPE(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="tragusE">TRAGUS E (mm)</Label>
+              <Input
+                id="tragusE"
+                type="number"
+                value={tragusE}
+                onChange={(e) => setTragusE(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tragusD">TRAGUS D (mm)</Label>
+              <Input
+                id="tragusD"
+                type="number"
+                value={tragusD}
+                onChange={(e) => setTragusD(e.target.value)}
+              />
+            </div>
           </div>
           
           <div className="space-y-2">

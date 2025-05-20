@@ -35,6 +35,46 @@ export default function MeasurementResults({
           <p className="text-2xl font-bold">{measurements.diagonalE} mm</p>
         </div>
       </div>
+
+      {/* Novas medidas */}
+      {measurements.ap && measurements.bp && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">AP</p>
+            <p className="text-2xl font-bold">{measurements.ap} mm</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">BP</p>
+            <p className="text-2xl font-bold">{measurements.bp} mm</p>
+          </div>
+        </div>
+      )}
+      
+      {measurements.pd && measurements.pe && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">PD</p>
+            <p className="text-2xl font-bold">{measurements.pd} mm</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">PE</p>
+            <p className="text-2xl font-bold">{measurements.pe} mm</p>
+          </div>
+        </div>
+      )}
+
+      {measurements.tragusE && measurements.tragusD && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">TRAGUS E</p>
+            <p className="text-2xl font-bold">{measurements.tragusE} mm</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">TRAGUS D</p>
+            <p className="text-2xl font-bold">{measurements.tragusD} mm</p>
+          </div>
+        </div>
+      )}
       
       <div>
         <p className="text-sm text-muted-foreground">Perímetro Cefálico (estimado)</p>
@@ -53,13 +93,18 @@ export default function MeasurementResults({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Índice Craniano</p>
-            <p className="text-xl font-bold">
-              {calculateCranialIndex(measurements.largura, measurements.comprimento).toFixed(1)}%
+            <p className={`text-xl font-bold ${
+              calculateCranialIndex(measurements.largura, measurements.comprimento) >= 81 ? "text-green-500" : ""
+            }`}>
+              {calculateCranialIndex(measurements.largura, measurements.comprimento).toFixed(2)}%
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">CVAI</p>
-            <p className="text-xl font-bold">
+            <p className={`text-xl font-bold ${
+              calculateCVAI(measurements.diagonalD, measurements.diagonalE) >= 8.5 ? "text-red-500" : 
+              calculateCVAI(measurements.diagonalD, measurements.diagonalE) >= 6.25 ? "text-yellow-500" : "text-green-500"
+            }`}>
               {calculateCVAI(measurements.diagonalD, measurements.diagonalE).toFixed(2)}%
             </p>
           </div>

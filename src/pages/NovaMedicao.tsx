@@ -34,6 +34,13 @@ export default function NovaMedicao() {
   const [diagonalD, setDiagonalD] = useState("");
   const [diagonalE, setDiagonalE] = useState("");
   const [perimetroCefalico, setPerimetroCefalico] = useState("");
+  // Novas medidas adicionadas
+  const [ap, setAP] = useState("");
+  const [bp, setBP] = useState("");
+  const [pd, setPD] = useState("");
+  const [pe, setPE] = useState("");
+  const [tragusE, setTragusE] = useState("");
+  const [tragusD, setTragusD] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   
@@ -116,6 +123,13 @@ export default function NovaMedicao() {
       setDiagonalD(String(measurements.diagonalD || ''));
       setDiagonalE(String(measurements.diagonalE || ''));
       setPerimetroCefalico(String(measurements.perimetroCefalico || ''));
+      // Novas medidas
+      setAP(String(measurements.ap || ''));
+      setBP(String(measurements.bp || ''));
+      setPD(String(measurements.pd || ''));
+      setPE(String(measurements.pe || ''));
+      setTragusE(String(measurements.tragusE || ''));
+      setTragusD(String(measurements.tragusD || ''));
       setPhotoUrl(photoUrl);
     }
   }, [photoData]);
@@ -179,7 +193,14 @@ export default function NovaMedicao() {
           perimetro_cefalico: Number(perimetroCefalico),
           status: severityLevel,
           observacoes: observacoes || null,
-          recomendacoes: generateRecomendacoes(severityLevel)
+          recomendacoes: generateRecomendacoes(severityLevel),
+          // Novas medidas
+          ap: ap ? Number(ap) : null,
+          bp: bp ? Number(bp) : null,
+          pd: pd ? Number(pd) : null,
+          pe: pe ? Number(pe) : null,
+          tragus_e: tragusE ? Number(tragusE) : null,
+          tragus_d: tragusD ? Number(tragusD) : null
         };
         
         const { data, error } = await supabase
@@ -258,6 +279,18 @@ export default function NovaMedicao() {
           setDiagonalE={setDiagonalE}
           perimetroCefalico={perimetroCefalico}
           setPerimetroCefalico={setPerimetroCefalico}
+          ap={ap}
+          setAP={setAP}
+          bp={bp}
+          setBP={setBP}
+          pd={pd}
+          setPD={setPD}
+          pe={pe}
+          setPE={setPE}
+          tragusE={tragusE}
+          setTragusE={setTragusE}
+          tragusD={tragusD}
+          setTragusD={setTragusD}
           observacoes={observacoes}
           setObservacoes={setObservacoes}
           indiceCraniano={indiceCraniano}
