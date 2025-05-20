@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +16,9 @@ export default function NovaMedicao() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Check if coming from photo page with measurements or from manual button
+  const fromManualButton = location.state?.fromManualButton === true;
   const photoData = location.state?.photoProcessed ? location.state : null;
   
   const [paciente, setPaciente] = useState<any>(null);
@@ -61,8 +63,8 @@ export default function NovaMedicao() {
           
           setMedicaoData(new Date().toISOString().split("T")[0]);
           
-          // Redirect to photo measurement if no photoData is present
-          if (!photoData) {
+          // If coming from photo page without manually clicking the button, and no data, redirect
+          if (!photoData && !fromManualButton) {
             navigate(`/pacientes/${id}/medicao-por-foto`);
             return;
           }
@@ -81,7 +83,7 @@ export default function NovaMedicao() {
     }
     
     loadPacienteData();
-  }, [id, navigate, photoData]);
+  }, [id, navigate, photoData, fromManualButton]);
   
   // Processar dados da foto, se disponíveis
   useEffect(() => {
@@ -262,54 +264,59 @@ export default function NovaMedicao() {
     );
   }
   
-  // Now we only show the photo review page since we redirected
-  // those without photo data to the photo measurement page
+  // Show a different layout depending on where we came from
   return (
     <div className="space-y-6 animate-fade-in p-4 md:p-6">
       <div>
-        <h2 className="text-3xl font-bold">Revisão da Medição por Foto</h2>
+        <h2 className="text-3xl font-bold">
+          {photoData ? "Revisão da Medição por Foto" : "Medição Manual"}
+        </h2>
         <p className="text-muted-foreground">
           Paciente: {paciente.nome} • {formatAgeHeader(paciente.data_nascimento)}
         </p>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Foto do Paciente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {photoUrl ? (
-              <div className="border rounded-lg overflow-hidden">
-                <AspectRatio ratio={4/3}>
-                  <img 
-                    src={photoUrl} 
-                    alt="Foto processada do paciente" 
-                    className="w-full h-full object-cover"
-                  />
-                </AspectRatio>
-              </div>
-            ) : (
-              <div className="border rounded-lg p-12 flex items-center justify-center">
-                <p className="text-muted-foreground">Foto não disponível</p>
-              </div>
-            )}
-            
-            <Button 
-              onClick={handleVoltarParaFoto}
-              variant="outline"
-              className="mt-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar para captura de foto
-            </Button>
-          </CardContent>
-        </Card>
+        {photoData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Foto do Paciente</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {photoUrl ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <AspectRatio ratio={4/3}>
+                    <img 
+                      src={photoUrl} 
+                      alt="Foto processada do paciente" 
+                      className="w-full h-full object-cover"
+                    />
+                  </AspectRatio>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-12 flex items-center justify-center">
+                  <p className="text-muted-foreground">Foto não disponível</p>
+                </div>
+              )}
+              
+              <Button 
+                onClick={() => navigate(`/pacientes/${id}/medicao-por-foto`)}
+                variant="outline"
+                className="mt-4"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar para captura de foto
+              </Button>
+            </CardContent>
+          </Card>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Medidas Detectadas</CardTitle>
+              <CardTitle>
+                {photoData ? "Medidas Detectadas" : "Inserir Medidas Manuais"}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

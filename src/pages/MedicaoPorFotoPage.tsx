@@ -351,6 +351,23 @@ export default function MedicaoPorFotoPage() {
     });
   };
 
+  const handleGoToManualForm = () => {
+    // If we have measurements from the photo, pass them to manual form
+    if (measurements) {
+      navigate(`/pacientes/${id}/nova-medicao`, { 
+        state: { 
+          photoProcessed: true,
+          measurements,
+          photoUrl: uploadedImage,
+          fromManualButton: true  // Flag to indicate this came from manual button
+        } 
+      });
+    } else {
+      // If no measurements yet, just navigate to manual form
+      navigate(`/pacientes/${id}/nova-medicao`);
+    }
+  };
+
   const renderMeasurementOverlay = () => {
     if (!uploadedImage || !imageRef.current) return null;
 
@@ -785,7 +802,7 @@ export default function MedicaoPorFotoPage() {
         
         {activeStep === 1 && (
           <Button
-            onClick={() => navigate(`/pacientes/${id}/nova-medicao`)}
+            onClick={handleGoToManualForm}
             className="shadow-md hover:shadow-lg transition-all"
           >
             Voltar para Medição Manual
