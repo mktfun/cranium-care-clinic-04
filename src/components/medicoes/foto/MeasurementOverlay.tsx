@@ -72,7 +72,7 @@ export default function MeasurementOverlay({
           key={index}
           className={`absolute w-3 h-3 rounded-full z-10 ${
             point.label.startsWith('comprimento') ? 'bg-red-500' :
-            point.label.startsWith('largura') ? 'bg-blue-500' :
+            point.label.startsWith('largura') ? 'bg-textoEscuro' :  // Mudado de bg-blue-500 para bg-textoEscuro
             point.label.startsWith('diagonalD') ? 'bg-green-500' :
             'bg-purple-500'
           }`}
@@ -91,7 +91,7 @@ export default function MeasurementOverlay({
         
         const lineColor = 
           prefix === 'comprimento' ? 'bg-red-500' :
-          prefix === 'largura' ? 'bg-blue-500' :
+          prefix === 'largura' ? 'bg-textoEscuro' :  // Mudado de bg-blue-500 para bg-textoEscuro
           prefix === 'diagonalD' ? 'bg-green-500' :
           'bg-purple-500';
         

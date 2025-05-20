@@ -3,7 +3,7 @@ export default function MeasurementLegend() {
   const legends = [
     { color: "bg-yellow-500", label: "Amarelo - Calibração" },
     { color: "bg-red-500", label: "Vermelho - Comprimento" },
-    { color: "bg-blue-500", label: "Azul - Largura" },
+    { color: "bg-textoEscuro", label: "Preto - Largura" },     // Mudado de bg-blue-500 para bg-textoEscuro
     { color: "bg-green-500", label: "Verde - Diagonal D" },
     { color: "bg-purple-500", label: "Roxo - Diagonal E" }
   ];
