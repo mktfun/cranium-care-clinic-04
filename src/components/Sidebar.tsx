@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -114,7 +115,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
       <div className="flex items-center justify-between p-4 border-b">
         {!collapsed ? (
           <div 
-            className="font-semibold text-turquesa text-xl cursor-pointer flex items-center hover:text-turquesa/90 transition-colors"
+            className="font-semibold text-textoEscuro text-xl cursor-pointer flex items-center hover:text-textoEscuro/90 transition-colors"
             onClick={navigateToDashboard}
           >
             {clinicaNome}
@@ -124,7 +125,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             className="flex justify-center w-full cursor-pointer"
             onClick={navigateToDashboard}
           >
-            <div className="text-turquesa text-2xl font-bold">
+            <div className="text-textoEscuro text-2xl font-bold">
               {clinicaNome.charAt(0)}
             </div>
           </div>
@@ -143,7 +144,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             to="/dashboard" 
             className={cn(
               "sidebar-link transition-all duration-200 hover:bg-sidebar-accent/70", 
-              isActive("/dashboard") && "active"
+              isActive("/dashboard") ? "active bg-sidebar-accent text-textoEscuro font-medium" : "text-textoEscuro"
             )}
           >
             <LayoutDashboard className="h-5 w-5" />
@@ -154,7 +155,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             to="/pacientes" 
             className={cn(
               "sidebar-link transition-all duration-200 hover:bg-sidebar-accent/70", 
-              isActive("/pacientes") && "active"
+              isActive("/pacientes") ? "active bg-sidebar-accent text-textoEscuro font-medium" : "text-textoEscuro"
             )}
           >
             <Users className="h-5 w-5" />
@@ -165,7 +166,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             to="/historico" 
             className={cn(
               "sidebar-link transition-all duration-200 hover:bg-sidebar-accent/70", 
-              isActive("/historico") && "active"
+              isActive("/historico") ? "active bg-sidebar-accent text-textoEscuro font-medium" : "text-textoEscuro"
             )}
           >
             <Calendar className="h-5 w-5" />
@@ -176,7 +177,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             to="/relatorios" 
             className={cn(
               "sidebar-link transition-all duration-200 hover:bg-sidebar-accent/70", 
-              isActive("/relatorios") && "active"
+              isActive("/relatorios") ? "active bg-sidebar-accent text-textoEscuro font-medium" : "text-textoEscuro"
             )}
           >
             <BarChart className="h-5 w-5" />
@@ -187,7 +188,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             to="/configuracoes" 
             className={cn(
               "sidebar-link transition-all duration-200 hover:bg-sidebar-accent/70", 
-              isActive("/configuracoes") && "active"
+              isActive("/configuracoes") ? "active bg-sidebar-accent text-textoEscuro font-medium" : "text-textoEscuro"
             )}
           >
             <Settings className="h-5 w-5" />
