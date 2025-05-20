@@ -144,7 +144,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             to="/dashboard" 
             className={cn(
               "sidebar-link transition-all duration-200 hover:bg-sidebar-accent/70", 
-              isActive("/dashboard") ? "active bg-sidebar-accent text-textoEscuro font-medium" : "text-textoEscuro"
+              isActive("/dashboard") ? "active bg-sidebar-accent text-turquesa font-medium" : "text-textoEscuro"
             )}
           >
             <LayoutDashboard className="h-5 w-5" />
@@ -155,7 +155,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             to="/pacientes" 
             className={cn(
               "sidebar-link transition-all duration-200 hover:bg-sidebar-accent/70", 
-              isActive("/pacientes") ? "active bg-sidebar-accent text-textoEscuro font-medium" : "text-textoEscuro"
+              isActive("/pacientes") ? "active bg-sidebar-accent text-turquesa font-medium" : "text-textoEscuro"
             )}
           >
             <Users className="h-5 w-5" />
@@ -166,7 +166,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             to="/historico" 
             className={cn(
               "sidebar-link transition-all duration-200 hover:bg-sidebar-accent/70", 
-              isActive("/historico") ? "active bg-sidebar-accent text-textoEscuro font-medium" : "text-textoEscuro"
+              isActive("/historico") ? "active bg-sidebar-accent text-turquesa font-medium" : "text-textoEscuro"
             )}
           >
             <Calendar className="h-5 w-5" />
@@ -177,7 +177,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             to="/relatorios" 
             className={cn(
               "sidebar-link transition-all duration-200 hover:bg-sidebar-accent/70", 
-              isActive("/relatorios") ? "active bg-sidebar-accent text-textoEscuro font-medium" : "text-textoEscuro"
+              isActive("/relatorios") ? "active bg-sidebar-accent text-turquesa font-medium" : "text-textoEscuro"
             )}
           >
             <BarChart className="h-5 w-5" />
@@ -188,7 +188,7 @@ export function Sidebar({ className, collapsed = false, navigateToDashboard }: S
             to="/configuracoes" 
             className={cn(
               "sidebar-link transition-all duration-200 hover:bg-sidebar-accent/70", 
-              isActive("/configuracoes") ? "active bg-sidebar-accent text-textoEscuro font-medium" : "text-textoEscuro"
+              isActive("/configuracoes") ? "active bg-sidebar-accent text-turquesa font-medium" : "text-textoEscuro"
             )}
           >
             <Settings className="h-5 w-5" />
