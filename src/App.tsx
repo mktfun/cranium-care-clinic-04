@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from 'sonner';
@@ -23,6 +22,7 @@ import { NotificacoesPage } from "@/pages/NotificacoesPage";
 import MedicaoPorFotoPage from "@/pages/MedicaoPorFotoPage";
 import ProntuarioMedico from "@/pages/ProntuarioMedico";
 import HistoricoCompletoPaciente from "@/pages/HistoricoCompletoPaciente";
+import MultiAngleCapturaPage from "./pages/MultiAngleCapturaPage";
 
 function App() {
   return (
@@ -40,6 +40,7 @@ function App() {
             <Route path="/pacientes/:id" element={<DetalhePaciente />} />
             <Route path="/pacientes/:id/nova-medicao" element={<NovaMedicao />} />
             <Route path="/pacientes/:id/medicao-por-foto" element={<MedicaoPorFotoPage />} /> 
+            <Route path="/pacientes/:id/medicao-multi-angulo" element={<MultiAngleCapturaPage />} />
             <Route path="/pacientes/:id/relatorio" element={<RelatorioMedicao />} />
             <Route path="/pacientes/:id/relatorios/:medicaoId" element={<RelatorioVisualizar />} />
             <Route path="/pacientes/:id/prontuario" element={<ProntuarioMedico />} />

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ChevronLeft, FileText, Edit, History } from "lucide-react";
+import { Loader2, ChevronLeft, FileText, Edit, History, Plus, Camera } from "lucide-react";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
@@ -398,6 +398,34 @@ export default function DetalhePaciente() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <div className="flex flex-col md:flex-row gap-4 mt-4">
+        {/* Keep existing buttons */}
+        <Button
+          className="flex-1 bg-primary hover:bg-primary/90 text-white"
+          onClick={() => navigate(`/pacientes/${id}/nova-medicao`)}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Medição Manual
+        </Button>
+        
+        <Button
+          className="flex-1 bg-turquesa hover:bg-turquesa/90 text-white"
+          onClick={() => navigate(`/pacientes/${id}/medicao-por-foto`)}
+        >
+          <Camera className="w-4 h-4 mr-2" />
+          Medição por Foto
+        </Button>
+        
+        {/* Add new Multi-Angle button */}
+        <Button
+          className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+          onClick={() => navigate(`/pacientes/${id}/medicao-multi-angulo`)}
+        >
+          <Camera className="w-4 h-4 mr-2" />
+          Medição Multi-Ângulo
+        </Button>
+      </div>
     </div>
   );
 }
