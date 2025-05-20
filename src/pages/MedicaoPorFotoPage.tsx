@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -32,11 +31,14 @@ export default function MedicaoPorFotoPage() {
     activeStep,
     setActiveStep,
     measurementPoints,
+    setMeasurementPoints,
     calibrationFactor,
     calibrationMode,
     setCalibrationMode,
     calibrationStart,
+    setCalibrationStart,
     calibrationEnd,
+    setCalibrationEnd,
     measurementMode,
     setMeasurementMode,
     perimetroError,
@@ -53,6 +55,9 @@ export default function MedicaoPorFotoPage() {
     setTragusEMode,
     tragusDMode,
     setTragusDMode,
+    // Auto detection
+    autoDetectMeasurements,
+    autoDetecting,
     handleCapturarFoto,
     handleUploadFoto,
     handleImageClick,
@@ -181,6 +186,9 @@ export default function MedicaoPorFotoPage() {
                 handleImageClick={handleImageClick}
                 calculateMeasurements={calculateMeasurements}
                 setMeasurements={setMeasurements}
+                setCalibrationStart={setCalibrationStart}
+                setCalibrationEnd={setCalibrationEnd}
+                setMeasurementPoints={setMeasurementPoints}
                 apMode={apMode}
                 setApMode={setApMode}
                 bpMode={bpMode}
@@ -193,6 +201,8 @@ export default function MedicaoPorFotoPage() {
                 setTragusEMode={setTragusEMode}
                 tragusDMode={tragusDMode}
                 setTragusDMode={setTragusDMode}
+                autoDetectMeasurements={autoDetectMeasurements}
+                autoDetecting={autoDetecting}
               />
               
               <MeasurementResultsCard

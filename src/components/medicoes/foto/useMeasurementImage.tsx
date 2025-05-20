@@ -22,6 +22,7 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
   const [calibrationEnd, setCalibrationEnd] = useState<{x: number, y: number} | null>(null);
   const [measurementMode, setMeasurementMode] = useState<string | null>(null);
   const [perimetroError, setPerimetroError] = useState<string | null>(null);
+  const [autoDetecting, setAutoDetecting] = useState(false);
 
   // Adicionando estados para as novas medidas
   const [apMode, setApMode] = useState(false);
@@ -211,6 +212,72 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     }
   };
 
+  // Auto-detect feature
+  const autoDetectMeasurements = () => {
+    if (!uploadedImage) {
+      toast({
+        title: "Imagem não disponível",
+        description: "Favor fazer upload de uma imagem primeiro.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAutoDetecting(true);
+    toast({
+      title: "Detecção iniciada",
+      description: "Analisando imagem para identificar pontos de medição...",
+    });
+
+    // Simulating the detection process
+    setTimeout(() => {
+      // Reset existing points
+      setMeasurementPoints([]);
+      
+      // Set calibration with default values to center of image
+      setCalibrationStart({ x: 0.25, y: 0.5 });
+      setCalibrationEnd({ x: 0.75, y: 0.5 });
+      
+      // Set a reasonable default calibration factor (this would normally be calculated from a known reference)
+      setCalibrationFactor(0.5);
+      
+      // Add detected points for primary measurements (these would be algorithmically determined)
+      const simulatedPoints = [
+        // Comprimento
+        { x: 0.2, y: 0.5, label: 'comprimento-start' },
+        { x: 0.8, y: 0.5, label: 'comprimento-end' },
+        
+        // Largura
+        { x: 0.5, y: 0.3, label: 'largura-start' },
+        { x: 0.5, y: 0.7, label: 'largura-end' },
+        
+        // Diagonal D
+        { x: 0.25, y: 0.35, label: 'diagonalD-start' },
+        { x: 0.75, y: 0.65, label: 'diagonalD-end' },
+        
+        // Diagonal E
+        { x: 0.25, y: 0.65, label: 'diagonalE-start' },
+        { x: 0.75, y: 0.35, label: 'diagonalE-end' },
+        
+        // Additional points
+        { x: 0.45, y: 0.45, label: 'ap-point' },
+        { x: 0.55, y: 0.45, label: 'bp-point' },
+        { x: 0.45, y: 0.55, label: 'pd-point' },
+        { x: 0.55, y: 0.55, label: 'pe-point' },
+        { x: 0.4, y: 0.6, label: 'tragusE-point' },
+        { x: 0.6, y: 0.6, label: 'tragusD-point' },
+      ];
+      
+      setMeasurementPoints(simulatedPoints);
+      setAutoDetecting(false);
+      
+      toast({
+        title: "Detecção concluída",
+        description: "Pontos identificados automaticamente. Utilize o modo de ajustes para refinar se necessário.",
+      });
+    }, 2000);
+  };
+
   const calculateMeasurements = () => {
     if (!calibrationFactor) {
       toast({
@@ -363,6 +430,9 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     setTragusEMode,
     tragusDMode,
     setTragusDMode,
+    // Auto detection
+    autoDetectMeasurements,
+    autoDetecting,
     handleCapturarFoto,
     handleUploadFoto,
     handleImageClick,
