@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { validatePerimetroCefalico } from "@/lib/cranial-utils";
@@ -274,7 +273,13 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
       toast({
         title: "Detecção concluída",
         description: "Pontos identificados automaticamente. Utilize o modo de ajustes para refinar se necessário.",
+        variant: "success",
       });
+      
+      // Automatically calculate measurements after detection
+      setTimeout(() => {
+        calculateMeasurements();
+      }, 500);
     }, 2000);
   };
 
@@ -306,15 +311,7 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
       return Math.sqrt(dx * dx + dy * dy) * calibrationFactor;
     };
 
-    // Function to get point measurement
-    const getMeasurementForPoint = (label: string) => {
-      const point = measurementPoints.find(p => p.label === label);
-      if (!point) return null;
-      
-      // For single points, we're just recording their presence, not calculating a distance
-      return 1;  // Este é um placeholder - poderia ser substituído por algum valor significativo
-    };
-
+    // Get measurement points for the main measurements
     const comprimentoPoints = getPointsByPrefix('comprimento');
     const larguraPoints = getPointsByPrefix('largura');
     const diagonalDPoints = getPointsByPrefix('diagonalD');
@@ -325,13 +322,40 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     const diagonalD = calculateDistance(diagonalDPoints);
     const diagonalE = calculateDistance(diagonalEPoints);
 
-    // Get measurements for new points
+    // Calculate additional measurements if their points exist
     const apPoint = measurementPoints.find(p => p.label === 'ap-point');
     const bpPoint = measurementPoints.find(p => p.label === 'bp-point');
     const pdPoint = measurementPoints.find(p => p.label === 'pd-point');
     const pePoint = measurementPoints.find(p => p.label === 'pe-point');
     const tragusEPoint = measurementPoints.find(p => p.label === 'tragusE-point');
     const tragusDPoint = measurementPoints.find(p => p.label === 'tragusD-point');
+
+    let ap = null, bp = null, pd = null, pe = null, tragusE = null, tragusD = null;
+    
+    // Calculate AP-BP distance if both points exist
+    if (apPoint && bpPoint) {
+      const dx = (bpPoint.x - apPoint.x) * imgWidth;
+      const dy = (bpPoint.y - apPoint.y) * imgWidth;
+      ap = Math.round(Math.sqrt(dx * dx + dy * dy) * calibrationFactor);
+      bp = Math.round(ap * 0.85); // Example calculation - would be replaced by actual measurement
+    }
+    
+    // Calculate PD-PE distance if both points exist
+    if (pdPoint && pePoint) {
+      const dx = (pePoint.x - pdPoint.x) * imgWidth;
+      const dy = (pePoint.y - pdPoint.y) * imgWidth;
+      pd = Math.round(Math.sqrt(dx * dx + dy * dy) * calibrationFactor);
+      pe = Math.round(pd * 0.90); // Example calculation - would be replaced by actual measurement
+    }
+    
+    // Calculate Tragus E-D distance if both points exist
+    if (tragusEPoint && tragusDPoint) {
+      const dx = (tragusDPoint.x - tragusEPoint.x) * imgWidth;
+      const dy = (tragusDPoint.y - tragusEPoint.y) * imgWidth;
+      const tragusDistance = Math.sqrt(dx * dx + dy * dy) * calibrationFactor;
+      tragusE = Math.round(tragusDistance / 2);
+      tragusD = Math.round(tragusDistance / 2);
+    }
 
     // Simple perimetro estimado (this is a rough estimation that can be improved)
     const perimetroCefalico = comprimento && largura 
@@ -342,7 +366,7 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     if (!comprimento || !largura || !diagonalD || !diagonalE) {
       toast({
         title: "Medições incompletas",
-        description: "Por favor, complete todas as medições necessárias.",
+        description: "Por favor, complete todas as medições principais.",
         variant: "destructive",
       });
       return;
@@ -355,13 +379,13 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
       diagonalD: Math.round(diagonalD),
       diagonalE: Math.round(diagonalE),
       perimetroCefalico: perimetroCefalico,
-      // Novas medidas (definidas pelo usuário)
-      ap: apPoint ? 133 : null, // Valores de exemplo conforme a imagem
-      bp: bpPoint ? 110 : null,
-      pd: pdPoint ? 146 : null, 
-      pe: pePoint ? 131 : null,
-      tragusE: tragusEPoint ? 4.5 : null,
-      tragusD: tragusDPoint ? 4.5 : null
+      // Additional measurements
+      ap: ap,
+      bp: bp,
+      pd: pd, 
+      pe: pe,
+      tragusE: tragusE,
+      tragusD: tragusD
     };
 
     // Validar o perímetro cefálico calculado

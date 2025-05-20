@@ -94,7 +94,7 @@ export default function MeasurementResults({
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Índice Craniano</p>
             <p className={`text-xl font-bold ${
-              calculateCranialIndex(measurements.largura, measurements.comprimento) >= 81 ? "text-green-500" : ""
+              calculateCranialIndex(measurements.largura, measurements.comprimento) >= 81 ? "text-amber-500" : "text-green-600"
             }`}>
               {calculateCranialIndex(measurements.largura, measurements.comprimento).toFixed(2)}%
             </p>
@@ -102,8 +102,8 @@ export default function MeasurementResults({
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">CVAI</p>
             <p className={`text-xl font-bold ${
-              calculateCVAI(measurements.diagonalD, measurements.diagonalE) >= 8.5 ? "text-red-500" : 
-              calculateCVAI(measurements.diagonalD, measurements.diagonalE) >= 6.25 ? "text-yellow-500" : "text-green-500"
+              calculateCVAI(measurements.diagonalD, measurements.diagonalE) >= 8.75 ? "text-red-500" : 
+              calculateCVAI(measurements.diagonalD, measurements.diagonalE) >= 6.25 ? "text-amber-500" : "text-green-600"
             }`}>
               {calculateCVAI(measurements.diagonalD, measurements.diagonalE).toFixed(2)}%
             </p>

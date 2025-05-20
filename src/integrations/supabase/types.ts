@@ -157,6 +157,8 @@ export type Database = {
       }
       medicoes: {
         Row: {
+          ap: number | null
+          bp: number | null
           comprimento: number
           created_at: string | null
           cvai: number | null
@@ -169,13 +171,19 @@ export type Database = {
           largura: number
           observacoes: string | null
           paciente_id: string
+          pd: number | null
+          pe: number | null
           perimetro_cefalico: number | null
           recomendacoes: string[] | null
           status: Database["public"]["Enums"]["status_medicao"]
+          tragus_d: number | null
+          tragus_e: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          ap?: number | null
+          bp?: number | null
           comprimento: number
           created_at?: string | null
           cvai?: number | null
@@ -188,13 +196,19 @@ export type Database = {
           largura: number
           observacoes?: string | null
           paciente_id: string
+          pd?: number | null
+          pe?: number | null
           perimetro_cefalico?: number | null
           recomendacoes?: string[] | null
           status: Database["public"]["Enums"]["status_medicao"]
+          tragus_d?: number | null
+          tragus_e?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          ap?: number | null
+          bp?: number | null
           comprimento?: number
           created_at?: string | null
           cvai?: number | null
@@ -207,9 +221,13 @@ export type Database = {
           largura?: number
           observacoes?: string | null
           paciente_id?: string
+          pd?: number | null
+          pe?: number | null
           perimetro_cefalico?: number | null
           recomendacoes?: string[] | null
           status?: Database["public"]["Enums"]["status_medicao"]
+          tragus_d?: number | null
+          tragus_e?: number | null
           updated_at?: string | null
           user_id?: string
         }
