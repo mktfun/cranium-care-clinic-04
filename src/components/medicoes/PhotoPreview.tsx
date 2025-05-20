@@ -13,6 +13,11 @@ type PhotoPreviewProps = {
 export default function PhotoPreview({ photoUrl, pacienteId }: PhotoPreviewProps) {
   const navigate = useNavigate();
 
+  const handleNavigateToPhotoCapture = () => {
+    console.log("Navigating to photo capture page");
+    navigate(`/pacientes/${pacienteId}/medicao-por-foto`);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -36,7 +41,7 @@ export default function PhotoPreview({ photoUrl, pacienteId }: PhotoPreviewProps
         )}
         
         <Button 
-          onClick={() => navigate(`/pacientes/${pacienteId}/medicao-por-foto`)}
+          onClick={handleNavigateToPhotoCapture}
           variant="outline"
           className="mt-4"
         >

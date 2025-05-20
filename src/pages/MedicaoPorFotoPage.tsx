@@ -352,6 +352,8 @@ export default function MedicaoPorFotoPage() {
   };
 
   const handleGoToManualForm = () => {
+    console.log("Navigating to manual form with fromManualButton=true");
+    
     // If we have measurements from the photo, pass them to manual form
     if (measurements) {
       navigate(`/pacientes/${id}/nova-medicao`, { 
@@ -360,11 +362,15 @@ export default function MedicaoPorFotoPage() {
           measurements,
           photoUrl: uploadedImage,
           fromManualButton: true  // Flag to indicate this came from manual button
-        } 
+        },
+        replace: true  // Use replace to prevent back navigation to photo page
       });
     } else {
       // If no measurements yet, just navigate to manual form
-      navigate(`/pacientes/${id}/nova-medicao`);
+      navigate(`/pacientes/${id}/nova-medicao`, { 
+        state: { fromManualButton: true },
+        replace: true  // Use replace to prevent back navigation to photo page
+      });
     }
   };
 

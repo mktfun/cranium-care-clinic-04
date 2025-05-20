@@ -16,9 +16,14 @@ export default function NovaMedicao() {
   const navigate = useNavigate();
   const location = useLocation();
   
+  console.log("NovaMedicao - Location state:", location.state);
+  
   // Check if coming from photo page with measurements or from manual button
   const fromManualButton = location.state?.fromManualButton === true;
   const photoData = location.state?.photoProcessed ? location.state : null;
+  
+  console.log("fromManualButton:", fromManualButton);
+  console.log("photoData:", photoData);
   
   const [paciente, setPaciente] = useState<any>(null);
   const [loadingPaciente, setLoadingPaciente] = useState(true);
@@ -72,10 +77,18 @@ export default function NovaMedicao() {
           
           setMedicaoData(new Date().toISOString().split("T")[0]);
           
-          // If coming from photo page without manually clicking the button, and no data, redirect
+          // Fixed the redirection logic to respect fromManualButton
+          console.log("Checking navigation conditions");
+          console.log("photoData:", !!photoData);
+          console.log("fromManualButton:", fromManualButton);
+          
+          // Only redirect if there's no photo data AND we didn't explicitly come from manual button
           if (!photoData && !fromManualButton) {
-            navigate(`/pacientes/${id}/medicao-por-foto`);
+            console.log("Redirecting to photo page - no data and not from manual button");
+            navigate(`/pacientes/${id}/medicao-por-foto`, { replace: true });
             return;
+          } else {
+            console.log("Staying on manual form page");
           }
         }
       } catch (error) {
@@ -98,11 +111,11 @@ export default function NovaMedicao() {
   useEffect(() => {
     if (photoData?.measurements) {
       const { measurements, photoUrl } = photoData;
-      setComprimento(String(measurements.comprimento));
-      setLargura(String(measurements.largura));
-      setDiagonalD(String(measurements.diagonalD));
-      setDiagonalE(String(measurements.diagonalE));
-      setPerimetroCefalico(String(measurements.perimetroCefalico));
+      setComprimento(String(measurements.comprimento || ''));
+      setLargura(String(measurements.largura || ''));
+      setDiagonalD(String(measurements.diagonalD || ''));
+      setDiagonalE(String(measurements.diagonalE || ''));
+      setPerimetroCefalico(String(measurements.perimetroCefalico || ''));
       setPhotoUrl(photoUrl);
     }
   }, [photoData]);
