@@ -1,10 +1,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { formatAge } from "@/lib/age-utils";
 import { AsymmetryType, SeverityLevel, getCranialStatus } from "@/lib/cranial-utils";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RelatorioHeader } from "@/components/relatorio/RelatorioHeader";
 import { PacienteDadosCard } from "@/components/relatorio/PacienteDadosCard";
 import { ResumoAvaliacaoCard } from "@/components/relatorio/ResumoAvaliacaoCard";
@@ -182,7 +181,7 @@ export default function RelatorioVisualizar() {
         )}
       </div>
 
-      {/* Nova visualização craniana */}
+      {/* Visualização craniana consolidada */}
       {!modoConsolidado && medicao && (
         <CranialVisualizationCard
           medicao={medicao}
@@ -197,7 +196,6 @@ export default function RelatorioVisualizar() {
         <Card>
           <CardHeader>
             <CardTitle>Histórico de Medições</CardTitle>
-            <CardDescription>Evolução cronológica das avaliações</CardDescription>
           </CardHeader>
           <CardContent>
             <MedicoesHistoricoTable 
@@ -220,84 +218,6 @@ export default function RelatorioVisualizar() {
         />
       ) : null}
       
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução do Índice Craniano</CardTitle>
-              <CardDescription>
-                O Índice Craniano mede a proporção entre largura e comprimento do crânio. 
-                Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% 
-                indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <MedicaoLineChart 
-                  titulo="" 
-                  descricao="" 
-                  altura={350} 
-                  medicoes={medicoes}
-                  dataNascimento={paciente.data_nascimento}
-                  tipoGrafico="indiceCraniano"
-                  linhaCorTheme="rose"
-                />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução da Plagiocefalia</CardTitle>
-              <CardDescription>
-                O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana.
-                Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa.
-                A área verde representa a faixa de normalidade.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <MedicaoLineChart 
-                  titulo="" 
-                  descricao="" 
-                  altura={350} 
-                  medicoes={medicoes}
-                  dataNascimento={paciente.data_nascimento}
-                  tipoGrafico="cvai"
-                  linhaCorTheme="amber"
-                />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
-              <CardDescription>
-                O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte 
-                mais protuberante do occipital. As linhas coloridas representam os percentis de referência 
-                para {paciente.sexo === "M" ? "meninos" : "meninas"} da mesma idade,
-                sendo P50 a média populacional.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <MedicaoLineChart 
-                  titulo="" 
-                  descricao="" 
-                  altura={350} 
-                  sexoPaciente={paciente.sexo}
-                  medicoes={medicoes}
-                  dataNascimento={paciente.data_nascimento}
-                  tipoGrafico="perimetro"
-                  linhaCorTheme="blue"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-      
       {medicao && (
         <RecomendacoesCard 
           recomendacoes={medicao.recomendacoes}
@@ -308,7 +228,6 @@ export default function RelatorioVisualizar() {
       <Card>
         <CardHeader>
           <CardTitle>Histórico de Medições</CardTitle>
-          <CardDescription>Todas as medições realizadas para este paciente</CardDescription>
         </CardHeader>
         <CardContent>
           <MedicoesHistoricoTable 
