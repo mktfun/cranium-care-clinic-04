@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { validatePerimetroCefalico } from "@/lib/cranial-utils";
@@ -33,14 +34,6 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
   const [detectionProgress, setDetectionProgress] = useState(0);
   const [canvasElem, setCanvasElem] = useState<HTMLCanvasElement | null>(null);
 
-  // Adicionando estados para as novas medidas
-  const [apMode, setApMode] = useState(false);
-  const [bpMode, setBpMode] = useState(false);
-  const [pdMode, setPdMode] = useState(false);
-  const [peMode, setPeMode] = useState(false);
-  const [tragusEMode, setTragusEMode] = useState(false);
-  const [tragusDMode, setTragusDMode] = useState(false);
-
   const handleCapturarFoto = () => {
     toast({
       title: "Funcionalidade em desenvolvimento",
@@ -66,13 +59,6 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
       setCalibrationStart(null);
       setCalibrationEnd(null);
       setMeasurementMode(null);
-      // Reset novos modos
-      setApMode(false);
-      setBpMode(false);
-      setPdMode(false);
-      setPeMode(false);
-      setTragusEMode(false);
-      setTragusDMode(false);
     } catch (error) {
       console.error("Erro ao fazer upload da foto:", error);
       toast({
@@ -157,67 +143,6 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
           });
         }
       }
-    }
-
-    // Tratamento para as novas medidas
-    if (apMode) {
-      const point = { x: relX, y: relY, label: 'ap-point' };
-      setMeasurementPoints([...measurementPoints, point]);
-      setApMode(false);
-      toast({
-        title: "AP definido",
-        description: "Ponto AP marcado com sucesso.",
-      });
-    }
-
-    if (bpMode) {
-      const point = { x: relX, y: relY, label: 'bp-point' };
-      setMeasurementPoints([...measurementPoints, point]);
-      setBpMode(false);
-      toast({
-        title: "BP definido",
-        description: "Ponto BP marcado com sucesso.",
-      });
-    }
-
-    if (pdMode) {
-      const point = { x: relX, y: relY, label: 'pd-point' };
-      setMeasurementPoints([...measurementPoints, point]);
-      setPdMode(false);
-      toast({
-        title: "PD definido",
-        description: "Ponto PD marcado com sucesso.",
-      });
-    }
-
-    if (peMode) {
-      const point = { x: relX, y: relY, label: 'pe-point' };
-      setMeasurementPoints([...measurementPoints, point]);
-      setPeMode(false);
-      toast({
-        title: "PE definido",
-        description: "Ponto PE marcado com sucesso.",
-      });
-    }
-
-    if (tragusEMode) {
-      const point = { x: relX, y: relY, label: 'tragusE-point' };
-      setMeasurementPoints([...measurementPoints, point]);
-      setTragusEMode(false);
-      toast({
-        title: "TRAGUS E definido",
-        description: "Ponto TRAGUS E marcado com sucesso.",
-      });
-    }
-
-    if (tragusDMode) {
-      const point = { x: relX, y: relY, label: 'tragusD-point' };
-      setMeasurementPoints([...measurementPoints, point]);
-      setTragusDMode(false);
-      toast({
-        title: "TRAGUS D definido",
-        description: "Ponto TRAGUS D marcado com sucesso.",
-      });
     }
   };
 
@@ -321,14 +246,6 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
         // Diagonal E
         { x: refinedPoints.diagonalEStart.x, y: refinedPoints.diagonalEStart.y, label: 'diagonalE-start' },
         { x: refinedPoints.diagonalEEnd.x, y: refinedPoints.diagonalEEnd.y, label: 'diagonalE-end' },
-        
-        // Additional reference points
-        { x: refinedPoints.apPoint.x, y: refinedPoints.apPoint.y, label: 'ap-point' },
-        { x: refinedPoints.bpPoint.x, y: refinedPoints.bpPoint.y, label: 'bp-point' },
-        { x: refinedPoints.pdPoint.x, y: refinedPoints.pdPoint.y, label: 'pd-point' },
-        { x: refinedPoints.pePoint.x, y: refinedPoints.pePoint.y, label: 'pe-point' },
-        { x: refinedPoints.tragusEPoint.x, y: refinedPoints.tragusEPoint.y, label: 'tragusE-point' },
-        { x: refinedPoints.tragusDPoint.x, y: refinedPoints.tragusDPoint.y, label: 'tragusD-point' },
       ];
       
       // Step 5: Look for calibration object if no calibration is set
@@ -468,41 +385,6 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     const diagonalD = calculateDistance(diagonalDPoints);
     const diagonalE = calculateDistance(diagonalEPoints);
 
-    // Calculate additional measurements if their points exist
-    const apPoint = measurementPoints.find(p => p && p.label === 'ap-point');
-    const bpPoint = measurementPoints.find(p => p && p.label === 'bp-point');
-    const pdPoint = measurementPoints.find(p => p && p.label === 'pd-point');
-    const pePoint = measurementPoints.find(p => p && p.label === 'pe-point');
-    const tragusEPoint = measurementPoints.find(p => p && p.label === 'tragusE-point');
-    const tragusDPoint = measurementPoints.find(p => p && p.label === 'tragusD-point');
-
-    let ap = null, bp = null, pd = null, pe = null, tragusE = null, tragusD = null;
-    
-    // Calculate AP-BP distance if both points exist
-    if (apPoint && bpPoint) {
-      const dx = (bpPoint.x - apPoint.x) * imgWidth;
-      const dy = (bpPoint.y - apPoint.y) * imgWidth;
-      ap = Math.round(Math.sqrt(dx * dx + dy * dy) * calibrationFactor);
-      bp = Math.round(ap * 0.85); // Example calculation - would be replaced by actual measurement
-    }
-    
-    // Calculate PD-PE distance if both points exist
-    if (pdPoint && pePoint) {
-      const dx = (pePoint.x - pdPoint.x) * imgWidth;
-      const dy = (pePoint.y - pdPoint.y) * imgWidth;
-      pd = Math.round(Math.sqrt(dx * dx + dy * dy) * calibrationFactor);
-      pe = Math.round(pd * 0.90); // Example calculation - would be replaced by actual measurement
-    }
-    
-    // Calculate Tragus E-D distance if both points exist
-    if (tragusEPoint && tragusDPoint) {
-      const dx = (tragusDPoint.x - tragusEPoint.x) * imgWidth;
-      const dy = (tragusDPoint.y - tragusEPoint.y) * imgWidth;
-      const tragusDistance = Math.sqrt(dx * dx + dy * dy) * calibrationFactor;
-      tragusE = Math.round(tragusDistance / 2);
-      tragusD = Math.round(tragusDistance / 2);
-    }
-
     // Enhanced perimetro estimado (this is a rough estimation that can be improved)
     const perimetroCefalico = comprimento && largura 
       ? Math.round(Math.PI * Math.sqrt(2 * (Math.pow(comprimento/2, 2) + Math.pow(largura/2, 2))))
@@ -524,14 +406,7 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
       largura: Math.round(largura),
       diagonalD: Math.round(diagonalD),
       diagonalE: Math.round(diagonalE),
-      perimetroCefalico: perimetroCefalico,
-      // Additional measurements
-      ap: ap,
-      bp: bp,
-      pd: pd, 
-      pe: pe,
-      tragusE: tragusE,
-      tragusD: tragusD
+      perimetroCefalico: perimetroCefalico
     };
 
     // Validar o perímetro cefálico calculado
@@ -588,19 +463,6 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     setMeasurementMode,
     perimetroError,
     setPerimetroError,
-    // Novos modos de medição
-    apMode,
-    setApMode,
-    bpMode,
-    setBpMode,
-    pdMode,
-    setPdMode,
-    peMode,
-    setPeMode,
-    tragusEMode,
-    setTragusEMode,
-    tragusDMode,
-    setTragusDMode,
     // Auto detection
     autoDetectMeasurements,
     autoDetecting,

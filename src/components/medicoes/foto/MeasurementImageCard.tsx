@@ -26,19 +26,6 @@ type MeasurementImageCardProps = {
   setCalibrationStart?: (pos: {x: number, y: number} | null) => void;
   setCalibrationEnd?: (pos: {x: number, y: number} | null) => void;
   setMeasurementPoints?: (points: any[]) => void;
-  // Novos modos
-  apMode?: boolean;
-  setApMode?: (mode: boolean) => void;
-  bpMode?: boolean;
-  setBpMode?: (mode: boolean) => void;
-  pdMode?: boolean;
-  setPdMode?: (mode: boolean) => void;
-  peMode?: boolean;
-  setPeMode?: (mode: boolean) => void;
-  tragusEMode?: boolean;
-  setTragusEMode?: (mode: boolean) => void;
-  tragusDMode?: boolean;
-  setTragusDMode?: (mode: boolean) => void;
   autoDetectMeasurements?: () => void;
   autoDetecting?: boolean;
   detectionProgress?: number;
@@ -62,18 +49,6 @@ export default function MeasurementImageCard({
   setCalibrationStart,
   setCalibrationEnd,
   setMeasurementPoints,
-  apMode,
-  setApMode,
-  bpMode,
-  setBpMode,
-  pdMode,
-  setPdMode,
-  peMode,
-  setPeMode,
-  tragusEMode,
-  setTragusEMode,
-  tragusDMode,
-  setTragusDMode,
   autoDetectMeasurements,
   autoDetecting,
   detectionProgress = 0,
@@ -174,7 +149,7 @@ export default function MeasurementImageCard({
                     src={uploadedImage} 
                     alt="Foto do paciente" 
                     className={`w-full h-full object-contain ${
-                      (calibrationMode || measurementMode || apMode || bpMode || pdMode || peMode || tragusEMode || tragusDMode) && !isAdjustMode ? 'cursor-crosshair' : ''
+                      (calibrationMode || measurementMode) && !isAdjustMode ? 'cursor-crosshair' : ''
                     }`}
                     onClick={isAdjustMode ? undefined : handleImageClick}
                   />
@@ -228,7 +203,7 @@ export default function MeasurementImageCard({
                 <br />
                 2. Em seguida, meça o comprimento, largura e as diagonais.
                 <br />
-                3. Opcionalmente, adicione as medidas específicas (AP, BP, PD, PE, TRAGUS).
+                3. Quando terminar, calcule as medidas.
               </p>
             )}
             
@@ -242,18 +217,6 @@ export default function MeasurementImageCard({
                 measurements={measurements}
                 measurementPoints={measurementPoints}
                 calculateMeasurements={calculateMeasurements}
-                apMode={apMode}
-                setApMode={setApMode}
-                bpMode={bpMode}
-                setBpMode={setBpMode}
-                pdMode={pdMode}
-                setPdMode={setPdMode}
-                peMode={peMode}
-                setPeMode={setPeMode}
-                tragusEMode={tragusEMode}
-                setTragusEMode={setTragusEMode}
-                tragusDMode={tragusDMode}
-                setTragusDMode={setTragusDMode}
               />
             )}
           </div>

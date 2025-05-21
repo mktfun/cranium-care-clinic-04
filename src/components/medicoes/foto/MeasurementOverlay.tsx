@@ -1,7 +1,7 @@
 
-import React, { useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
-type MeasurementPoint = {
+type Point = {
   x: number;
   y: number;
   label: string;
@@ -10,110 +10,105 @@ type MeasurementPoint = {
 type MeasurementOverlayProps = {
   uploadedImage: string | null;
   imageRef: React.RefObject<HTMLImageElement>;
-  calibrationStart: {x: number, y: number} | null;
-  calibrationEnd: {x: number, y: number} | null;
-  measurementPoints: MeasurementPoint[];
-  onMovePoint?: (index: number, newPos: {x: number, y: number}) => void;
+  calibrationStart: { x: number; y: number } | null;
+  calibrationEnd: { x: number; y: number } | null;
+  measurementPoints: Point[];
+  onMovePoint?: (index: number, newPos: { x: number, y: number }) => void;
 };
 
-export default function MeasurementOverlay({
+const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
   uploadedImage,
   imageRef,
   calibrationStart,
   calibrationEnd,
   measurementPoints,
   onMovePoint
-}: MeasurementOverlayProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+}) => {
+  const [draggingPointIndex, setDraggingPointIndex] = useState<number | null>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const moveHandler = useRef<((e: MouseEvent | TouchEvent) => void) | null>(null);
+  const endHandler = useRef<((e: MouseEvent | TouchEvent) => void) | null>(null);
   
-  // State to track which point is being dragged
-  const [draggingPointIndex, setDraggingPointIndex] = React.useState<number | null>(null);
-  
-  // Setup drag event handlers
+  // Setup and cleanup event listeners for dragging
   useEffect(() => {
-    if (!containerRef.current || !onMovePoint) return;
+    // Only setup if we have an onMovePoint function
+    if (!onMovePoint) return;
     
-    const handleMouseMove = (e: MouseEvent) => {
-      if (draggingPointIndex !== null && containerRef.current && imageRef.current) {
-        const rect = imageRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-        
-        // Keep coordinates within bounds (0-1)
-        const boundedX = Math.max(0, Math.min(1, x));
-        const boundedY = Math.max(0, Math.min(1, y));
-        
-        onMovePoint(draggingPointIndex, { x: boundedX, y: boundedY });
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      if (draggingPointIndex === null || !imageRef.current || !overlayRef.current) return;
+      
+      // Get the position based on whether it's a mouse or touch event
+      let clientX, clientY;
+      if (e instanceof MouseEvent) {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      } else {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      }
+      
+      // Get the bounds of the image
+      const rect = imageRef.current.getBoundingClientRect();
+      
+      // Calculate new position, constrained to the image bounds
+      let newX = (clientX - rect.left) / rect.width;
+      let newY = (clientY - rect.top) / rect.height;
+      
+      // Constrain to image bounds
+      newX = Math.max(0, Math.min(1, newX));
+      newY = Math.max(0, Math.min(1, newY));
+      
+      // Update the point through the callback
+      if (draggingPointIndex === -2) {
+        // Calibration start point
+        onMovePoint(-2, { x: newX, y: newY });
+      } else if (draggingPointIndex === -1) {
+        // Calibration end point
+        onMovePoint(-1, { x: newX, y: newY });
+      } else if (draggingPointIndex >= 0) {
+        // Measurement point
+        onMovePoint(draggingPointIndex, { x: newX, y: newY });
       }
     };
     
-    const handleMouseUp = () => {
+    const handleMoveEnd = () => {
       setDraggingPointIndex(null);
     };
     
+    // Store these handlers for cleanup
+    moveHandler.current = handleMove;
+    endHandler.current = handleMoveEnd;
+    
+    // Add event listeners
     if (draggingPointIndex !== null) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mousemove', handleMove);
+      document.addEventListener('mouseup', handleMoveEnd);
+      document.addEventListener('touchmove', handleMove, { passive: false });
+      document.addEventListener('touchend', handleMoveEnd);
     }
     
+    // Cleanup
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [draggingPointIndex, onMovePoint, imageRef]);
-  
-  // Also add touch event support
-  useEffect(() => {
-    if (!containerRef.current || !onMovePoint) return;
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      if (draggingPointIndex !== null && containerRef.current && imageRef.current && e.touches[0]) {
-        const rect = imageRef.current.getBoundingClientRect();
-        const touch = e.touches[0];
-        const x = (touch.clientX - rect.left) / rect.width;
-        const y = (touch.clientY - rect.top) / rect.height;
-        
-        // Keep coordinates within bounds (0-1)
-        const boundedX = Math.max(0, Math.min(1, x));
-        const boundedY = Math.max(0, Math.min(1, y));
-        
-        onMovePoint(draggingPointIndex, { x: boundedX, y: boundedY });
-        e.preventDefault(); // Prevent scrolling while dragging
+      if (moveHandler.current) {
+        document.removeEventListener('mousemove', moveHandler.current);
+        document.removeEventListener('touchmove', moveHandler.current);
+      }
+      if (endHandler.current) {
+        document.removeEventListener('mouseup', endHandler.current);
+        document.removeEventListener('touchend', endHandler.current);
       }
     };
-    
-    const handleTouchEnd = () => {
-      setDraggingPointIndex(null);
-    };
-    
-    if (draggingPointIndex !== null) {
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handleTouchEnd);
-    }
-    
-    return () => {
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [draggingPointIndex, onMovePoint, imageRef]);
-  
-  if (!uploadedImage || !imageRef.current) return null;
+  }, [draggingPointIndex, imageRef, onMovePoint]);
 
+  // Handlers for mouse/touch events on points
   const handlePointMouseDown = (index: number) => (e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation();
-    if (onMovePoint) {
-      setDraggingPointIndex(index);
-    }
+    setDraggingPointIndex(index);
   };
-
-  // Handle touch start for mobile devices
+  
   const handlePointTouchStart = (index: number) => (e: React.TouchEvent) => {
     e.preventDefault();
-    e.stopPropagation();
-    if (onMovePoint) {
-      setDraggingPointIndex(index);
-    }
+    setDraggingPointIndex(index);
   };
 
   // Function to get the correct color class for points and lines
@@ -123,61 +118,62 @@ export default function MeasurementOverlay({
     if (label.startsWith('largura')) return 'bg-textoEscuro';  
     if (label.startsWith('diagonalD')) return 'bg-green-500';
     if (label.startsWith('diagonalE')) return 'bg-purple-500';
-    if (label === 'ap-point') return 'bg-orange-500';
-    if (label === 'bp-point') return 'bg-blue-500';
-    if (label === 'pd-point') return 'bg-teal-500';
-    if (label === 'pe-point') return 'bg-pink-500';
-    if (label === 'tragusE-point') return 'bg-amber-500';
-    if (label === 'tragusD-point') return 'bg-cyan-500';
     return 'bg-gray-500';
   };
 
+  // Don't render if no image
+  if (!uploadedImage) return null;
+
   return (
-    <div ref={containerRef} className="absolute inset-0 pointer-events-none">
+    <div 
+      ref={overlayRef}
+      className="absolute inset-0 pointer-events-none"
+      style={{ 
+        width: '100%',
+        height: '100%'
+      }}
+    >
       {/* Calibration line */}
-      {calibrationStart && (
-        <div 
-          className={`absolute w-3 h-3 bg-yellow-500 rounded-full z-20 ${onMovePoint ? 'cursor-move pointer-events-auto' : ''}`}
-          style={{ 
-            left: `${calibrationStart.x * 100}%`, 
-            top: `${calibrationStart.y * 100}%`,
-            transform: 'translate(-50%, -50%)'
-          }}
-          onMouseDown={onMovePoint ? handlePointMouseDown(-2) : undefined}
-          onTouchStart={onMovePoint ? handlePointTouchStart(-2) : undefined}
-        />
-      )}
-      
       {calibrationStart && calibrationEnd && (
-        <div 
-          className="absolute bg-yellow-500 h-0.5 z-10"
-          style={{ 
-            left: `${calibrationStart.x * 100}%`, 
-            top: `${calibrationStart.y * 100}%`,
-            width: `${Math.sqrt(
-              Math.pow((calibrationEnd.x - calibrationStart.x) * imageRef.current.width, 2) + 
-              Math.pow((calibrationEnd.y - calibrationStart.y) * imageRef.current.height, 2)
-            ) / imageRef.current.width * 100}%`,
-            transform: `rotate(${Math.atan2(
-              (calibrationEnd.y - calibrationStart.y),
-              (calibrationEnd.x - calibrationStart.x)
-            ) * (180 / Math.PI)}deg)`,
-            transformOrigin: '0 0'
-          }}
-        />
-      )}
-      
-      {calibrationEnd && (
-        <div 
-          className={`absolute w-3 h-3 bg-yellow-500 rounded-full z-20 ${onMovePoint ? 'cursor-move pointer-events-auto' : ''}`}
-          style={{ 
-            left: `${calibrationEnd.x * 100}%`, 
-            top: `${calibrationEnd.y * 100}%`,
-            transform: 'translate(-50%, -50%)'
-          }}
-          onMouseDown={onMovePoint ? handlePointMouseDown(-1) : undefined}
-          onTouchStart={onMovePoint ? handlePointTouchStart(-1) : undefined}
-        />
+        <>
+          <div 
+            className="absolute w-2 h-2 rounded-full z-20 bg-yellow-500"
+            style={{ 
+              left: `${calibrationStart.x * 100}%`, 
+              top: `${calibrationStart.y * 100}%`,
+              transform: 'translate(-50%, -50%)'
+            }}
+            onMouseDown={onMovePoint ? handlePointMouseDown(-2) : undefined}
+            onTouchStart={onMovePoint ? handlePointTouchStart(-2) : undefined}
+          />
+          <div 
+            className="absolute w-2 h-2 rounded-full z-20 bg-yellow-500"
+            style={{ 
+              left: `${calibrationEnd.x * 100}%`, 
+              top: `${calibrationEnd.y * 100}%`,
+              transform: 'translate(-50%, -50%)'
+            }}
+            onMouseDown={onMovePoint ? handlePointMouseDown(-1) : undefined}
+            onTouchStart={onMovePoint ? handlePointTouchStart(-1) : undefined}
+          />
+          <div 
+            className="absolute bg-yellow-500 z-10"
+            style={{
+              left: `${calibrationStart.x * 100}%`,
+              top: `${calibrationStart.y * 100}%`,
+              width: `${Math.sqrt(
+                Math.pow((calibrationEnd.x - calibrationStart.x) * 100, 2) +
+                Math.pow((calibrationEnd.y - calibrationStart.y) * 100, 2)
+              )}%`,
+              height: '2px',
+              transformOrigin: 'left center',
+              transform: `rotate(${Math.atan2(
+                (calibrationEnd.y - calibrationStart.y),
+                (calibrationEnd.x - calibrationStart.x)
+              )}rad)`,
+            }}
+          />
+        </>
       )}
       
       {/* Measurement points */}
@@ -211,139 +207,45 @@ export default function MeasurementOverlay({
         
         const lineColor = 
           prefix === 'comprimento' ? 'bg-red-500' :
-          prefix === 'largura' ? 'bg-textoEscuro' : 
+          prefix === 'largura' ? 'bg-textoEscuro' :
           prefix === 'diagonalD' ? 'bg-green-500' :
-          'bg-purple-500';
+          prefix === 'diagonalE' ? 'bg-purple-500' :
+          'bg-gray-500';
         
-        const p1 = { x: points[0].x, y: points[0].y };
-        const p2 = { x: points[1].x, y: points[1].y };
+        // Calculate line position and rotation
+        const startX = points[0].x * 100;
+        const startY = points[0].y * 100;
+        const endX = points[1].x * 100;
+        const endY = points[1].y * 100;
         
-        // Calculate the distance and angle
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        
-        // Calculate the distance based on the actual image dimensions
+        // Calculate the distance and angle for the line
         const distance = Math.sqrt(
-          Math.pow(dx * (imageRef.current?.width || 0), 2) + 
-          Math.pow(dy * (imageRef.current?.height || 0), 2)
+          Math.pow(endX - startX, 2) +
+          Math.pow(endY - startY, 2)
         );
         
-        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-        
-        // Convert to percentage for CSS
-        const widthPercent = (distance / (imageRef.current?.width || 1)) * 100;
+        const angle = Math.atan2(
+          endY - startY,
+          endX - startX
+        );
         
         return (
           <div 
             key={prefix}
-            className={`absolute h-0.5 z-5 ${lineColor}`}
-            style={{ 
-              left: `${p1.x * 100}%`, 
-              top: `${p1.y * 100}%`,
-              width: `${widthPercent}%`,
-              transform: `rotate(${angle}deg)`,
-              transformOrigin: '0 0'
+            className={`absolute z-10 ${lineColor}`}
+            style={{
+              left: `${startX}%`,
+              top: `${startY}%`,
+              width: `${distance}%`,
+              height: '2px',
+              transformOrigin: 'left center',
+              transform: `rotate(${angle}rad)`,
             }}
           />
         );
       })}
-      
-      {/* Additional measurement visualizations for other points */}
-      {/* For AP-BP line */}
-      {(() => {
-        if (!measurementPoints) return null;
-        const apPoint = measurementPoints.find(p => p && p.label === 'ap-point');
-        const bpPoint = measurementPoints.find(p => p && p.label === 'bp-point');
-        
-        if (apPoint && bpPoint) {
-          const dx = bpPoint.x - apPoint.x;
-          const dy = bpPoint.y - apPoint.y;
-          const distance = Math.sqrt(
-            Math.pow(dx * (imageRef.current?.width || 0), 2) + 
-            Math.pow(dy * (imageRef.current?.height || 0), 2)
-          );
-          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-          const widthPercent = (distance / (imageRef.current?.width || 1)) * 100;
-          
-          return (
-            <div 
-              className="absolute h-0.5 z-5 bg-blue-600"
-              style={{ 
-                left: `${apPoint.x * 100}%`, 
-                top: `${apPoint.y * 100}%`,
-                width: `${widthPercent}%`,
-                transform: `rotate(${angle}deg)`,
-                transformOrigin: '0 0'
-              }}
-            />
-          );
-        }
-        return null;
-      })()}
-      
-      {/* For PD-PE line */}
-      {(() => {
-        if (!measurementPoints) return null;
-        const pdPoint = measurementPoints.find(p => p && p.label === 'pd-point');
-        const pePoint = measurementPoints.find(p => p && p.label === 'pe-point');
-        
-        if (pdPoint && pePoint) {
-          const dx = pePoint.x - pdPoint.x;
-          const dy = pePoint.y - pdPoint.y;
-          const distance = Math.sqrt(
-            Math.pow(dx * (imageRef.current?.width || 0), 2) + 
-            Math.pow(dy * (imageRef.current?.height || 0), 2)
-          );
-          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-          const widthPercent = (distance / (imageRef.current?.width || 1)) * 100;
-          
-          return (
-            <div 
-              className="absolute h-0.5 z-5 bg-teal-500"
-              style={{ 
-                left: `${pdPoint.x * 100}%`, 
-                top: `${pdPoint.y * 100}%`,
-                width: `${widthPercent}%`,
-                transform: `rotate(${angle}deg)`,
-                transformOrigin: '0 0'
-              }}
-            />
-          );
-        }
-        return null;
-      })()}
-      
-      {/* For tragusE-tragusD line */}
-      {(() => {
-        if (!measurementPoints) return null;
-        const tragusEPoint = measurementPoints.find(p => p && p.label === 'tragusE-point');
-        const tragusDPoint = measurementPoints.find(p => p && p.label === 'tragusD-point');
-        
-        if (tragusEPoint && tragusDPoint) {
-          const dx = tragusDPoint.x - tragusEPoint.x;
-          const dy = tragusDPoint.y - tragusEPoint.y;
-          const distance = Math.sqrt(
-            Math.pow(dx * (imageRef.current?.width || 0), 2) + 
-            Math.pow(dy * (imageRef.current?.height || 0), 2)
-          );
-          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-          const widthPercent = (distance / (imageRef.current?.width || 1)) * 100;
-          
-          return (
-            <div 
-              className="absolute h-0.5 z-5 bg-amber-500"
-              style={{ 
-                left: `${tragusEPoint.x * 100}%`, 
-                top: `${tragusEPoint.y * 100}%`,
-                width: `${widthPercent}%`,
-                transform: `rotate(${angle}deg)`,
-                transformOrigin: '0 0'
-              }}
-            />
-          );
-        }
-        return null;
-      })()}
     </div>
   );
-}
+};
+
+export default MeasurementOverlay;
