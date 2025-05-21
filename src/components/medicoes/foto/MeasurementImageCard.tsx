@@ -7,7 +7,6 @@ import { Loader2, ZoomIn } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import MeasurementOverlay from "./MeasurementOverlay";
 import MeasurementButtons from "./MeasurementButtons";
-import MeasurementLegend from "./MeasurementLegend";
 
 type MeasurementImageCardProps = {
   uploadedImage: string | null;

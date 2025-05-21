@@ -121,7 +121,7 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     // Tratamento para medições principais
     if (measurementMode) {
       // Add the point based on the current measurement mode
-      const existingPoints = measurementPoints.filter(p => p.label.startsWith(measurementMode));
+      const existingPoints = measurementPoints.filter(p => p && p.label && p.label.startsWith(measurementMode));
       
       if (existingPoints.length < 2) {
         const label = existingPoints.length === 0 
