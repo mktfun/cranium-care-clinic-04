@@ -1,8 +1,9 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Ruler, RadioIcon, CircleOff } from "lucide-react";
+import { Ruler, RadioIcon } from "lucide-react";
 import MeasurementButton from "./MeasurementButton";
+import MeasurementLegend from "./MeasurementLegend";
 
 type MeasurementButtonsProps = {
   calibrationMode: boolean;
@@ -362,8 +363,5 @@ const MeasurementButtons = ({
     </div>
   );
 };
-
-// Import at the component level so it's available in this file
-import MeasurementLegend from "./MeasurementLegend";
 
 export default MeasurementButtons;
