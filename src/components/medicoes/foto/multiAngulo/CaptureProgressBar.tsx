@@ -5,11 +5,13 @@ import { cn } from "@/lib/utils";
 type CaptureProgressBarProps = {
   currentStep: number;
   totalSteps: number;
+  labels?: string[];  // Optional custom step labels
 };
 
 export default function CaptureProgressBar({ 
   currentStep, 
-  totalSteps 
+  totalSteps,
+  labels = ["Superior", "Lateral", "Frontal", "Revisão"]  // Default labels
 }: CaptureProgressBarProps) {
   return (
     <div className="w-full relative mb-8">
@@ -38,30 +40,17 @@ export default function CaptureProgressBar({
       
       {/* Step Labels */}
       <div className="flex justify-between text-xs mt-3">
-        <div className={cn(
-          "text-center transition-colors",
-          currentStep >= 0 ? "text-turquesa font-medium" : "text-muted-foreground"
-        )}>
-          Superior
-        </div>
-        <div className={cn(
-          "text-center transition-colors",
-          currentStep >= 1 ? "text-turquesa font-medium" : "text-muted-foreground"
-        )}>
-          Lateral
-        </div>
-        <div className={cn(
-          "text-center transition-colors",
-          currentStep >= 2 ? "text-turquesa font-medium" : "text-muted-foreground"
-        )}>
-          Frontal
-        </div>
-        <div className={cn(
-          "text-center transition-colors",
-          currentStep >= 3 ? "text-turquesa font-medium" : "text-muted-foreground"
-        )}>
-          Revisão
-        </div>
+        {labels.map((label, index) => (
+          <div 
+            key={index}
+            className={cn(
+              "text-center transition-colors",
+              currentStep >= index ? "text-turquesa font-medium" : "text-muted-foreground"
+            )}
+          >
+            {label}
+          </div>
+        ))}
       </div>
     </div>
   );
