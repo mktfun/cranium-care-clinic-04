@@ -54,7 +54,7 @@ export default function CranialVisualizationCard({
     }));
     
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardContent className="p-0">
         <CranialVisualization
           currentMeasurement={currentMeasurement}

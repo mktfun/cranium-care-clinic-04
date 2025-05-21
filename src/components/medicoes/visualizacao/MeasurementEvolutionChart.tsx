@@ -13,6 +13,7 @@ import {
   Area
 } from 'recharts';
 import { Card, CardContent } from "@/components/ui/card";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface MeasurementHistoryProps {
   measurementHistory: Array<{
@@ -36,6 +37,8 @@ export default function MeasurementEvolutionChart({
   colorTheme = "blue",
   sexoPaciente
 }: MeasurementHistoryProps) {
+  const isMobile = useMediaQuery(768);
+  
   if (!measurementHistory || measurementHistory.length === 0) {
     return (
       <Card className="p-4 text-center text-muted-foreground">
@@ -121,29 +124,48 @@ export default function MeasurementEvolutionChart({
     valueFormatter = (value: number) => `${value}mm`;
   }
   
+  // Ajustar tamanhos e margens baseados no dispositivo
+  const getFontSize = () => isMobile ? 10 : 12;
+  const getLabelSize = () => isMobile ? 10 : 12;
+  const getMargin = () => isMobile 
+    ? { top: 5, right: 10, left: 5, bottom: 20 }
+    : { top: 5, right: 30, left: 20, bottom: 5 };
+  
+  // Ajustar a exibição de labels para dispositivos móveis
+  const renderYAxisLabel = () => {
+    if (isMobile) {
+      return null; // Em dispositivos móveis, não mostrar o label para economizar espaço
+    }
+    
+    return { 
+      value: yAxisLabel, 
+      angle: -90, 
+      position: 'insideLeft',
+      style: { textAnchor: 'middle', fontSize: getLabelSize(), fill: '#64748b' } 
+    };
+  };
+  
   return (
     <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          margin={getMargin()}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.6} />
           <XAxis 
             dataKey="date" 
             stroke="#64748b"
-            tick={{ fontSize: 12 }}
+            tick={{ fontSize: getFontSize() }}
+            tickMargin={10}
           />
           <YAxis 
             domain={yDomain}
             stroke="#64748b"
-            tick={{ fontSize: 12 }}
-            label={{ 
-              value: yAxisLabel, 
-              angle: -90, 
-              position: 'insideLeft',
-              style: { textAnchor: 'middle', fontSize: '12px', fill: '#64748b' } 
-            }}
+            tick={{ fontSize: getFontSize() }}
+            tickMargin={5}
+            width={isMobile ? 30 : 50}
+            label={renderYAxisLabel()}
           />
           
           {/* Áreas de normalidade/severidade */}
@@ -181,16 +203,16 @@ export default function MeasurementEvolutionChart({
             />
           )}
           
-          {/* Linhas de referência */}
-          {referenceLines.map((line, index) => (
+          {/* Linhas de referência - mostrar menos referências em dispositivos móveis */}
+          {(isMobile ? referenceLines.slice(0, 2) : referenceLines).map((line, index) => (
             <ReferenceLine 
               key={index}
               y={line.value}
-              label={{ 
+              label={isMobile ? undefined : { 
                 value: line.label,
                 position: 'right',
                 fill: line.color,
-                fontSize: 11
+                fontSize: getFontSize() - 1
               }}
               stroke={line.color}
               strokeDasharray="3 3"
@@ -207,7 +229,11 @@ export default function MeasurementEvolutionChart({
               fontSize: '12px'
             }}
           />
-          <Legend />
+          <Legend 
+            verticalAlign="bottom" 
+            height={isMobile ? 30 : 36} 
+            wrapperStyle={{ fontSize: getFontSize() }}
+          />
           <Line 
             type="monotone" 
             dataKey="valor" 
@@ -217,9 +243,9 @@ export default function MeasurementEvolutionChart({
                    colorTheme === "amber" ? "#f59e0b" : 
                    "#3b82f6"}
             strokeWidth={2.5}
-            activeDot={{ r: 6 }}
+            activeDot={{ r: isMobile ? 4 : 6 }}
             dot={{ 
-              r: 4, 
+              r: isMobile ? 3 : 4, 
               stroke: colorTheme === "blue" ? "#3b82f6" : 
                       colorTheme === "rose" ? "#e11d48" : 
                       colorTheme === "amber" ? "#f59e0b" : 

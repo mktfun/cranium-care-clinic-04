@@ -7,6 +7,7 @@ import { Eye, BarChart2 } from "lucide-react";
 import { AsymmetryType, SeverityLevel } from "@/types";
 import CranialSilhouette from './CranialSilhouette';
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface CranialVisualizationProps {
   currentMeasurement: {
@@ -42,6 +43,10 @@ export default function CranialVisualization({
   const [viewType, setViewType] = useState<"superior" | "frontal" | "lateral">("superior");
   const [metricType, setMetricType] = useState<'indiceCraniano' | 'cvai' | 'perimetroCefalico'>('indiceCraniano');
   
+  // Use media queries for responsive design
+  const isMobile = useMediaQuery(768);
+  const isTablet = useMediaQuery(1024);
+  
   // Calcular índice craniano e CVAI para a medição atual
   const indiceCraniano = (currentMeasurement.largura / currentMeasurement.comprimento) * 100;
   const diagonalMax = Math.max(currentMeasurement.diagonalD, currentMeasurement.diagonalE);
@@ -76,6 +81,15 @@ export default function CranialVisualization({
     status: severity
   }));
   
+  // Adjust chart height based on device size
+  const getChartHeight = () => {
+    if (isMobile) return 300;
+    if (isTablet) return 350;
+    return 400;
+  };
+  
+  const chartHeight = getChartHeight();
+  
   return (
     <div className="border-primary/20 shadow-lg">
       <CardHeader className="bg-card/50">
@@ -84,7 +98,7 @@ export default function CranialVisualization({
           <div className="flex space-x-2">
             <Button 
               variant={viewType === "superior" ? "default" : "outline"} 
-              size="sm"
+              size={isMobile ? "sm" : "sm"}
               onClick={() => setViewType("superior")}
               className="h-8 px-2"
             >
@@ -92,7 +106,7 @@ export default function CranialVisualization({
             </Button>
             <Button 
               variant={viewType === "frontal" ? "default" : "outline"} 
-              size="sm"
+              size={isMobile ? "sm" : "sm"}
               onClick={() => setViewType("frontal")}
               className="h-8 px-2"
             >
@@ -100,7 +114,7 @@ export default function CranialVisualization({
             </Button>
             <Button 
               variant={viewType === "lateral" ? "default" : "outline"} 
-              size="sm"
+              size={isMobile ? "sm" : "sm"}
               onClick={() => setViewType("lateral")}
               className="h-8 px-2"
             >
@@ -155,9 +169,9 @@ export default function CranialVisualization({
           </TabsContent>
           
           <TabsContent value="evolution" className="mt-4">
-            <div className="mb-4 flex justify-between items-center">
+            <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
               <div className="text-sm font-medium">Evolução das Medidas</div>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   variant={metricType === "indiceCraniano" ? "default" : "outline"} 
                   size="sm"
@@ -185,12 +199,12 @@ export default function CranialVisualization({
               </div>
             </div>
             
-            <div className="chart-container" style={{ height: '400px', position: 'relative', marginBottom: '20px' }}>
+            <div className="chart-container pb-6" style={{ height: `${chartHeight}px`, position: 'relative', marginBottom: '40px' }}>
               {metricType === "indiceCraniano" && (
                 <MedicaoLineChart
                   titulo="Evolução do Índice Craniano"
                   descricao="O Índice Craniano mede a proporção entre largura e comprimento do crânio. Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade."
-                  altura={400}
+                  altura={chartHeight}
                   medicoes={medicoesFiltradas}
                   dataNascimento={new Date().toISOString()}
                   tipoGrafico="indiceCraniano"
@@ -202,7 +216,7 @@ export default function CranialVisualization({
                 <MedicaoLineChart
                   titulo="Evolução da Plagiocefalia"
                   descricao="O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana. Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa. A área verde representa a faixa de normalidade."
-                  altura={400}
+                  altura={chartHeight}
                   medicoes={medicoesFiltradas}
                   dataNascimento={new Date().toISOString()}
                   tipoGrafico="cvai"
@@ -214,7 +228,7 @@ export default function CranialVisualization({
                 <MedicaoLineChart
                   titulo="Evolução do Perímetro Cefálico"
                   descricao="O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte mais protuberante do occipital. As linhas coloridas representam os percentis de referência para meninos da mesma idade, sendo P50 a média populacional."
-                  altura={400}
+                  altura={chartHeight}
                   medicoes={medicoesFiltradas}
                   dataNascimento={new Date().toISOString()}
                   tipoGrafico="perimetro"
