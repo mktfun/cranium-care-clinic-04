@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -150,28 +151,33 @@ export default function DetalhePaciente() {
 
   return (
     <div className="space-y-6 animate-fade-in p-4 md:p-6">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/pacientes")}>
+      {/* Cabeçalho reorganizado conforme a imagem */}
+      <div className="flex flex-col space-y-2">
+        <div className="flex items-center">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/pacientes")} className="mr-2">
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h2 className="text-3xl font-bold">{paciente.nome}</h2>
-            <p className="text-muted-foreground">
-              Cadastrado em: {formatarData(paciente.created_at || '')}
-            </p>
-          </div>
+          <h2 className="text-3xl font-bold">{paciente.nome}</h2>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setActiveTab("editar")} variant="outline">
-            <Edit className="h-4 w-4 mr-2" />
-            Editar
-          </Button>
-          <Button onClick={() => navigate(`/pacientes/${id}/prontuario`)} className="bg-turquesa hover:bg-turquesa/90">
-            <FileText className="h-4 w-4 mr-2" />
-            Ver Prontuário
-          </Button>
+        
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-muted-foreground">
+                Cadastrado em: {formatarData(paciente.created_at || '')}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-2 md:mt-0">
+            <Button onClick={() => setActiveTab("editar")} variant="outline">
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+            <Button onClick={() => navigate(`/pacientes/${id}/prontuario`)} className="bg-turquesa hover:bg-turquesa/90">
+              <FileText className="h-4 w-4 mr-2" />
+              Ver Prontuário
+            </Button>
+          </div>
         </div>
       </div>
 
