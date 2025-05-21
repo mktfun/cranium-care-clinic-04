@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
@@ -15,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsMobileOrTabletPortrait } from "@/hooks/use-media-query";
+import CranialVisualizationCard from "@/components/relatorio/CranialVisualizationCard";
 
 export default function RelatorioVisualizar() {
   const { id, medicaoId } = useParams<{ id: string, medicaoId: string }>();
@@ -179,6 +181,17 @@ export default function RelatorioVisualizar() {
           />
         )}
       </div>
+
+      {/* Nova visualização craniana */}
+      {!modoConsolidado && medicao && (
+        <CranialVisualizationCard
+          medicao={medicao}
+          medicoes={medicoes}
+          asymmetryType={asymmetryType}
+          severity={severityLevel}
+          sexoPaciente={paciente.sexo}
+        />
+      )}
       
       {modoConsolidado ? (
         <Card>
