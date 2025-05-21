@@ -90,7 +90,7 @@ export function ParametrosCraniaisCard({
             <p className={`text-lg font-medium ${getCvaiClasse(cvai)}`}>
               {cvai}%
             </p>
-            <p className="text-xs text-muted-foreground">Normal: < 3.5%</p>
+            <p className="text-xs text-muted-foreground">Normal: &lt; 3.5%</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Status</p>

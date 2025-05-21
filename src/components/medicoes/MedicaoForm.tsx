@@ -154,7 +154,7 @@ export default function MedicaoForm({
                 <div>
                   <p className="text-sm text-muted-foreground">CVAI</p>
                   <p className="font-bold">{cvai.toFixed(1)}%</p>
-                  <p className="text-xs text-muted-foreground">Normal: < 3.5%</p>
+                  <p className="text-xs text-muted-foreground">Normal: &lt; 3.5%</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Diferença Diagonais</p>
