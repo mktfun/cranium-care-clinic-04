@@ -33,7 +33,7 @@ export function ParametrosCraniaisCard({
 
   // Função para determinar a classe de cor com base no valor do índice craniano
   const getIndiceClasse = (valor: number) => {
-    if (valor >= 75 && valor <= 85) return "text-green-600"; // Normal
+    if (valor >= 75 && valor <= 85) return "text-green-600"; // Normal (updated range)
     if (valor > 85) return "text-amber-500"; // Braquicefalia
     return "text-amber-500"; // Dolicocefalia
   };
@@ -68,6 +68,7 @@ export function ParametrosCraniaisCard({
             <p className={`text-lg font-medium ${getIndiceClasse(indiceCraniano)}`}>
               {indiceCraniano}%
             </p>
+            <p className="text-xs text-muted-foreground">Normal: 75-85%</p>
           </div>
           
           {/* Linha 2: Diagonal D, Diagonal E, Diferença Diagonais, CVAI */}
@@ -89,6 +90,7 @@ export function ParametrosCraniaisCard({
             <p className={`text-lg font-medium ${getCvaiClasse(cvai)}`}>
               {cvai}%
             </p>
+            <p className="text-xs text-muted-foreground">Normal: < 3.5%</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Status</p>

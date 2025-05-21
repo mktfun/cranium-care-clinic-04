@@ -249,7 +249,7 @@ export default function NovaMedicao() {
         {!photoData && (
           <Button 
             onClick={handlePhotoCapture}
-            className="bg-turquesa hover:bg-turquesa/90 flex items-center gap-2"
+            className="bg-turquesa hover:bg-turquesa/90 flex items-center gap-2 md:hidden"
           >
             <Camera className="h-4 w-4" />
             Medir por Foto
@@ -284,6 +284,7 @@ export default function NovaMedicao() {
           perimetroError={perimetroError}
           paciente={paciente}
           onSubmit={handleSubmit}
+          onPhotoCapture={!photoData ? handlePhotoCapture : undefined}
         />
       </div>
     </div>
