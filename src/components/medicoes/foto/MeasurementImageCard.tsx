@@ -4,6 +4,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Loader2, ZoomIn } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import MeasurementOverlay from "./MeasurementOverlay";
 import MeasurementButtons from "./MeasurementButtons";
 import MeasurementLegend from "./MeasurementLegend";
@@ -40,6 +41,8 @@ type MeasurementImageCardProps = {
   setTragusDMode?: (mode: boolean) => void;
   autoDetectMeasurements?: () => void;
   autoDetecting?: boolean;
+  detectionProgress?: number;
+  canvasElem?: HTMLCanvasElement | null;
 };
 
 export default function MeasurementImageCard({
@@ -72,11 +75,14 @@ export default function MeasurementImageCard({
   tragusDMode,
   setTragusDMode,
   autoDetectMeasurements,
-  autoDetecting
+  autoDetecting,
+  detectionProgress = 0,
+  canvasElem
 }: MeasurementImageCardProps) {
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isAdjustMode, setIsAdjustMode] = useState(false);
+  const [showDetectionPreview, setShowDetectionPreview] = useState(false);
 
   // Handler for point adjustments
   const handleMovePoint = (index: number, newPos: {x: number, y: number}) => {
@@ -124,6 +130,16 @@ export default function MeasurementImageCard({
               </Button>
             )}
             
+            {canvasElem && (
+              <Button
+                onClick={() => setShowDetectionPreview(!showDetectionPreview)}
+                variant={showDetectionPreview ? "default" : "outline"}
+                size="sm"
+              >
+                {showDetectionPreview ? "Ocultar Visualização" : "Ver Procesamento"}
+              </Button>
+            )}
+            
             {(measurementPoints.length > 0 || calibrationStart) && !measurements && (
               <Button
                 onClick={() => setIsAdjustMode(!isAdjustMode)}
@@ -150,15 +166,31 @@ export default function MeasurementImageCard({
         <div className="border rounded-lg overflow-hidden relative" ref={containerRef}>
           <AspectRatio ratio={4/3}>
             {uploadedImage && (
-              <img 
-                ref={imageRef}
-                src={uploadedImage} 
-                alt="Foto do paciente" 
-                className={`w-full h-full object-contain ${
-                  (calibrationMode || measurementMode || apMode || bpMode || pdMode || peMode || tragusEMode || tragusDMode) && !isAdjustMode ? 'cursor-crosshair' : ''
-                }`}
-                onClick={isAdjustMode ? undefined : handleImageClick}
-              />
+              <>
+                {/* Original image */}
+                {!showDetectionPreview && (
+                  <img 
+                    ref={imageRef}
+                    src={uploadedImage} 
+                    alt="Foto do paciente" 
+                    className={`w-full h-full object-contain ${
+                      (calibrationMode || measurementMode || apMode || bpMode || pdMode || peMode || tragusEMode || tragusDMode) && !isAdjustMode ? 'cursor-crosshair' : ''
+                    }`}
+                    onClick={isAdjustMode ? undefined : handleImageClick}
+                  />
+                )}
+                
+                {/* Detection visualization */}
+                {showDetectionPreview && canvasElem && (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <img 
+                      src={canvasElem.toDataURL()} 
+                      alt="Visualização de detecção" 
+                      className="max-w-full max-h-full object-contain" 
+                    />
+                  </div>
+                )}
+              </>
             )}
             <MeasurementOverlay
               uploadedImage={uploadedImage}
@@ -170,6 +202,17 @@ export default function MeasurementImageCard({
             />
           </AspectRatio>
         </div>
+        
+        {/* Detection progress bar */}
+        {autoDetecting && (
+          <div className="mt-2">
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Detectando pontos...</span>
+              <span>{detectionProgress}%</span>
+            </div>
+            <Progress value={detectionProgress} className="h-2 mt-1" />
+          </div>
+        )}
 
         {!measurements && (
           <div className="mt-4 space-y-2">

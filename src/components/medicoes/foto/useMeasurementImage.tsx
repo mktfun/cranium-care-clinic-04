@@ -1,6 +1,14 @@
 import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { validatePerimetroCefalico } from "@/lib/cranial-utils";
+import { 
+  detectEdges, 
+  detectHeadContour, 
+  findMeasurementPoints, 
+  detectCalibrationObject,
+  refineDetectedPoints,
+  estimateHeadParameters
+} from "@/lib/image-detection-utils";
 
 interface MeasurementPoint {
   x: number;
@@ -22,6 +30,8 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
   const [measurementMode, setMeasurementMode] = useState<string | null>(null);
   const [perimetroError, setPerimetroError] = useState<string | null>(null);
   const [autoDetecting, setAutoDetecting] = useState(false);
+  const [detectionProgress, setDetectionProgress] = useState(0);
+  const [canvasElem, setCanvasElem] = useState<HTMLCanvasElement | null>(null);
 
   // Adicionando estados para as novas medidas
   const [apMode, setApMode] = useState(false);
@@ -211,7 +221,7 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     }
   };
 
-  // Enhanced Auto-detection function
+  // Enhanced Auto-detection function that uses real image processing techniques
   const autoDetectMeasurements = async () => {
     if (!uploadedImage) {
       toast({
@@ -223,6 +233,8 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     }
 
     setAutoDetecting(true);
+    setDetectionProgress(10);
+    
     toast({
       title: "Detecção iniciada",
       description: "Analisando imagem para identificar pontos de medição...",
@@ -231,15 +243,19 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     try {
       // Create a new image element to process
       const img = new Image();
+      img.crossOrigin = "Anonymous";
       img.src = uploadedImage;
       
-      await new Promise((resolve) => {
+      await new Promise((resolve, reject) => {
         img.onload = resolve;
+        img.onerror = reject;
       });
       
       // Get the dimensions of the image
       const width = img.width;
       const height = img.height;
+      
+      setDetectionProgress(20);
       
       // Create a canvas to process the image
       const canvas = document.createElement('canvas');
@@ -251,103 +267,138 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
         throw new Error("Não foi possível criar o contexto de canvas");
       }
       
+      // Set canvas for debugging/visualization if needed
+      setCanvasElem(canvas);
+      
       // Draw image on canvas
       ctx.drawImage(img, 0, 0, width, height);
       
       // Get image data for processing
       const imageData = ctx.getImageData(0, 0, width, height);
       
-      // Simple edge detection to find head contour
-      // In a real implementation, we would use more sophisticated algorithms
+      setDetectionProgress(30);
       
-      // For now, we'll use a simulated approach to demonstrate the UI flow
-      // In a production app, this would be replaced with actual CV algorithms
+      // Step 1: Detect edges in the image
+      const edgeData = detectEdges(imageData, width, height);
       
-      console.log("Processando imagem:", width, "x", height);
+      // Optional: Draw edges to canvas for debugging
+      // ctx.putImageData(edgeData, 0, 0);
+      
+      setDetectionProgress(50);
+      
+      // Step 2: Detect head contour from edges
+      const contourPoints = detectHeadContour(edgeData, width, height);
+      
+      setDetectionProgress(65);
+      
+      // Step 3: Find key measurement points from contour
+      const initialPoints = findMeasurementPoints(contourPoints);
+      
+      setDetectionProgress(75);
+      
+      // Step 4: Refine detected points
+      const refinedPoints = refineDetectedPoints(initialPoints, imageData, width, height);
+      
+      setDetectionProgress(85);
       
       // Reset existing points
       setMeasurementPoints([]);
       
-      // Simulated detection - in real implementation, these points would come from algorithmic analysis
-      // Typically estimating head shape from detected edges or contours
-      
-      // Estimate the center of the head (in a real implementation this would be detected)
-      const centerX = 0.5;
-      const centerY = 0.5;
-      
-      // Estimate head dimensions (this would be calculated from edge detection)
-      const estimatedHeadWidth = 0.4; // As relative value (40% of image width)
-      const estimatedHeadHeight = 0.45; // As relative value (45% of image height)
-      
-      // Set calibration with a reasonable default
-      // In a real implementation, we would detect a calibration object
-      setCalibrationStart({ x: 0.15, y: 0.85 });
-      setCalibrationEnd({ x: 0.35, y: 0.85 });
-      
-      // Set calibration factor - this is in mm/px (would be calculated from detected reference)
-      // A typical value for a well-framed head photo might be around 0.2-0.5 mm/px
-      setCalibrationFactor(0.35);
-      
-      // Calculate key points based on estimated head dimensions and center
-      const points = [
+      // Format points for the existing system
+      const formattedPoints: MeasurementPoint[] = [
         // Comprimento (front to back)
-        { x: centerX - estimatedHeadWidth * 0.9, y: centerY, label: 'comprimento-start' },
-        { x: centerX + estimatedHeadWidth * 0.9, y: centerY, label: 'comprimento-end' },
+        { x: refinedPoints.comprimentoStart.x, y: refinedPoints.comprimentoStart.y, label: 'comprimento-start' },
+        { x: refinedPoints.comprimentoEnd.x, y: refinedPoints.comprimentoEnd.y, label: 'comprimento-end' },
         
         // Largura (side to side)
-        { x: centerX, y: centerY - estimatedHeadHeight * 0.75, label: 'largura-start' },
-        { x: centerX, y: centerY + estimatedHeadHeight * 0.75, label: 'largura-end' },
+        { x: refinedPoints.larguraStart.x, y: refinedPoints.larguraStart.y, label: 'largura-start' },
+        { x: refinedPoints.larguraEnd.x, y: refinedPoints.larguraEnd.y, label: 'largura-end' },
         
         // Diagonal D
-        { x: centerX - estimatedHeadWidth * 0.7, y: centerY - estimatedHeadHeight * 0.5, label: 'diagonalD-start' },
-        { x: centerX + estimatedHeadWidth * 0.7, y: centerY + estimatedHeadHeight * 0.5, label: 'diagonalD-end' },
+        { x: refinedPoints.diagonalDStart.x, y: refinedPoints.diagonalDStart.y, label: 'diagonalD-start' },
+        { x: refinedPoints.diagonalDEnd.x, y: refinedPoints.diagonalDEnd.y, label: 'diagonalD-end' },
         
         // Diagonal E
-        { x: centerX - estimatedHeadWidth * 0.7, y: centerY + estimatedHeadHeight * 0.5, label: 'diagonalE-start' },
-        { x: centerX + estimatedHeadWidth * 0.7, y: centerY - estimatedHeadHeight * 0.5, label: 'diagonalE-end' },
+        { x: refinedPoints.diagonalEStart.x, y: refinedPoints.diagonalEStart.y, label: 'diagonalE-start' },
+        { x: refinedPoints.diagonalEEnd.x, y: refinedPoints.diagonalEEnd.y, label: 'diagonalE-end' },
         
         // Additional reference points
-        { x: centerX - estimatedHeadWidth * 0.3, y: centerY - estimatedHeadHeight * 0.2, label: 'ap-point' },
-        { x: centerX + estimatedHeadWidth * 0.3, y: centerY - estimatedHeadHeight * 0.2, label: 'bp-point' },
-        { x: centerX - estimatedHeadWidth * 0.3, y: centerY + estimatedHeadHeight * 0.2, label: 'pd-point' },
-        { x: centerX + estimatedHeadWidth * 0.3, y: centerY + estimatedHeadHeight * 0.2, label: 'pe-point' },
-        { x: centerX - estimatedHeadWidth * 0.5, y: centerY + estimatedHeadHeight * 0.4, label: 'tragusE-point' },
-        { x: centerX + estimatedHeadWidth * 0.5, y: centerY + estimatedHeadHeight * 0.4, label: 'tragusD-point' },
+        { x: refinedPoints.apPoint.x, y: refinedPoints.apPoint.y, label: 'ap-point' },
+        { x: refinedPoints.bpPoint.x, y: refinedPoints.bpPoint.y, label: 'bp-point' },
+        { x: refinedPoints.pdPoint.x, y: refinedPoints.pdPoint.y, label: 'pd-point' },
+        { x: refinedPoints.pePoint.x, y: refinedPoints.pePoint.y, label: 'pe-point' },
+        { x: refinedPoints.tragusEPoint.x, y: refinedPoints.tragusEPoint.y, label: 'tragusE-point' },
+        { x: refinedPoints.tragusDPoint.x, y: refinedPoints.tragusDPoint.y, label: 'tragusD-point' },
       ];
       
-      // Introduce small random variations to make it look more realistic
-      const addJitter = (point: {x: number, y: number}) => {
-        const jitterAmount = 0.02; // 2% jitter
-        return {
-          x: Math.max(0, Math.min(1, point.x + (Math.random() - 0.5) * jitterAmount)),
-          y: Math.max(0, Math.min(1, point.y + (Math.random() - 0.5) * jitterAmount))
-        };
-      };
+      // Step 5: Look for calibration object if no calibration is set
+      if (!calibrationFactor) {
+        const detectedCalibration = detectCalibrationObject(imageData, width, height);
+        if (detectedCalibration) {
+          setCalibrationStart(detectedCalibration.start);
+          setCalibrationEnd(detectedCalibration.end);
+          
+          // Ask user to confirm the calibration
+          setTimeout(() => {
+            toast({
+              title: "Objeto de calibração detectado",
+              description: "Por favor, confirme o tamanho do objeto de referência.",
+            });
+            
+            const defaultSize = 100; // 10cm in mm
+            const sizeInput = prompt("Confirme o tamanho do objeto de calibração em milímetros:", defaultSize.toString());
+            
+            if (sizeInput && !isNaN(Number(sizeInput))) {
+              const realSize = Number(sizeInput);
+              const dx = (detectedCalibration.end.x - detectedCalibration.start.x) * width;
+              const dy = (detectedCalibration.end.y - detectedCalibration.start.y) * width;
+              const pixelDistance = Math.sqrt(dx * dx + dy * dy);
+              const factor = realSize / pixelDistance;
+              
+              setCalibrationFactor(factor);
+            } else {
+              toast({
+                title: "Calibração manual necessária",
+                description: "Não foi possível configurar calibração automaticamente. Por favor, calibre manualmente.",
+                variant: "warning"
+              });
+            }
+          }, 1000);
+        }
+      }
       
-      const jitteredPoints = points.map(point => ({
-        ...point,
-        ...addJitter(point)
-      }));
+      setDetectionProgress(95);
       
       // Add points with a visual delay to simulate processing
       let pointIndex = 0;
       const pointInterval = setInterval(() => {
-        if (pointIndex < jitteredPoints.length) {
-          setMeasurementPoints(prev => [...prev, jitteredPoints[pointIndex]]);
+        if (pointIndex < formattedPoints.length) {
+          setMeasurementPoints(prev => [...prev, formattedPoints[pointIndex]]);
           pointIndex++;
         } else {
           clearInterval(pointInterval);
           
           // Finish detection
           setAutoDetecting(false);
+          setDetectionProgress(100);
+          
           toast({
             title: "Detecção concluída",
             description: "Pontos identificados automaticamente. Utilize o modo de ajustes para refinar se necessário.",
+            variant: "success"
           });
           
           // Calculate measurements with a short delay
           setTimeout(() => {
-            calculateMeasurements();
+            if (calibrationFactor) {
+              calculateMeasurements();
+            } else {
+              toast({
+                title: "Calibração necessária",
+                description: "Por favor, calibre a imagem antes de calcular as medidas.",
+                variant: "warning"
+              });
+            }
           }, 500);
         }
       }, 100); // Add a point every 100ms for visual effect
@@ -355,6 +406,8 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     } catch (error) {
       console.error("Erro na detecção automática:", error);
       setAutoDetecting(false);
+      setDetectionProgress(0);
+      
       toast({
         title: "Erro na detecção",
         description: "Não foi possível detectar os pontos automaticamente. Tente novamente ou utilize o modo manual.",
@@ -363,7 +416,7 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     }
   };
 
-  // Adjust the calculate measurements function to be more robust
+  // Updated to use the new estimateHeadParameters function
   const calculateMeasurements = () => {
     if (!calibrationFactor) {
       toast({
@@ -375,7 +428,7 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     }
 
     // More robust helper function to find points by label prefix
-    const getPointsByPrefix = (prefix: string) => measurementPoints.filter(p => p.label.startsWith(prefix));
+    const getPointsByPrefix = (prefix: string) => measurementPoints.filter(p => p && p.label && p.label.startsWith(prefix));
     
     // Get the image element to calculate actual pixel distances
     const imageElement = document.querySelector('img[alt="Foto do paciente"]') as HTMLImageElement;
@@ -416,12 +469,12 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     const diagonalE = calculateDistance(diagonalEPoints);
 
     // Calculate additional measurements if their points exist
-    const apPoint = measurementPoints.find(p => p.label === 'ap-point');
-    const bpPoint = measurementPoints.find(p => p.label === 'bp-point');
-    const pdPoint = measurementPoints.find(p => p.label === 'pd-point');
-    const pePoint = measurementPoints.find(p => p.label === 'pe-point');
-    const tragusEPoint = measurementPoints.find(p => p.label === 'tragusE-point');
-    const tragusDPoint = measurementPoints.find(p => p.label === 'tragusD-point');
+    const apPoint = measurementPoints.find(p => p && p.label === 'ap-point');
+    const bpPoint = measurementPoints.find(p => p && p.label === 'bp-point');
+    const pdPoint = measurementPoints.find(p => p && p.label === 'pd-point');
+    const pePoint = measurementPoints.find(p => p && p.label === 'pe-point');
+    const tragusEPoint = measurementPoints.find(p => p && p.label === 'tragusE-point');
+    const tragusDPoint = measurementPoints.find(p => p && p.label === 'tragusD-point');
 
     let ap = null, bp = null, pd = null, pe = null, tragusE = null, tragusD = null;
     
@@ -505,6 +558,7 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
       toast({
         title: "Foto processada com sucesso",
         description: "Os valores foram extraídos e estão prontos para revisão.",
+        variant: "success",
       });
     }, 800);
   };
@@ -550,6 +604,8 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
     // Auto detection
     autoDetectMeasurements,
     autoDetecting,
+    detectionProgress,
+    canvasElem,
     handleCapturarFoto,
     handleUploadFoto,
     handleImageClick,
