@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ChevronLeft, FileText, Edit, History, Plus, Camera } from "lucide-react";
+import { Loader2, ChevronLeft, FileText, Edit, History, Plus, Camera, RotateCcw } from "lucide-react";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
@@ -319,19 +318,24 @@ export default function DetalhePaciente() {
                     </div>
                   </div>
                   
-                  <div className="flex justify-end space-x-2">
+                  {/* Modified button layout to match the reference image */}
+                  <div className="flex justify-between border-t pt-3 mt-4">
                     <Button 
                       variant="outline"
+                      size="sm"
                       onClick={() => navigate(`/pacientes/${id}/nova-medicao`)}
+                      className="px-4"
                     >
-                      Nova medição
+                      Edição
                     </Button>
+                    
                     <Button 
                       variant="outline"
+                      size="sm"
                       onClick={() => navigate(`/pacientes/${id}/historico`)}
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1 px-4"
                     >
-                      <History className="h-4 w-4" />
+                      <RotateCcw className="h-3.5 w-3.5 mr-1" />
                       Ver histórico completo
                     </Button>
                   </div>
