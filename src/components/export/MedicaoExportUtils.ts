@@ -1,5 +1,4 @@
 
-import { CSVLink } from "react-csv";
 import html2pdf from "html2pdf.js";
 import { formatAge } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
@@ -28,56 +27,61 @@ export class MedicaoExportUtils {
     if (!medicoes.length) return;
 
     const headers = [
-      { label: "Data", key: "data" },
-      { label: "Idade", key: "idade" },
-      { label: "Perímetro Cefálico (mm)", key: "perimetro_cefalico" },
-      { label: "Comprimento Máximo (mm)", key: "comprimento" },
-      { label: "Largura Máxima (mm)", key: "largura" },
-      { label: "Diagonal Direita (mm)", key: "diagonal_d" },
-      { label: "Diagonal Esquerda (mm)", key: "diagonal_e" },
-      { label: "Diferença Diagonais (mm)", key: "diferenca_diagonais" },
-      { label: "Índice Craniano (%)", key: "indice_craniano" },
-      { label: "CVAI (%)", key: "cvai" },
-      { label: "Tipo de Assimetria", key: "tipo_assimetria" },
-      { label: "Nível de Severidade", key: "nivel_severidade" }
+      "Data", "Idade", "Perímetro Cefálico (mm)", "Comprimento Máximo (mm)", 
+      "Largura Máxima (mm)", "Diagonal Direita (mm)", "Diagonal Esquerda (mm)", 
+      "Diferença Diagonais (mm)", "Índice Craniano (%)", "CVAI (%)", 
+      "Tipo de Assimetria", "Nível de Severidade"
     ];
 
-    const data = medicoes.map(medicao => {
+    const rows = medicoes.map(medicao => {
       const { asymmetryType, severityLevel } = getCranialStatus(medicao.indice_craniano, medicao.cvai);
       const dataFormatada = new Date(medicao.data).toLocaleDateString('pt-BR');
       const idade = formatAge(paciente.data_nascimento, medicao.data);
       
-      return {
-        data: dataFormatada,
+      return [
+        dataFormatada,
         idade,
-        perimetro_cefalico: medicao.perimetro_cefalico || '',
-        comprimento: medicao.comprimento_maximo || '',
-        largura: medicao.largura_maxima || '',
-        diagonal_d: medicao.diagonal_direita || medicao.diagonal_d || '',
-        diagonal_e: medicao.diagonal_esquerda || medicao.diagonal_e || '',
-        diferenca_diagonais: medicao.diferenca_diagonais || '',
-        indice_craniano: medicao.indice_craniano.toFixed(1),
-        cvai: medicao.cvai.toFixed(1),
-        tipo_assimetria: this.translateAsymmetryType(asymmetryType),
-        nivel_severidade: this.translateSeverityLevel(severityLevel)
-      };
+        medicao.perimetro_cefalico || '',
+        medicao.comprimento_maximo || '',
+        medicao.largura_maxima || '',
+        medicao.diagonal_direita || medicao.diagonal_d || '',
+        medicao.diagonal_esquerda || medicao.diagonal_e || '',
+        medicao.diferenca_diagonais || '',
+        medicao.indice_craniano.toFixed(1),
+        medicao.cvai.toFixed(1),
+        this.translateAsymmetryType(asymmetryType),
+        this.translateSeverityLevel(severityLevel)
+      ];
     });
 
-    // Criando um elemento temporário para o download
-    const csvData = {
-      data,
-      headers,
-      filename: `historico_medicoes_${paciente.nome.replace(/\s+/g, '_').toLowerCase()}.csv`
-    };
+    // Criar o conteúdo CSV
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => {
+        // Escapa valores com vírgulas
+        if (cell && typeof cell === 'string' && cell.includes(',')) {
+          return `"${cell}"`;
+        }
+        return cell;
+      }).join(','))
+    ].join('\n');
 
-    // Criando e clicando em um link temporário para download
-    const csvInstance = document.createElement('div');
-    document.body.appendChild(csvInstance);
-    const csvLink = csvInstance.appendChild(document.createElement('a'));
-    const csvLinkComponent = <CSVLink {...csvData}>Download CSV</CSVLink>;
-    // @ts-ignore - React-CSV's internals handle the click
-    csvLinkComponent.props.onClick({ preventDefault: () => {} });
-    document.body.removeChild(csvInstance);
+    // Criar um blob com o conteúdo CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    // Criar um link para download
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `historico_medicoes_${paciente.nome.replace(/\s+/g, '_').toLowerCase()}.csv`);
+    document.body.appendChild(link);
+    
+    // Disparar o clique para iniciar o download
+    link.click();
+    
+    // Limpar
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   static async exportToPDF(medicoes: MedicaoExportable[], paciente: PacienteExportable): Promise<void> {
