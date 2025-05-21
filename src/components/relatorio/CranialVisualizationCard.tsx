@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AsymmetryType, SeverityLevel } from "@/types";
 import CranialVisualization from "../medicoes/visualizacao/CranialVisualization";
 
@@ -55,7 +55,10 @@ export default function CranialVisualizationCard({
     
   return (
     <Card>
-      <CardContent className="p-6">
+      <CardHeader>
+        <CardTitle>Visualização Craniana</CardTitle>
+      </CardHeader>
+      <CardContent>
         <CranialVisualization
           currentMeasurement={currentMeasurement}
           measurementHistory={measurementHistory}
