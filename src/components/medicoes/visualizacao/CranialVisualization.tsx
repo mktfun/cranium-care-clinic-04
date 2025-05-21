@@ -2,11 +2,10 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, BarChart2, RotateCw } from "lucide-react";
+import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Eye, BarChart2 } from "lucide-react";
 import { AsymmetryType, SeverityLevel } from "@/types";
 import CranialSilhouette from './CranialSilhouette';
-import MeasurementEvolutionChart from './MeasurementEvolutionChart';
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 
 interface CranialVisualizationProps {
@@ -78,7 +77,7 @@ export default function CranialVisualization({
   }));
   
   return (
-    <Card className="border-primary/20 shadow-lg">
+    <div className="border-primary/20 shadow-lg">
       <CardHeader className="bg-card/50">
         <CardTitle className="text-card-foreground flex items-center justify-between">
           <span>Visualização Craniana</span>
@@ -186,51 +185,47 @@ export default function CranialVisualization({
               </div>
             </div>
             
-            {metricType === "indiceCraniano" && (
-              <div className="h-[350px]">
+            <div className="chart-container" style={{ height: '400px', position: 'relative', marginBottom: '20px' }}>
+              {metricType === "indiceCraniano" && (
                 <MedicaoLineChart
                   titulo="Evolução do Índice Craniano"
                   descricao="O Índice Craniano mede a proporção entre largura e comprimento do crânio. Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade."
-                  altura={350}
+                  altura={400}
                   medicoes={medicoesFiltradas}
                   dataNascimento={new Date().toISOString()}
                   tipoGrafico="indiceCraniano"
                   linhaCorTheme="rose"
                 />
-              </div>
-            )}
-            
-            {metricType === "cvai" && (
-              <div className="h-[350px]">
+              )}
+              
+              {metricType === "cvai" && (
                 <MedicaoLineChart
                   titulo="Evolução da Plagiocefalia"
                   descricao="O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana. Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa. A área verde representa a faixa de normalidade."
-                  altura={350}
+                  altura={400}
                   medicoes={medicoesFiltradas}
                   dataNascimento={new Date().toISOString()}
                   tipoGrafico="cvai"
                   linhaCorTheme="amber"
                 />
-              </div>
-            )}
-            
-            {metricType === "perimetroCefalico" && (
-              <div className="h-[350px]">
+              )}
+              
+              {metricType === "perimetroCefalico" && (
                 <MedicaoLineChart
                   titulo="Evolução do Perímetro Cefálico"
                   descricao="O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte mais protuberante do occipital. As linhas coloridas representam os percentis de referência para meninos da mesma idade, sendo P50 a média populacional."
-                  altura={350}
+                  altura={400}
                   medicoes={medicoesFiltradas}
                   dataNascimento={new Date().toISOString()}
                   tipoGrafico="perimetro"
                   sexoPaciente={sexoPaciente}
                   linhaCorTheme="blue"
                 />
-              </div>
-            )}
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
-    </Card>
+    </div>
   );
 }
