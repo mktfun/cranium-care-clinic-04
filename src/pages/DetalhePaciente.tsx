@@ -359,38 +359,27 @@ export default function DetalhePaciente() {
         
         <TabsContent value="medicoes">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Histórico de Medições</CardTitle>
-              <Button 
-                variant="outline"
-                onClick={() => navigate(`/pacientes/${id}/historico`)}
-                className="flex items-center gap-1"
-              >
-                <History className="h-4 w-4" />
-                Ver histórico completo
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                {medicoes.length > 0 ? (
-                  <MedicoesHistoricoTable 
-                    medicoes={medicoes}
-                    dataNascimento={paciente.data_nascimento}
-                  />
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">Nenhuma medição registrada</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2"
-                      onClick={() => navigate(`/pacientes/${id}/nova-medicao`)}
-                    >
-                      Registrar Medição
-                    </Button>
-                  </div>
-                )}
-              </div>
+            <CardContent className="pt-6">
+              {medicoes.length > 0 ? (
+                <MedicoesHistoricoTable 
+                  medicoes={medicoes}
+                  dataNascimento={paciente.data_nascimento}
+                  pacienteId={id || ''}
+                  showFullHistoryButton={true}
+                />
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">Nenhuma medição registrada</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => navigate(`/pacientes/${id}/nova-medicao`)}
+                  >
+                    Registrar Medição
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

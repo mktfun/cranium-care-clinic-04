@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -191,20 +190,12 @@ export default function HistoricoCompletoPaciente() {
         
         <TabsContent value="medicoes" className="pt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Medições Cranianas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {medicoes.length > 0 ? (
-                <MedicoesHistoricoTable 
-                  medicoes={medicoes}
-                  dataNascimento={paciente.data_nascimento}
-                />
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground">Nenhuma medição craniana registrada.</p>
-                </div>
-              )}
+            <CardContent className="pt-6">
+              <MedicoesHistoricoTable 
+                medicoes={medicoes}
+                dataNascimento={paciente.data_nascimento}
+                className="w-full"
+              />
             </CardContent>
           </Card>
         </TabsContent>
