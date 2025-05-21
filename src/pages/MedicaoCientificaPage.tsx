@@ -1,183 +1,148 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, FileText, History } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useNavigate, useParams } from "react-router-dom";
+import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-import { formatAgeHeader } from "@/lib/age-utils";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import ScientificCranialForm from "@/components/scientific-cranial/ScientificCranialForm";
 import ScientificCranialHistory from "@/components/scientific-cranial/ScientificCranialHistory";
 
 export default function MedicaoCientificaPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [paciente, setPaciente] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [medicoes, setMedicoes] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState("nova-medicao");
-  
+  const [loading, setLoading] = useState<boolean>(true);
+
   useEffect(() => {
-    async function fetchData() {
-      if (id) {
-        setLoading(true);
-        try {
-          // Fetch patient data
-          const { data: pacienteData, error: pacienteError } = await supabase
-            .from('pacientes')
-            .select('*')
-            .eq('id', id)
-            .single();
-            
-          if (pacienteError) {
-            console.error("Erro ao buscar dados do paciente:", pacienteError);
-            toast.error("Erro ao carregar dados do paciente.");
-            navigate("/pacientes");
-            return;
-          }
-          
-          setPaciente(pacienteData);
-          
-          // Fetch measurements
-          const { data: medicoesData, error: medicoesError } = await supabase
-            .from('medicoes')
-            .select('*')
-            .eq('paciente_id', id)
-            .order('data', { ascending: false });
-            
-          if (medicoesError) {
-            console.error("Erro ao buscar medições:", medicoesError);
-            toast.error("Erro ao carregar medições.");
-          } else {
-            setMedicoes(medicoesData || []);
-          }
-          
-        } catch (error) {
-          console.error("Erro inesperado:", error);
-          toast.error("Ocorreu um erro ao carregar os dados.");
-        } finally {
-          setLoading(false);
-        }
-      }
-    }
+    if (!id) return;
     
-    fetchData();
-  }, [id, navigate]);
+    const fetchPaciente = async () => {
+      try {
+        setLoading(true);
+        
+        // Carregar dados do paciente
+        const { data: pacienteData, error: pacienteError } = await supabase
+          .from('pacientes')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (pacienteError) throw pacienteError;
+        if (!pacienteData) throw new Error("Paciente não encontrado");
+        
+        setPaciente(pacienteData);
+        
+        // Carregar histórico de medições
+        const { data: medicoesData, error: medicoesError } = await supabase
+          .from('medicoes')
+          .select('*')
+          .eq('paciente_id', id)
+          .order('data', { ascending: false });
+        
+        if (medicoesError) throw medicoesError;
+        
+        setMedicoes(medicoesData || []);
+      } catch (error: any) {
+        console.error('Erro ao carregar dados:', error.message);
+        toast.error("Erro ao carregar dados do paciente");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchPaciente();
+  }, [id]);
   
-  const handleSaveMeasurement = async (medicao: any) => {
+  // Função para salvar nova medição
+  const handleSaveMeasurement = async (medicao: any): Promise<void> => {
     try {
+      if (!id) throw new Error("ID do paciente não encontrado");
+      
       const { data, error } = await supabase
         .from('medicoes')
-        .insert([{
+        .insert({
           ...medicao,
+          paciente_id: id,
           user_id: (await supabase.auth.getUser()).data.user?.id
-        }])
+        })
         .select()
         .single();
       
-      if (error) {
-        console.error("Erro ao salvar medição:", error);
-        throw new Error(error.message);
-      }
+      if (error) throw error;
       
-      // Atualizar a lista de medições
+      // Atualizar estado local
       setMedicoes(prevMedicoes => [data, ...prevMedicoes]);
       
-      // Mudar para a aba de histórico após salvar
-      setActiveTab("historico");
-      
-      return data;
-    } catch (error) {
-      console.error("Falha ao salvar medição:", error);
+      // Retornando void explicitamente
+      return;
+    } catch (error: any) {
+      console.error('Erro ao salvar medição:', error.message);
+      toast.error("Erro ao salvar medição craniana");
       throw error;
     }
   };
   
-  const formatarData = (data: string) => {
-    if (!data) return "N/A";
-    
-    const dataObj = new Date(data);
-    if (isNaN(dataObj.getTime())) return "Data inválida";
-    
-    return dataObj.toLocaleDateString('pt-BR');
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
+      <div className="container my-8 flex justify-center">
+        <p>Carregando dados do paciente...</p>
       </div>
     );
   }
-
+  
   if (!paciente) {
     return (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-semibold mb-4">Paciente não encontrado</h2>
-        <p className="text-muted-foreground mb-6">O paciente que você está procurando não foi encontrado no sistema.</p>
-        <Button onClick={() => navigate("/pacientes")}>Voltar para Pacientes</Button>
+      <div className="container my-8">
+        <p className="text-red-500">Paciente não encontrado.</p>
+        <Button onClick={() => navigate(-1)} className="mt-4">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+        </Button>
       </div>
     );
   }
-
-  const idadeAtual = formatAgeHeader(paciente.data_nascimento);
-
+  
   return (
-    <div className="space-y-6 animate-fade-in p-4 md:p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate(`/pacientes/${id}`)}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h2 className="text-3xl font-bold">{paciente.nome}</h2>
-            <p className="text-muted-foreground">
-              {idadeAtual} • Nasc.: {formatarData(paciente.data_nascimento)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="nova-medicao" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Nova Medição Científica
-          </TabsTrigger>
-          <TabsTrigger value="historico" className="flex items-center gap-2">
-            <History className="h-4 w-4" />
-            Histórico e Evolução
-          </TabsTrigger>
-        </TabsList>
+    <div className="container my-8">
+      <div className="mb-6">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate(-1)}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+        </Button>
         
-        <TabsContent value="nova-medicao" className="pt-4">
+        <h1 className="text-2xl font-bold mb-2">
+          Avaliação Craniana Científica - {paciente.nome}
+        </h1>
+        <p className="text-muted-foreground">
+          Utilize este formulário para realizar uma avaliação craniana baseada em métodos científicos e padrões antropométricos.
+        </p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Coluna do formulário - 2/3 */}
+        <div className="lg:col-span-2">
           <ScientificCranialForm 
-            pacienteId={id || ""}
+            pacienteId={paciente.id}
             pacienteNome={paciente.nome}
             pacienteDataNascimento={paciente.data_nascimento}
-            pacienteSexo={paciente.sexo || 'M'}
+            pacienteSexo={paciente.sexo || 'M'} 
             onSaveMeasurement={handleSaveMeasurement}
           />
-        </TabsContent>
+        </div>
         
-        <TabsContent value="historico" className="pt-4">
+        {/* Coluna do histórico - 1/3 */}
+        <div className="lg:col-span-1">
           <ScientificCranialHistory 
             medicoes={medicoes}
             dataNascimento={paciente.data_nascimento}
-            sexo={paciente.sexo || 'M'}
+            sexo={paciente.sexo || 'M'} 
           />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }
