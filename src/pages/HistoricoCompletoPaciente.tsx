@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, FileText, History, Calendar } from "lucide-react";
+import { ChevronLeft, History, Calendar, FileText, Download, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -12,6 +13,7 @@ import { formatAgeHeader } from "@/lib/age-utils";
 import { HistoricoMedicoList } from "@/components/historico/HistoricoMedicoList";
 import { ConsultasList } from "@/components/historico/ConsultasList";
 import { MedicoesHistoricoTable } from "@/components/relatorio/MedicoesHistoricoTable";
+import { MedicaoExportUtils } from "@/components/export/MedicaoExportUtils";
 
 export default function HistoricoCompletoPaciente() {
   const { id } = useParams();
@@ -22,6 +24,7 @@ export default function HistoricoCompletoPaciente() {
   const [historico, setHistorico] = useState<any[]>([]);
   const [consultas, setConsultas] = useState<any[]>([]);
   const [medicoes, setMedicoes] = useState<any[]>([]);
+  const [exportLoading, setExportLoading] = useState(false);
   
   useEffect(() => {
     async function fetchData() {
@@ -107,6 +110,36 @@ export default function HistoricoCompletoPaciente() {
     return dataObj.toLocaleDateString('pt-BR');
   };
 
+  const handleExportPDF = async () => {
+    if (!paciente) return;
+    
+    setExportLoading(true);
+    try {
+      await MedicaoExportUtils.exportToPDF(medicoes, paciente);
+      toast.success("PDF gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Erro ao gerar PDF. Tente novamente.");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (!paciente) return;
+    
+    setExportLoading(true);
+    try {
+      MedicaoExportUtils.exportToCSV(medicoes, paciente);
+      toast.success("CSV gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar CSV:", error);
+      toast.error("Erro ao gerar CSV. Tente novamente.");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -190,7 +223,32 @@ export default function HistoricoCompletoPaciente() {
         
         <TabsContent value="medicoes" className="pt-4">
           <Card>
-            <CardContent className="pt-6">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Medições Cranianas</CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={handleExportPDF}
+                  disabled={exportLoading || medicoes.length === 0}
+                >
+                  {exportLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                  Exportar PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={handleExportCSV}
+                  disabled={exportLoading || medicoes.length === 0}
+                >
+                  {exportLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  Exportar CSV
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
               <MedicoesHistoricoTable 
                 medicoes={medicoes}
                 dataNascimento={paciente.data_nascimento}
