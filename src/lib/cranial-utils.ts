@@ -1,3 +1,4 @@
+
 // Define types for asymmetry and severity
 export type AsymmetryType = "Braquicefalia" | "Dolicocefalia" | "Plagiocefalia" | "Misto" | "Normal";
 export type SeverityLevel = "normal" | "leve" | "moderada" | "severa";
@@ -144,6 +145,3 @@ export function getCranialStatus(indiceCraniano: number, cvai: number): CranialS
   // Return the determined status
   return { asymmetryType, severityLevel };
 }
-
-// Exporte explicitamente os tipos para uso em MedicaoExportUtils
-export type { AsymmetryType, SeverityLevel };
