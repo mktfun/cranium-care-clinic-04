@@ -31,6 +31,21 @@ export function ParametrosCraniaisCard({
   // Obter tipo e severidade da assimetria
   const { asymmetryType, severityLevel } = getCranialStatus(indiceCraniano, cvai);
 
+  // Função para determinar a classe de cor com base no valor do índice craniano
+  const getIndiceClasse = (valor: number) => {
+    if (valor >= 75 && valor <= 85) return "text-green-600"; // Normal
+    if (valor > 85) return "text-amber-500"; // Braquicefalia
+    return "text-amber-500"; // Dolicocefalia
+  };
+
+  // Função para determinar a classe de cor com base no valor do CVAI
+  const getCvaiClasse = (valor: number) => {
+    if (valor < 3.5) return "text-green-600"; // Normal
+    if (valor < 6.25) return "text-yellow-500"; // Leve
+    if (valor < 8.75) return "text-amber-500"; // Moderada
+    return "text-red-500"; // Severa
+  };
+
   return (
     <Card className={className}>
       <CardHeader>
@@ -50,7 +65,9 @@ export function ParametrosCraniaisCard({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Índice Craniano</p>
-            <p className="text-lg font-medium">{indiceCraniano}%</p>
+            <p className={`text-lg font-medium ${getIndiceClasse(indiceCraniano)}`}>
+              {indiceCraniano}%
+            </p>
           </div>
           
           {/* Linha 2: Diagonal D, Diagonal E, Diferença Diagonais, CVAI */}
@@ -69,7 +86,9 @@ export function ParametrosCraniaisCard({
           
           <div>
             <p className="text-sm text-muted-foreground">CVAI</p>
-            <p className="text-lg font-medium">{cvai}%</p>
+            <p className={`text-lg font-medium ${getCvaiClasse(cvai)}`}>
+              {cvai}%
+            </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Status</p>

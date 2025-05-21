@@ -5,11 +5,12 @@ import { formatAgeHeader } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { generateRecomendacoes } from "@/lib/medicao-utils";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Camera } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useMedicaoCalculations } from "@/hooks/useMedicaoCalculations";
 import MedicaoForm from "@/components/medicoes/MedicaoForm";
 import PhotoPreview from "@/components/medicoes/PhotoPreview";
+import { Button } from "@/components/ui/button";
 
 export default function NovaMedicao() {
   const { id } = useParams();
@@ -34,13 +35,6 @@ export default function NovaMedicao() {
   const [diagonalD, setDiagonalD] = useState("");
   const [diagonalE, setDiagonalE] = useState("");
   const [perimetroCefalico, setPerimetroCefalico] = useState("");
-  // Novas medidas adicionadas
-  const [ap, setAP] = useState("");
-  const [bp, setBP] = useState("");
-  const [pd, setPD] = useState("");
-  const [pe, setPE] = useState("");
-  const [tragusE, setTragusE] = useState("");
-  const [tragusD, setTragusD] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   
@@ -123,16 +117,15 @@ export default function NovaMedicao() {
       setDiagonalD(String(measurements.diagonalD || ''));
       setDiagonalE(String(measurements.diagonalE || ''));
       setPerimetroCefalico(String(measurements.perimetroCefalico || ''));
-      // Novas medidas
-      setAP(String(measurements.ap || ''));
-      setBP(String(measurements.bp || ''));
-      setPD(String(measurements.pd || ''));
-      setPE(String(measurements.pe || ''));
-      setTragusE(String(measurements.tragusE || ''));
-      setTragusD(String(measurements.tragusD || ''));
       setPhotoUrl(photoUrl);
     }
   }, [photoData]);
+  
+  const handlePhotoCapture = () => {
+    if (id) {
+      navigate(`/pacientes/${id}/medicao-por-foto`);
+    }
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,14 +186,7 @@ export default function NovaMedicao() {
           perimetro_cefalico: Number(perimetroCefalico),
           status: severityLevel,
           observacoes: observacoes || null,
-          recomendacoes: generateRecomendacoes(severityLevel),
-          // Novas medidas
-          ap: ap ? Number(ap) : null,
-          bp: bp ? Number(bp) : null,
-          pd: pd ? Number(pd) : null,
-          pe: pe ? Number(pe) : null,
-          tragus_e: tragusE ? Number(tragusE) : null,
-          tragus_d: tragusD ? Number(tragusD) : null
+          recomendacoes: generateRecomendacoes(severityLevel)
         };
         
         const { data, error } = await supabase
@@ -251,13 +237,24 @@ export default function NovaMedicao() {
   
   return (
     <div className="space-y-6 animate-fade-in p-4 md:p-6">
-      <div>
-        <h2 className="text-3xl font-bold">
-          {photoData ? "Revisão da Medição por Foto" : "Medição Manual"}
-        </h2>
-        <p className="text-muted-foreground">
-          Paciente: {paciente.nome} • {formatAgeHeader(paciente.data_nascimento)}
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold">
+            {photoData ? "Revisão da Medição por Foto" : "Medição Manual"}
+          </h2>
+          <p className="text-muted-foreground">
+            Paciente: {paciente.nome} • {formatAgeHeader(paciente.data_nascimento)}
+          </p>
+        </div>
+        {!photoData && (
+          <Button 
+            onClick={handlePhotoCapture}
+            className="bg-turquesa hover:bg-turquesa/90 flex items-center gap-2"
+          >
+            <Camera className="h-4 w-4" />
+            Medir por Foto
+          </Button>
+        )}
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -279,18 +276,6 @@ export default function NovaMedicao() {
           setDiagonalE={setDiagonalE}
           perimetroCefalico={perimetroCefalico}
           setPerimetroCefalico={setPerimetroCefalico}
-          ap={ap}
-          setAP={setAP}
-          bp={bp}
-          setBP={setBP}
-          pd={pd}
-          setPD={setPD}
-          pe={pe}
-          setPE={setPE}
-          tragusE={tragusE}
-          setTragusE={setTragusE}
-          tragusD={tragusD}
-          setTragusD={setTragusD}
           observacoes={observacoes}
           setObservacoes={setObservacoes}
           indiceCraniano={indiceCraniano}

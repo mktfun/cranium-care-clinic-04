@@ -154,13 +154,13 @@ export function MedicaoLineChart({
     return data.map(point => ({
       ...point,
       // Limites para classificação de braquicefalia/dolicocefalia
-      normalLowerBound: 76,
-      normalUpperBound: 80,
-      braquiLeve: 84,
+      normalLowerBound: 75, // Atualizado para 75
+      normalUpperBound: 85, // Atualizado para 85
+      braquiLeve: 87,      // Ajustado com base no novo limite superior
       braquiModerada: 90,
-      dolicoLeve: 73,
+      dolicoLeve: 73,      // Ajustado com base no novo limite inferior
       dolicoModerada: 70,
-      mediaPopulacional: 78
+      mediaPopulacional: 80 // Média ajustada para o centro do intervalo normal
     }));
   };
 
@@ -327,10 +327,10 @@ export function MedicaoLineChart({
       return (
         <>
           <ReferenceArea y1={90} y2={95} fill="#FECDD3" fillOpacity={0.6} />
-          <ReferenceArea y1={84} y2={90} fill="#FED7AA" fillOpacity={0.6} />
-          <ReferenceArea y1={80} y2={84} fill="#FEF08A" fillOpacity={0.6} />
-          <ReferenceArea y1={76} y2={80} fill="#BBF7D0" fillOpacity={0.6} />
-          <ReferenceArea y1={73} y2={76} fill="#FEF08A" fillOpacity={0.6} />
+          <ReferenceArea y1={87} y2={90} fill="#FED7AA" fillOpacity={0.6} />
+          <ReferenceArea y1={85} y2={87} fill="#FEF08A" fillOpacity={0.6} />
+          <ReferenceArea y1={75} y2={85} fill="#BBF7D0" fillOpacity={0.6} />
+          <ReferenceArea y1={73} y2={75} fill="#FEF08A" fillOpacity={0.6} />
           <ReferenceArea y1={70} y2={73} fill="#FED7AA" fillOpacity={0.6} />
           <ReferenceArea y1={65} y2={70} fill="#FECDD3" fillOpacity={0.6} />
         </>

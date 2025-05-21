@@ -134,13 +134,13 @@ export function MeasurementCharts({ medicoes, dataNascimento, sexoPaciente }: Me
                 {!isMobile && (
                 <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/20 dark:bg-gray-800/30">
                   <p><strong>O que é?</strong> O Índice Craniano mede a proporção entre largura e comprimento do crânio.</p>
-                  <p><strong>Como interpretar:</strong> Valores entre 76% e 80% são considerados normais (zona verde no gráfico).</p>
-                  <p><strong>Desvios:</strong> Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% indicam tendência à dolicocefalia.</p>
+                  <p><strong>Como interpretar:</strong> Valores entre 75% e 85% são considerados normais (zona verde no gráfico).</p>
+                  <p><strong>Desvios:</strong> Valores acima de 85% indicam tendência à braquicefalia, enquanto valores abaixo de 75% indicam tendência à dolicocefalia.</p>
                 </div>
                 )}
                 {isMobile && (
                 <div className="text-xs text-muted-foreground p-2 border rounded-md bg-muted/20 dark:bg-gray-800/30">
-                  <p><strong>Normal:</strong> 76-80% | <strong>Alto:</strong> &gt;80% (braquicefalia) | <strong>Baixo:</strong> &lt;76% (dolicocefalia)</p>
+                  <p><strong>Normal:</strong> 75-85% | <strong>Alto:</strong> &gt;85% (braquicefalia) | <strong>Baixo:</strong> &lt;75% (dolicocefalia)</p>
                 </div>
                 )}
                 <div 
