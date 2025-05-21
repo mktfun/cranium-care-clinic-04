@@ -42,11 +42,16 @@ export function RelatorioHeader({
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from('usuarios')
             .select('nome, clinica_nome, clinica_logo')
             .eq('id', user.id)
             .single();
+            
+          if (error) {
+            console.error("Erro ao buscar informações da clínica:", error);
+            return;
+          }
             
           if (data) {
             setClinicaInfo({

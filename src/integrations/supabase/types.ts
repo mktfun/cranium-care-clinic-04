@@ -401,6 +401,7 @@ export type Database = {
       usuarios: {
         Row: {
           avatar_url: string | null
+          clinica_logo: string | null
           clinica_nome: string | null
           created_at: string | null
           email: string
@@ -410,6 +411,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          clinica_logo?: string | null
           clinica_nome?: string | null
           created_at?: string | null
           email: string
@@ -419,6 +421,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          clinica_logo?: string | null
           clinica_nome?: string | null
           created_at?: string | null
           email?: string

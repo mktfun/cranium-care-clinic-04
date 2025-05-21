@@ -23,11 +23,16 @@ export function RelatorioFooter({
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from('usuarios')
             .select('nome, clinica_nome')
             .eq('id', user.id)
             .single();
+              
+          if (error) {
+            console.error("Erro ao buscar dados do usuário:", error);
+            return;
+          }
               
           if (data) {
             setProfissionalNome(data.nome || "");
