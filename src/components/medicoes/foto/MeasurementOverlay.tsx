@@ -118,6 +118,7 @@ export default function MeasurementOverlay({
 
   // Function to get the correct color class for points and lines
   const getColorClass = (label: string) => {
+    if (!label) return 'bg-gray-500';
     if (label.startsWith('comprimento')) return 'bg-red-500';
     if (label.startsWith('largura')) return 'bg-textoEscuro';  
     if (label.startsWith('diagonalD')) return 'bg-green-500';
@@ -180,28 +181,33 @@ export default function MeasurementOverlay({
       )}
       
       {/* Measurement points */}
-      {measurementPoints.map((point, index) => (
-        <div 
-          key={index}
-          className={`absolute w-3 h-3 rounded-full z-20 ${point && point.label ? getColorClass(point.label) : 'bg-gray-500'} 
-          ${onMovePoint ? 'cursor-move pointer-events-auto shadow-md hover:shadow-lg' : ''}`}
-          style={{ 
-            left: `${point.x * 100}%`, 
-            top: `${point.y * 100}%`,
-            transform: 'translate(-50%, -50%)',
-            transition: draggingPointIndex === index ? 'none' : 'all 0.1s ease'
-          }}
-          onMouseDown={onMovePoint ? handlePointMouseDown(index) : undefined}
-          onTouchStart={onMovePoint ? handlePointTouchStart(index) : undefined}
-          title={point && point.label ? point.label.replace('-start', '').replace('-end', '') : ''}
-        />
-      ))}
+      {measurementPoints && measurementPoints.map((point, index) => {
+        // Skip rendering if point or point properties are undefined
+        if (!point || point.x === undefined || point.y === undefined) return null;
+        return (
+          <div 
+            key={index}
+            className={`absolute w-3 h-3 rounded-full z-20 ${point.label ? getColorClass(point.label) : 'bg-gray-500'} 
+            ${onMovePoint ? 'cursor-move pointer-events-auto shadow-md hover:shadow-lg' : ''}`}
+            style={{ 
+              left: `${point.x * 100}%`, 
+              top: `${point.y * 100}%`,
+              transform: 'translate(-50%, -50%)',
+              transition: draggingPointIndex === index ? 'none' : 'all 0.1s ease'
+            }}
+            onMouseDown={onMovePoint ? handlePointMouseDown(index) : undefined}
+            onTouchStart={onMovePoint ? handlePointTouchStart(index) : undefined}
+            title={point.label ? point.label.replace('-start', '').replace('-end', '') : ''}
+          />
+        );
+      })}
       
       {/* Measurement lines */}
       {['comprimento', 'largura', 'diagonalD', 'diagonalE'].map(prefix => {
         // Ensure we have valid points before proceeding
+        if (!measurementPoints) return null;
         const points = measurementPoints.filter(p => p && p.label && p.label.startsWith(prefix));
-        if (points.length !== 2) return null;
+        if (points.length !== 2 || !points[0] || !points[1]) return null;
         
         const lineColor = 
           prefix === 'comprimento' ? 'bg-red-500' :
@@ -245,6 +251,7 @@ export default function MeasurementOverlay({
       {/* Additional measurement visualizations for other points */}
       {/* For AP-BP line */}
       {(() => {
+        if (!measurementPoints) return null;
         const apPoint = measurementPoints.find(p => p && p.label === 'ap-point');
         const bpPoint = measurementPoints.find(p => p && p.label === 'bp-point');
         
@@ -276,6 +283,7 @@ export default function MeasurementOverlay({
       
       {/* For PD-PE line */}
       {(() => {
+        if (!measurementPoints) return null;
         const pdPoint = measurementPoints.find(p => p && p.label === 'pd-point');
         const pePoint = measurementPoints.find(p => p && p.label === 'pe-point');
         
@@ -307,6 +315,7 @@ export default function MeasurementOverlay({
       
       {/* For tragusE-tragusD line */}
       {(() => {
+        if (!measurementPoints) return null;
         const tragusEPoint = measurementPoints.find(p => p && p.label === 'tragusE-point');
         const tragusDPoint = measurementPoints.find(p => p && p.label === 'tragusD-point');
         

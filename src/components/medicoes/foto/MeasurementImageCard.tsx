@@ -54,7 +54,7 @@ export default function MeasurementImageCard({
   calibrationFactor,
   calibrationStart,
   calibrationEnd,
-  measurementPoints,
+  measurementPoints = [], // Set default to empty array
   measurements,
   handleImageClick,
   calculateMeasurements,
@@ -197,7 +197,7 @@ export default function MeasurementImageCard({
               imageRef={imageRef}
               calibrationStart={calibrationStart}
               calibrationEnd={calibrationEnd}
-              measurementPoints={measurementPoints}
+              measurementPoints={measurementPoints || []}
               onMovePoint={isAdjustMode ? handleMovePoint : undefined}
             />
           </AspectRatio>
