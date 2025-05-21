@@ -25,6 +25,33 @@ export default function MeasurementLegend() {
         </div>
       </div>
       
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+          <span>AP</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+          <span>BP</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-teal-500"></div>
+          <span>PD</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+          <span>PE</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+          <span>Tragus E</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-cyan-500"></div>
+          <span>Tragus D</span>
+        </div>
+      </div>
+      
       <Separator className="my-2" />
       
       <div className="text-xs">

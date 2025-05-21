@@ -1,6 +1,7 @@
 
+import React from "react";
 import { Button } from "@/components/ui/button";
-import CalibrationPanel from "./CalibrationPanel";
+import { Ruler, RadioIcon, CircleOff } from "lucide-react";
 import MeasurementButton from "./MeasurementButton";
 
 type MeasurementButtonsProps = {
@@ -12,7 +13,7 @@ type MeasurementButtonsProps = {
   measurements: any;
   measurementPoints: any[];
   calculateMeasurements: () => void;
-  // Novos modos
+  // Novos botões
   apMode?: boolean;
   setApMode?: (mode: boolean) => void;
   bpMode?: boolean;
@@ -27,7 +28,7 @@ type MeasurementButtonsProps = {
   setTragusDMode?: (mode: boolean) => void;
 };
 
-export default function MeasurementButtons({
+const MeasurementButtons = ({
   calibrationMode,
   setCalibrationMode,
   measurementMode,
@@ -47,249 +48,322 @@ export default function MeasurementButtons({
   tragusEMode,
   setTragusEMode,
   tragusDMode,
-  setTragusDMode
-}: MeasurementButtonsProps) {
+  setTragusDMode,
+}: MeasurementButtonsProps) => {
+  // Safe check to ensure measurementPoints is an array
+  const safePoints = Array.isArray(measurementPoints) ? measurementPoints : [];
+
+  // Check if a specific measurement type is complete
+  const isMeasurementComplete = (prefix: string) => {
+    return safePoints.filter(p => p && p.label && p.label.startsWith(prefix)).length === 2;
+  };
+
+  // Check if a specific point is marked
+  const isPointMarked = (label: string) => {
+    return safePoints.some(p => p && p.label === label);
+  };
+
+  // Helpers to check if primary measurements are ready
+  const comprimentoComplete = isMeasurementComplete('comprimento');
+  const larguraComplete = isMeasurementComplete('largura');
+  const diagonalDComplete = isMeasurementComplete('diagonalD');
+  const diagonalEComplete = isMeasurementComplete('diagonalE');
+
+  // Check if all primary measurements are complete
+  const allPrimaryMeasurementsComplete = 
+    comprimentoComplete && 
+    larguraComplete && 
+    diagonalDComplete && 
+    diagonalEComplete;
   
-  const measurementButtons = [
-    {
-      type: "comprimento",
-      label: "Comprimento",
-      description: "Clique nos pontos mais anterior e posterior da cabeça",
-      color: "bg-red-500",
-      hoverColor: "hover:bg-red-600"
-    },
-    {
-      type: "largura",
-      label: "Largura",
-      description: "Clique nos pontos mais laterais da cabeça",
-      color: "bg-textoEscuro",
-      hoverColor: "hover:bg-gray-800"
-    },
-    {
-      type: "diagonalD",
-      label: "Diagonal D",
-      description: "Clique para marcar a diagonal direita da cabeça",
-      color: "bg-green-500",
-      hoverColor: "hover:bg-green-600"
-    },
-    {
-      type: "diagonalE",
-      label: "Diagonal E",
-      description: "Clique para marcar a diagonal esquerda da cabeça",
-      color: "bg-purple-500",
-      hoverColor: "hover:bg-purple-600"
-    }
-  ];
-
-  // Funções para os novos botões
-  const handleApClick = () => {
-    if (!setApMode) return;
-    setApMode(true);
-    setMeasurementMode(null);
-    setCalibrationMode(false);
-    if (setBpMode) setBpMode(false);
-    if (setPdMode) setPdMode(false);
-    if (setPeMode) setPeMode(false);
-    if (setTragusEMode) setTragusEMode(false);
-    if (setTragusDMode) setTragusDMode(false);
-    
-    toast({
-      title: "Medindo AP",
-      description: "Clique na posição AP na foto",
-    });
-  };
-
-  const handleBpClick = () => {
-    if (!setBpMode) return;
-    setBpMode(true);
-    setMeasurementMode(null);
-    setCalibrationMode(false);
-    if (setApMode) setApMode(false);
-    if (setPdMode) setPdMode(false);
-    if (setPeMode) setPeMode(false);
-    if (setTragusEMode) setTragusEMode(false);
-    if (setTragusDMode) setTragusDMode(false);
-    
-    toast({
-      title: "Medindo BP",
-      description: "Clique na posição BP na foto",
-    });
-  };
-
-  const handlePdClick = () => {
-    if (!setPdMode) return;
-    setPdMode(true);
-    setMeasurementMode(null);
-    setCalibrationMode(false);
-    if (setApMode) setApMode(false);
-    if (setBpMode) setBpMode(false);
-    if (setPeMode) setPeMode(false);
-    if (setTragusEMode) setTragusEMode(false);
-    if (setTragusDMode) setTragusDMode(false);
-    
-    toast({
-      title: "Medindo PD",
-      description: "Clique na posição PD na foto",
-    });
-  };
-
-  const handlePeClick = () => {
-    if (!setPeMode) return;
-    setPeMode(true);
-    setMeasurementMode(null);
-    setCalibrationMode(false);
-    if (setApMode) setApMode(false);
-    if (setBpMode) setBpMode(false);
-    if (setPdMode) setPdMode(false);
-    if (setTragusEMode) setTragusEMode(false);
-    if (setTragusDMode) setTragusDMode(false);
-    
-    toast({
-      title: "Medindo PE",
-      description: "Clique na posição PE na foto",
-    });
-  };
-
-  const handleTragusEClick = () => {
-    if (!setTragusEMode) return;
-    setTragusEMode(true);
-    setMeasurementMode(null);
-    setCalibrationMode(false);
-    if (setApMode) setApMode(false);
-    if (setBpMode) setBpMode(false);
-    if (setPdMode) setPdMode(false);
-    if (setPeMode) setPeMode(false);
-    if (setTragusDMode) setTragusDMode(false);
-    
-    toast({
-      title: "Medindo TRAGUS E",
-      description: "Clique na posição TRAGUS E na foto",
-    });
-  };
-
-  const handleTragusDClick = () => {
-    if (!setTragusDMode) return;
-    setTragusDMode(true);
-    setMeasurementMode(null);
-    setCalibrationMode(false);
-    if (setApMode) setApMode(false);
-    if (setBpMode) setBpMode(false);
-    if (setPdMode) setPdMode(false);
-    if (setPeMode) setPeMode(false);
-    if (setTragusEMode) setTragusEMode(false);
-    
-    toast({
-      title: "Medindo TRAGUS D",
-      description: "Clique na posição TRAGUS D na foto",
-    });
-  };
+  // Check if AP-BP measurements are complete
+  const apPointMarked = isPointMarked('ap-point');
+  const bpPointMarked = isPointMarked('bp-point');
+  
+  // Check if PD-PE measurements are complete
+  const pdPointMarked = isPointMarked('pd-point');
+  const pePointMarked = isPointMarked('pe-point');
+  
+  // Check if Tragus measurements are complete
+  const tragusEPointMarked = isPointMarked('tragusE-point');
+  const tragusDPointMarked = isPointMarked('tragusD-point');
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2">
-        <CalibrationPanel
-          calibrationMode={calibrationMode}
-          setCalibrationMode={setCalibrationMode}
-          setMeasurementMode={setMeasurementMode}
-          calibrationFactor={calibrationFactor}
-          measurements={measurements}
+    <div>
+      <div className="grid grid-cols-3 md:flex md:flex-wrap gap-2">
+        {/* Calibration button */}
+        <Button
+          size="sm"
+          variant={calibrationMode ? "default" : calibrationFactor ? "outline" : "destructive"}
+          className={calibrationFactor ? "border-green-500 text-green-600" : ""}
+          onClick={() => {
+            if (!calibrationMode) {
+              setCalibrationMode(true);
+              setMeasurementMode(null);
+              // Reset additional modes if they exist
+              setApMode?.(false);
+              setBpMode?.(false);
+              setPdMode?.(false);
+              setPeMode?.(false);
+              setTragusEMode?.(false);
+              setTragusDMode?.(false);
+            } else {
+              setCalibrationMode(false);
+            }
+          }}
+        >
+          <Ruler className="h-4 w-4 mr-1" />
+          <span>Calibração</span>
+          {calibrationFactor && !calibrationMode && (
+            <span className="ml-1 text-xs text-green-600">✓</span>
+          )}
+        </Button>
+
+        {/* Primary measurement buttons */}
+        <MeasurementButton
+          label="Comprimento"
+          mode="comprimento"
+          icon="horizontal"
+          currentMode={measurementMode}
+          onClick={() => {
+            setMeasurementMode('comprimento');
+            setCalibrationMode(false);
+            // Reset additional modes if they exist
+            setApMode?.(false);
+            setBpMode?.(false);
+            setPdMode?.(false);
+            setPeMode?.(false);
+            setTragusEMode?.(false);
+            setTragusDMode?.(false);
+          }}
+          disabled={!calibrationFactor}
+          isComplete={comprimentoComplete}
         />
-        
-        {measurementButtons.map((button) => (
+
+        <MeasurementButton
+          label="Largura"
+          mode="largura"
+          icon="vertical"
+          currentMode={measurementMode}
+          onClick={() => {
+            setMeasurementMode('largura');
+            setCalibrationMode(false);
+            // Reset additional modes if they exist
+            setApMode?.(false);
+            setBpMode?.(false);
+            setPdMode?.(false);
+            setPeMode?.(false);
+            setTragusEMode?.(false);
+            setTragusDMode?.(false);
+          }}
+          disabled={!calibrationFactor}
+          isComplete={larguraComplete}
+        />
+
+        <MeasurementButton
+          label="Diagonal D"
+          mode="diagonalD"
+          icon="diagonal-right"
+          currentMode={measurementMode}
+          onClick={() => {
+            setMeasurementMode('diagonalD');
+            setCalibrationMode(false);
+            // Reset additional modes if they exist
+            setApMode?.(false);
+            setBpMode?.(false);
+            setPdMode?.(false);
+            setPeMode?.(false);
+            setTragusEMode?.(false);
+            setTragusDMode?.(false);
+          }}
+          disabled={!calibrationFactor}
+          isComplete={diagonalDComplete}
+        />
+
+        <MeasurementButton
+          label="Diagonal E"
+          mode="diagonalE"
+          icon="diagonal-left"
+          currentMode={measurementMode}
+          onClick={() => {
+            setMeasurementMode('diagonalE');
+            setCalibrationMode(false);
+            // Reset additional modes if they exist
+            setApMode?.(false);
+            setBpMode?.(false);
+            setPdMode?.(false);
+            setPeMode?.(false);
+            setTragusEMode?.(false);
+            setTragusDMode?.(false);
+          }}
+          disabled={!calibrationFactor}
+          isComplete={diagonalEComplete}
+        />
+
+        {/* Additional measurement points */}
+        {setApMode && (
           <MeasurementButton
-            key={button.type}
-            type={button.type}
-            label={button.label}
-            description={button.description}
-            color={button.color}
-            hoverColor={button.hoverColor}
-            currentMode={measurementMode}
-            setMeasurementMode={setMeasurementMode}
-            setCalibrationMode={setCalibrationMode}
-            disabled={!calibrationFactor || !!measurements}
+            label="AP"
+            isPoint={true}
+            isActive={apMode}
+            onClick={() => {
+              setApMode(true);
+              setCalibrationMode(false);
+              setMeasurementMode(null);
+              setBpMode?.(false);
+              setPdMode?.(false);
+              setPeMode?.(false);
+              setTragusEMode?.(false);
+              setTragusDMode?.(false);
+            }}
+            disabled={!calibrationFactor}
+            isComplete={apPointMarked}
+            className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-700"
+            completeClassName="border-orange-500 text-orange-600"
           />
-        ))}
+        )}
+        
+        {setBpMode && (
+          <MeasurementButton
+            label="BP"
+            isPoint={true}
+            isActive={bpMode}
+            onClick={() => {
+              setBpMode(true);
+              setCalibrationMode(false);
+              setMeasurementMode(null);
+              setApMode?.(false);
+              setPdMode?.(false);
+              setPeMode?.(false);
+              setTragusEMode?.(false);
+              setTragusDMode?.(false);
+            }}
+            disabled={!calibrationFactor}
+            isComplete={bpPointMarked}
+            className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-700"
+            completeClassName="border-blue-500 text-blue-600"
+          />
+        )}
+        
+        {setPdMode && (
+          <MeasurementButton
+            label="PD"
+            isPoint={true}
+            isActive={pdMode}
+            onClick={() => {
+              setPdMode(true);
+              setCalibrationMode(false);
+              setMeasurementMode(null);
+              setApMode?.(false);
+              setBpMode?.(false);
+              setPeMode?.(false);
+              setTragusEMode?.(false);
+              setTragusDMode?.(false);
+            }}
+            disabled={!calibrationFactor}
+            isComplete={pdPointMarked}
+            className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-700"
+            completeClassName="border-teal-500 text-teal-600"
+          />
+        )}
+        
+        {setPeMode && (
+          <MeasurementButton
+            label="PE"
+            isPoint={true}
+            isActive={peMode}
+            onClick={() => {
+              setPeMode(true);
+              setCalibrationMode(false);
+              setMeasurementMode(null);
+              setApMode?.(false);
+              setBpMode?.(false);
+              setPdMode?.(false);
+              setTragusEMode?.(false);
+              setTragusDMode?.(false);
+            }}
+            disabled={!calibrationFactor}
+            isComplete={pePointMarked}
+            className="bg-pink-500/10 hover:bg-pink-500/20 text-pink-700"
+            completeClassName="border-pink-500 text-pink-600"
+          />
+        )}
+        
+        {setTragusEMode && (
+          <MeasurementButton
+            label="TRAG-E"
+            isPoint={true}
+            isActive={tragusEMode}
+            onClick={() => {
+              setTragusEMode(true);
+              setCalibrationMode(false);
+              setMeasurementMode(null);
+              setApMode?.(false);
+              setBpMode?.(false);
+              setPdMode?.(false);
+              setPeMode?.(false);
+              setTragusDMode?.(false);
+            }}
+            disabled={!calibrationFactor}
+            isComplete={tragusEPointMarked}
+            className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-700"
+            completeClassName="border-amber-500 text-amber-600"
+          />
+        )}
+        
+        {setTragusDMode && (
+          <MeasurementButton
+            label="TRAG-D"
+            isPoint={true}
+            isActive={tragusDMode}
+            onClick={() => {
+              setTragusDMode(true);
+              setCalibrationMode(false);
+              setMeasurementMode(null);
+              setApMode?.(false);
+              setBpMode?.(false);
+              setPdMode?.(false);
+              setPeMode?.(false);
+              setTragusEMode?.(false);
+            }}
+            disabled={!calibrationFactor}
+            isComplete={tragusDPointMarked}
+            className="bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700"
+            completeClassName="border-cyan-500 text-cyan-600"
+          />
+        )}
+
+        {/* Calculate Button */}
+        <Button
+          size="sm"
+          className="col-span-3 md:col-span-1 bg-turquesa hover:bg-turquesa/90"
+          disabled={
+            !calibrationFactor || 
+            !allPrimaryMeasurementsComplete ||
+            calibrationMode || 
+            !!measurementMode ||
+            apMode || 
+            bpMode || 
+            pdMode || 
+            peMode ||
+            tragusEMode ||
+            tragusDMode
+          }
+          onClick={calculateMeasurements}
+        >
+          <RadioIcon className="h-4 w-4 mr-1" />
+          <span>Calcular Medidas</span>
+        </Button>
       </div>
-      
-      {/* Novas medidas */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          onClick={handleApClick}
-          variant={apMode ? "default" : "outline"}
-          size="sm"
-          disabled={!calibrationFactor || !!measurements}
-          className={apMode ? "bg-orange-500 hover:bg-orange-600" : ""}
-        >
-          AP
-        </Button>
-        
-        <Button
-          onClick={handleBpClick}
-          variant={bpMode ? "default" : "outline"}
-          size="sm"
-          disabled={!calibrationFactor || !!measurements}
-          className={bpMode ? "bg-orange-500 hover:bg-orange-600" : ""}
-        >
-          BP
-        </Button>
-        
-        <Button
-          onClick={handlePdClick}
-          variant={pdMode ? "default" : "outline"}
-          size="sm"
-          disabled={!calibrationFactor || !!measurements}
-          className={pdMode ? "bg-orange-500 hover:bg-orange-600" : ""}
-        >
-          PD
-        </Button>
-        
-        <Button
-          onClick={handlePeClick}
-          variant={peMode ? "default" : "outline"}
-          size="sm"
-          disabled={!calibrationFactor || !!measurements}
-          className={peMode ? "bg-orange-500 hover:bg-orange-600" : ""}
-        >
-          PE
-        </Button>
-        
-        <Button
-          onClick={handleTragusEClick}
-          variant={tragusEMode ? "default" : "outline"}
-          size="sm"
-          disabled={!calibrationFactor || !!measurements}
-          className={tragusEMode ? "bg-orange-500 hover:bg-orange-600" : ""}
-        >
-          TRAGUS E
-        </Button>
-        
-        <Button
-          onClick={handleTragusDClick}
-          variant={tragusDMode ? "default" : "outline"}
-          size="sm"
-          disabled={!calibrationFactor || !!measurements}
-          className={tragusDMode ? "bg-orange-500 hover:bg-orange-600" : ""}
-        >
-          TRAGUS D
-        </Button>
+
+      <div className="mt-4">
+        <MeasurementLegend />
       </div>
-      
-      <Button
-        onClick={calculateMeasurements}
-        className="w-full mt-4 bg-turquesa hover:bg-turquesa/90"
-        disabled={
-          !calibrationFactor || 
-          measurementPoints.filter(p => p.label.startsWith('comprimento')).length !== 2 ||
-          measurementPoints.filter(p => p.label.startsWith('largura')).length !== 2 ||
-          measurementPoints.filter(p => p.label.startsWith('diagonalD')).length !== 2 ||
-          measurementPoints.filter(p => p.label.startsWith('diagonalE')).length !== 2
-        }
-      >
-        Calcular Medidas
-      </Button>
     </div>
   );
-}
+};
 
-// Importação necessária para toast
-import { toast } from "@/hooks/use-toast";
+// Import at the component level so it's available in this file
+import MeasurementLegend from "./MeasurementLegend";
+
+export default MeasurementButtons;
