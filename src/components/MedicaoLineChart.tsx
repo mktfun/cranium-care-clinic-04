@@ -596,7 +596,14 @@ export function MedicaoLineChart({
       {(titulo || descricao) && (
         <div className="mb-4">
           {titulo && <h3 className="text-lg font-medium">{titulo}</h3>}
-          {descricao && <p className="text-sm text-muted-foreground">{descricao}</p>}
+          {descricao && (
+            <>
+              <p className="text-sm text-muted-foreground">{descricao}</p>
+              <span className="hidden md:block text-sm text-muted-foreground">
+                Esse texto aparece só no desktop/tablet
+              </span>
+            </>
+          )}
         </div>
       )}
       <div style={{ width: '100%', height: altura }}>
