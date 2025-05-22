@@ -3,6 +3,7 @@ import React from "react";
 import { HeroScrollDemo } from "@/components/HeroScrollDemo";
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { MedikranFeatures } from "@/components/MedikranFeatures";
 
 export default function HeroLandingPage() {
   return (
