@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -5,6 +6,8 @@ import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { MedikranFeatures } from "@/components/MedikranFeatures";
+import { MedikranTestimonials } from "@/components/MedikranTestimonials";
+
 export function HeroScrollDemo() {
   return <div className="flex flex-col overflow-hidden pb-[500px] pt-20 py-[100px]">
       <ContainerScroll titleComponent={<>
@@ -38,6 +41,11 @@ export function HeroScrollDemo() {
       
       <div className="container mx-auto px-4 -mt-32 mb-20 relative z-10 my-[125px]">
         <MedikranFeatures />
+      </div>
+
+      {/* Testimonials Section */}
+      <div className="relative z-10">
+        <MedikranTestimonials />
       </div>
     </div>;
 }
