@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AsymmetryType, SeverityLevel } from "@/types";
@@ -54,7 +53,7 @@ export default function CranialVisualizationCard({
     }));
     
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden shadow-none">
       <CardContent className="p-0">
         <CranialVisualization
           currentMeasurement={currentMeasurement}
