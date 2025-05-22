@@ -1,13 +1,10 @@
-
 import React from "react";
 import { HeroScrollDemo } from "@/components/HeroScrollDemo";
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { MedikranFeatures } from "@/components/MedikranFeatures";
-
 export default function HeroLandingPage() {
-  return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
+  return <div className="min-h-screen bg-white dark:bg-gray-950">
       <header className="fixed w-full top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
@@ -20,10 +17,7 @@ export default function HeroLandingPage() {
               <Link to="/login" className="text-sm font-medium hover:text-turquesa transition-colors">
                 Entrar
               </Link>
-              <Link 
-                to="/registro" 
-                className="text-sm font-medium bg-turquesa hover:bg-turquesa/90 text-white px-4 py-2 rounded-md transition-colors"
-              >
+              <Link to="/registro" className="text-sm font-medium bg-turquesa hover:bg-turquesa/90 text-white px-4 py-2 rounded-md transition-colors">
                 Criar Conta
               </Link>
             </div>
@@ -70,9 +64,7 @@ export default function HeroLandingPage() {
       <footer className="bg-gray-100 dark:bg-gray-900 py-10">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-600 dark:text-gray-400 mb-4 md:mb-0">
-              &copy; 2024 Medikran. Todos os direitos reservados.
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 md:mb-0">© 2025 Medikran. Todos os direitos reservados.</p>
             <div className="flex space-x-6">
               <Link to="/termos" className="text-sm text-gray-600 dark:text-gray-400 hover:text-turquesa">
                 Termos de Uso
@@ -84,6 +76,5 @@ export default function HeroLandingPage() {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 }
