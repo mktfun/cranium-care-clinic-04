@@ -14,7 +14,7 @@ export function HeroScrollDemo() {
             <h1 className="text-4xl font-semibold text-black dark:text-white">
               Bem-vindo ao <br />
               <span className="text-4xl md:text-[6rem] font-bold mt-1 leading-none text-turquesa">
-                CraniumCare Clinic
+                Medikran
               </span>
             </h1>
             <p className="mt-4 text-xl text-gray-700 dark:text-gray-300 max-w-lg mx-auto">
@@ -34,7 +34,7 @@ export function HeroScrollDemo() {
         <div className="flex items-center justify-center h-full">
           <img
             src="/lovable-uploads/1c64556f-1265-455b-bd7b-b264f9ea1265.png"
-            alt="CraniumCare Dashboard Preview"
+            alt="Medikran Dashboard Preview"
             className="mx-auto rounded-2xl object-contain h-full max-w-full"
             draggable={false}
           />

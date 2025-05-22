@@ -15,7 +15,7 @@ export function RelatorioFooter({
   dataCriacao = new Date(),
   onExportPDF 
 }: RelatorioFooterProps) {
-  const [clinicaNome, setClinicaNome] = useState<string>("CraniumCare");
+  const [clinicaNome, setClinicaNome] = useState<string>("Medikran");
   const [profissionalNome, setProfissionalNome] = useState<string>("");
   
   useEffect(() => {
@@ -36,7 +36,7 @@ export function RelatorioFooter({
               
           if (data) {
             setProfissionalNome(data.nome || "");
-            setClinicaNome(data.clinica_nome || "CraniumCare");
+            setClinicaNome(data.clinica_nome || "Medikran");
           }
         }
       } catch (error) {
@@ -67,7 +67,7 @@ export function RelatorioFooter({
       </div>
       
       <div className="text-center border-t pt-4 text-xs text-muted-foreground mt-8 hidden print:block">
-        <p>Relatório gerado pelo sistema CraniumCare em {dataCriacao.toLocaleDateString('pt-BR')} às {dataCriacao.toLocaleTimeString('pt-BR')}</p>
+        <p>Relatório gerado pelo sistema Medikran em {dataCriacao.toLocaleDateString('pt-BR')} às {dataCriacao.toLocaleTimeString('pt-BR')}</p>
         <p>Profissional responsável: {profissionalNome || "Médico Responsável"} • Clínica: {clinicaNome}</p>
         <p>© {new Date().getFullYear()} {clinicaNome} - Uso exclusivamente clínico</p>
       </div>

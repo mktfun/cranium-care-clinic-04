@@ -68,7 +68,7 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold text-turquesa">CraniumCare Clinic</CardTitle>
+        <CardTitle className="text-2xl font-bold text-turquesa">Medikran</CardTitle>
         <CardDescription>
           Faça login para acessar o sistema de medição craniana
         </CardDescription>

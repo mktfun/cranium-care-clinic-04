@@ -18,7 +18,7 @@ export function Sidebar({
   navigateToDashboard
 }: SidebarProps) {
   const [isMobile, setIsMobile] = useState(false);
-  const [clinicaNome, setClinicaNome] = useState("CraniumCare");
+  const [clinicaNome, setClinicaNome] = useState("Medikran");
   const [carregando, setCarregando] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
