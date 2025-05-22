@@ -330,7 +330,7 @@ export default function Dashboard() {
       <div className="mt-6 py-[88px]">
         <h3 className="text-lg font-medium mb-4 transition-colors hover:text-primary/90">Pacientes em Destaque</h3>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {pacientes.length > 0 ? pacientes.slice(0, 3).map(paciente => <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer px-[47px]">
+          {pacientes.length > 0 ? pacientes.slice(0, 3).map(paciente => <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer px-[11px]">
                 <PacienteCard paciente={paciente} />
               </div>) : <div className="col-span-full py-8 text-center text-muted-foreground">
               Nenhum paciente cadastrado. <Link to="/pacientes/registro" className="text-turquesa hover:underline">Adicione um paciente</Link>.
