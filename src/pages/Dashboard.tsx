@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -394,9 +393,9 @@ export default function Dashboard() {
       {/* Featured Patients Section */}
       <div className="mt-6">
         <h3 className="text-lg font-medium mb-4 transition-colors hover:text-primary/90">Pacientes em Destaque</h3>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {pacientes.length > 0 ? (
-            pacientes.slice(0,4).map((paciente) => (
+            pacientes.slice(0,3).map((paciente) => (
               <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer">
                 <PacienteCard paciente={paciente} />
               </div>

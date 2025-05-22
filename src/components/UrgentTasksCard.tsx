@@ -186,12 +186,12 @@ export function UrgentTasksCard() {
   };
 
   return (
-    <Card className="h-full max-h-[350px] overflow-y-auto flex flex-col">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center">
-          <Clock className="h-5 w-5 mr-2 text-amber-500" />
-          Tarefas Urgentes
-        </CardTitle>
+    <Card className="h-full max-h-[350px] overflow-y-auto flex flex-col border-2 border-blue-100 rounded-xl">
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-amber-500" />
+          <CardTitle className="text-lg font-medium">Tarefas Urgentes</CardTitle>
+        </div>
         <CardDescription>Tarefas que precisam de atenção imediata</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto">
@@ -202,11 +202,11 @@ export function UrgentTasksCard() {
           </div>
         ) : tasks.length === 0 ? (
           <div className="text-center text-muted-foreground py-6">
-            <p className="mb-2">Nenhuma tarefa urgente pendente</p>
+            <p className="mb-4">Nenhuma tarefa urgente pendente</p>
             <Button 
               onClick={() => navigate("/tarefas")} 
               variant="outline"
-              className="mt-2"
+              className="bg-blue-500 text-white hover:bg-blue-600"
             >
               Gerenciar Tarefas
             </Button>
