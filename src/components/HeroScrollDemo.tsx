@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { MedikranFeatures } from "@/components/MedikranFeatures";
 import { MedikranTestimonials } from "@/components/MedikranTestimonials";
 export function HeroScrollDemo() {
-  return <div className="flex flex-col overflow-hidden pb-[500px] pt-20 py-[78px]">
+  return <div className="flex flex-col overflow-hidden pb-[500px] pt-20 py-0">
       <ContainerScroll titleComponent={<>
             <h1 className="text-4xl font-semibold text-black dark:text-white">
               Bem-vindo ao <br />
@@ -35,7 +35,7 @@ export function HeroScrollDemo() {
         </div>
       </ContainerScroll>
       
-      <div className="container mx-auto px-4 -mt-32 mb-20 relative z-10 my-[122px]">
+      <div className="container mx-auto px-4 -mt-32 mb-20 relative z-10 my-[169px]">
         <MedikranFeatures />
       </div>
 
