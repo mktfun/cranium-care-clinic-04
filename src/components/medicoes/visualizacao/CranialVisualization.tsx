@@ -98,7 +98,7 @@ export default function CranialVisualization({
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6 px-[25px] py-[45px]">
+      <CardContent className="p-6 px-[25px] py-[45px] my-[90px]">
         <Tabs defaultValue="silhouette" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="silhouette" className="flex items-center">
