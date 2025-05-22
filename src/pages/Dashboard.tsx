@@ -17,12 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
 import { useIsMobile } from "@/hooks/use-mobile";
-
 interface TrendData {
   value: number;
   isPositive: boolean;
 }
-
 export default function Dashboard() {
   const navigate = useNavigate();
   const [clinicaNome, setClinicaNome] = useState("CraniumCare");
@@ -40,30 +38,33 @@ export default function Dashboard() {
     severa: 0
   });
   const [carregando, setCarregando] = useState(true);
-  const [usuario, setUsuario] = useState<{nome: string} | null>(null);
+  const [usuario, setUsuario] = useState<{
+    nome: string;
+  } | null>(null);
   const [pacientesAlertaMesAtual, setPacientesAlertaMesAtual] = useState(0);
   const [trendPacientesAlerta, setTrendPacientesAlerta] = useState<TrendData | undefined>(undefined);
   const [percentualPacientesAlerta, setPercentualPacientesAlerta] = useState(0);
   const isMobile = useIsMobile();
-
   useEffect(() => {
     async function carregarDados() {
       try {
         setCarregando(true);
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: {
+            session
+          }
+        } = await supabase.auth.getSession();
         if (!session?.user) {
           navigate("/login");
           return;
         }
-
-        const { data: usuarioData } = await supabase
-          .from("usuarios")
-          .select("nome, clinica_nome")
-          .eq("id", session.user.id)
-          .single();
-
+        const {
+          data: usuarioData
+        } = await supabase.from("usuarios").select("nome, clinica_nome").eq("id", session.user.id).single();
         if (usuarioData) {
-          setUsuario({ nome: usuarioData.nome });
+          setUsuario({
+            nome: usuarioData.nome
+          });
           if (usuarioData.clinica_nome) {
             setClinicaNome(usuarioData.clinica_nome);
             localStorage.setItem("clinicaNome", usuarioData.clinica_nome);
@@ -72,34 +73,32 @@ export default function Dashboard() {
             if (savedClinicaNome) setClinicaNome(savedClinicaNome);
           }
         }
-
-        const { data: pacientesData, error: pacientesError } = await supabase
-          .from("pacientes")
-          .select("*")
-          .order("created_at", { ascending: false });
-
+        const {
+          data: pacientesData,
+          error: pacientesError
+        } = await supabase.from("pacientes").select("*").order("created_at", {
+          ascending: false
+        });
         if (pacientesError) {
           console.error("Erro ao carregar pacientes:", pacientesError);
           toast.error("Erro ao carregar pacientes");
           return;
         }
-        
         if (!pacientesData) {
           setPacientes([]);
           return;
         }
-
-        const { data: medicoesData, error: medicoesError } = await supabase
-          .from("medicoes")
-          .select("*")
-          .order("data", { ascending: false });
-
+        const {
+          data: medicoesData,
+          error: medicoesError
+        } = await supabase.from("medicoes").select("*").order("data", {
+          ascending: false
+        });
         if (medicoesError) {
           console.error("Erro ao carregar medições:", medicoesError);
           toast.error("Erro ao carregar medições");
           return;
         }
-        
         const medicoesProcessadas = medicoesData || [];
         setMedicoes(medicoesProcessadas);
 
@@ -109,16 +108,14 @@ export default function Dashboard() {
         const ultimoDiaMesAtual = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
         const primeiroDiaMesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
         const ultimoDiaMesAnterior = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
-
         const getPacientesEmAlertaNoPeriodo = (meds: any[], inicio: Date, fim: Date): Set<string> => {
           const pacientesEmAlertaSet = new Set<string>();
           meds.forEach(medicao => {
             const dataMedicao = new Date(medicao.data);
             if (dataMedicao >= inicio && dataMedicao <= fim) {
-              const { severityLevel } = getCranialStatus(
-                medicao.indice_craniano || 0,
-                medicao.cvai || 0
-              );
+              const {
+                severityLevel
+              } = getCranialStatus(medicao.indice_craniano || 0, medicao.cvai || 0);
               if (severityLevel === "moderada" || severityLevel === "severa") {
                 pacientesEmAlertaSet.add(medicao.paciente_id);
               }
@@ -126,28 +123,30 @@ export default function Dashboard() {
           });
           return pacientesEmAlertaSet;
         };
-
         const pacientesAlertaSetMesAtual = getPacientesEmAlertaNoPeriodo(medicoesProcessadas, primeiroDiaMesAtual, ultimoDiaMesAtual);
         const numPacientesAlertaMesAtual = pacientesAlertaSetMesAtual.size;
         setPacientesAlertaMesAtual(numPacientesAlertaMesAtual);
-
         const pacientesAlertaSetMesAnterior = getPacientesEmAlertaNoPeriodo(medicoesProcessadas, primeiroDiaMesAnterior, ultimoDiaMesAnterior);
         const numPacientesAlertaMesAnterior = pacientesAlertaSetMesAnterior.size;
-        
+
         // Calcular Trend
-        if (medicoesProcessadas.filter(m => new Date(m.data) >= primeiroDiaMesAnterior && new Date(m.data) <= ultimoDiaMesAnterior).length > 0) { // Verifica se há dados no mês anterior
+        if (medicoesProcessadas.filter(m => new Date(m.data) >= primeiroDiaMesAnterior && new Date(m.data) <= ultimoDiaMesAnterior).length > 0) {
+          // Verifica se há dados no mês anterior
           if (numPacientesAlertaMesAnterior > 0) {
-            const variacao = ((numPacientesAlertaMesAtual - numPacientesAlertaMesAnterior) / numPacientesAlertaMesAnterior) * 100;
+            const variacao = (numPacientesAlertaMesAtual - numPacientesAlertaMesAnterior) / numPacientesAlertaMesAnterior * 100;
             setTrendPacientesAlerta({
               value: Math.abs(Math.round(variacao)),
-              isPositive: numPacientesAlertaMesAtual < numPacientesAlertaMesAnterior, // Melhora = verde (isPositive true)
+              isPositive: numPacientesAlertaMesAtual < numPacientesAlertaMesAnterior // Melhora = verde (isPositive true)
             });
-          } else if (numPacientesAlertaMesAtual > 0) { // Mês anterior zerado, mas atual tem alertas
-             setTrendPacientesAlerta({
-              value: 100, // Representa um aumento de 0 para X
-              isPositive: false, // Piora = vermelho
+          } else if (numPacientesAlertaMesAtual > 0) {
+            // Mês anterior zerado, mas atual tem alertas
+            setTrendPacientesAlerta({
+              value: 100,
+              // Representa um aumento de 0 para X
+              isPositive: false // Piora = vermelho
             });
-          } else { // Ambos zerados
+          } else {
+            // Ambos zerados
             setTrendPacientesAlerta(undefined); // Sem variação, não mostra trend
           }
         } else {
@@ -157,59 +156,58 @@ export default function Dashboard() {
         // Calcular percentual de pacientes em alerta (em relação ao total de pacientes)
         const totalPacientesSistema = pacientesData?.length || 0;
         if (totalPacientesSistema > 0) {
-          setPercentualPacientesAlerta(Math.round((numPacientesAlertaMesAtual / totalPacientesSistema) * 100));
+          setPercentualPacientesAlerta(Math.round(numPacientesAlertaMesAtual / totalPacientesSistema * 100));
         } else {
           setPercentualPacientesAlerta(0);
         }
-        
+
         // Processar distribuição geral de status
-        const distribuicaoGeral = { normal: 0, leve: 0, moderada: 0, severa: 0 };
+        const distribuicaoGeral = {
+          normal: 0,
+          leve: 0,
+          moderada: 0,
+          severa: 0
+        };
         const pacientesComMedicaoIds = new Set<string>();
-        medicoesProcessadas
-          .sort((a,b) => new Date(b.data).getTime() - new Date(a.data).getTime())
-          .forEach(medicao => {
-            if(!pacientesComMedicaoIds.has(medicao.paciente_id)){
-                const { severityLevel } = getCranialStatus(medicao.indice_craniano || 0, medicao.cvai || 0);
-                distribuicaoGeral[severityLevel]++;
-                pacientesComMedicaoIds.add(medicao.paciente_id);
-            }
-          });
+        medicoesProcessadas.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()).forEach(medicao => {
+          if (!pacientesComMedicaoIds.has(medicao.paciente_id)) {
+            const {
+              severityLevel
+            } = getCranialStatus(medicao.indice_craniano || 0, medicao.cvai || 0);
+            distribuicaoGeral[severityLevel]++;
+            pacientesComMedicaoIds.add(medicao.paciente_id);
+          }
+        });
         setStatusDistribuicaoGeral(distribuicaoGeral);
 
         // Processar pacientes e suas últimas medições para cards de destaque
         const pacientesProcessados: Paciente[] = pacientesData.map(paciente => {
-          const medicoesDoPaciente = medicoesProcessadas
-            .filter(m => m.paciente_id === paciente.id)
-            .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-          
+          const medicoesDoPaciente = medicoesProcessadas.filter(m => m.paciente_id === paciente.id).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
           const ultimaMedicao = medicoesDoPaciente[0];
           let ultimaMedicaoProcessada;
-          
           if (ultimaMedicao) {
-            const { severityLevel, asymmetryType } = getCranialStatus(
-              ultimaMedicao.indice_craniano || 0, 
-              ultimaMedicao.cvai || 0
-            );
-            ultimaMedicaoProcessada = { 
-              data: ultimaMedicao.data, 
-              status: severityLevel, 
-              asymmetryType 
+            const {
+              severityLevel,
+              asymmetryType
+            } = getCranialStatus(ultimaMedicao.indice_craniano || 0, ultimaMedicao.cvai || 0);
+            ultimaMedicaoProcessada = {
+              data: ultimaMedicao.data,
+              status: severityLevel,
+              asymmetryType
             };
           }
-          
           const hoje = new Date();
           const dataNascimento = new Date(paciente.data_nascimento);
-          const idadeEmMeses = ((hoje.getFullYear() - dataNascimento.getFullYear()) * 12) + 
-                              (hoje.getMonth() - dataNascimento.getMonth());
-          
+          const idadeEmMeses = (hoje.getFullYear() - dataNascimento.getFullYear()) * 12 + (hoje.getMonth() - dataNascimento.getMonth());
           return {
             ...paciente,
-            dataNascimento: paciente.data_nascimento, // Garantindo que este campo esteja presente
-            idadeEmMeses: idadeEmMeses,  // Explicitly assign as a number
+            dataNascimento: paciente.data_nascimento,
+            // Garantindo que este campo esteja presente
+            idadeEmMeses: idadeEmMeses,
+            // Explicitly assign as a number
             ultimaMedicao: ultimaMedicaoProcessada
           };
         });
-        
         setPacientes(pacientesProcessados);
       } catch (err) {
         console.error("Erro:", err);
@@ -218,35 +216,25 @@ export default function Dashboard() {
         setCarregando(false);
       }
     }
-    
     carregarDados();
   }, [navigate]);
-  
+
   // Helper function to calculate age in months
   const calculateAgeInMonths = (birthDate: string): number => {
     const today = new Date();
     const birth = new Date(birthDate);
-    return ((today.getFullYear() - birth.getFullYear()) * 12) + 
-           (today.getMonth() - birth.getMonth());
+    return (today.getFullYear() - birth.getFullYear()) * 12 + (today.getMonth() - birth.getMonth());
   };
-
-  const pacienteComMedicaoMaisRecente = pacientes.length > 0
-    ? [...pacientes]
-        .filter(p => p.ultimaMedicao)
-        .sort((a, b) => {
-          const dataA = a.ultimaMedicao?.data ? new Date(a.ultimaMedicao.data).getTime() : 0;
-          const dataB = b.ultimaMedicao?.data ? new Date(b.ultimaMedicao.data).getTime() : 0;
-          return dataB - dataA;
-        })[0]
-    : null;
-
+  const pacienteComMedicaoMaisRecente = pacientes.length > 0 ? [...pacientes].filter(p => p.ultimaMedicao).sort((a, b) => {
+    const dataA = a.ultimaMedicao?.data ? new Date(a.ultimaMedicao.data).getTime() : 0;
+    const dataB = b.ultimaMedicao?.data ? new Date(b.ultimaMedicao.data).getTime() : 0;
+    return dataB - dataA;
+  })[0] : null;
   const totalPacientesSistema = pacientes.length;
   const totalMedicoesRegistradas = medicoes.length;
-
   const navegarParaPacientesComFiltro = (filtroStatus: string) => {
     navigate(`/pacientes?status=${filtroStatus}`);
   };
-
   const formatarDataUltimaMedicao = (dataString?: string) => {
     if (!dataString) return "N/A";
     const data = new Date(dataString);
@@ -267,17 +255,12 @@ export default function Dashboard() {
       navigate('/pacientes');
     }
   };
-
   if (carregando) {
-    return (
-      <div className="flex items-center justify-center h-screen">
+    return <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6 animate-fade-in p-4 md:p-6">
+  return <div className="space-y-6 animate-fade-in p-4 md:p-6">
       <div>
         <h2 className="text-3xl font-bold transition-all duration-300 hover:text-primary">Olá, {usuario?.nome.split(" ")[0] || "Doutor(a)"}</h2>
         <p className="text-muted-foreground">
@@ -292,37 +275,18 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Button 
-              onClick={() => navigate('/pacientes/registro')}
-              className="bg-turquesa hover:bg-turquesa/90 transition-all duration-300 hover:shadow-md transform hover:translate-y-[-2px]"
-            >
+            <Button onClick={() => navigate('/pacientes/registro')} className="bg-turquesa hover:bg-turquesa/90 transition-all duration-300 hover:shadow-md transform hover:translate-y-[-2px]">
               <Plus className="h-4 w-4 mr-2" />
               Novo Paciente
             </Button>
-            {pacientes.length > 0 ? (
-              <Button 
-                onClick={() => handleQuickAction(pacientes[0]?.id)}
-                variant="outline"
-                className="transition-all duration-300 hover:border-primary/60 hover:bg-primary/5"
-              >
+            {pacientes.length > 0 ? <Button onClick={() => handleQuickAction(pacientes[0]?.id)} variant="outline" className="transition-all duration-300 hover:border-primary/60 hover:bg-primary/5">
                 <Camera className="h-4 w-4 mr-2" />
                 Nova Medição
-              </Button>
-            ) : (
-              <Button 
-                onClick={() => navigate('/pacientes/registro')}
-                variant="outline"
-                disabled={pacientes.length === 0}
-              >
+              </Button> : <Button onClick={() => navigate('/pacientes/registro')} variant="outline" disabled={pacientes.length === 0}>
                 <Camera className="h-4 w-4 mr-2" />
                 Nova Medição
-              </Button>
-            )}
-            <Button 
-              onClick={() => navigate('/historico')}
-              variant="outline"
-              className="transition-all duration-300 hover:border-primary/60 hover:bg-primary/5"
-            >
+              </Button>}
+            <Button onClick={() => navigate('/historico')} variant="outline" className="transition-all duration-300 hover:border-primary/60 hover:bg-primary/5">
               Ver Histórico
             </Button>
           </div>
@@ -332,49 +296,23 @@ export default function Dashboard() {
       {/* Stats Cards - Responsive Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div onClick={() => navigate("/pacientes")} className="cursor-pointer">
-          <StatsCard
-            title="Total de Pacientes"
-            value={totalPacientesSistema}
-            description="Ativos no sistema"
-            icon={<Users className="h-4 w-4 text-muted-foreground" />}
-          />
+          <StatsCard title="Total de Pacientes" value={totalPacientesSistema} description="Ativos no sistema" icon={<Users className="h-4 w-4 text-muted-foreground" />} />
         </div>
         <div onClick={() => navigate("/historico")} className="cursor-pointer">
-          <StatsCard
-            title="Total de Medições"
-            value={totalMedicoesRegistradas}
-            description="Registradas no sistema"
-            icon={<Activity className="h-4 w-4 text-muted-foreground" />}
-          />
+          <StatsCard title="Total de Medições" value={totalMedicoesRegistradas} description="Registradas no sistema" icon={<Activity className="h-4 w-4 text-muted-foreground" />} />
         </div>
-        <div
-          onClick={() => pacienteComMedicaoMaisRecente ? navigate(`/pacientes/${pacienteComMedicaoMaisRecente.id}`) : null}
-          className={pacienteComMedicaoMaisRecente ? "cursor-pointer" : ""}
-        >
-          <StatsCard
-            title="Última Avaliação"
-            value={pacienteComMedicaoMaisRecente
-              ? formatarDataUltimaMedicao(pacienteComMedicaoMaisRecente.ultimaMedicao?.data)
-              : "N/A"}
-            description={pacienteComMedicaoMaisRecente?.nome || "Nenhum paciente avaliado"}
-            icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-          />
+        <div onClick={() => pacienteComMedicaoMaisRecente ? navigate(`/pacientes/${pacienteComMedicaoMaisRecente.id}`) : null} className={pacienteComMedicaoMaisRecente ? "cursor-pointer" : ""}>
+          <StatsCard title="Última Avaliação" value={pacienteComMedicaoMaisRecente ? formatarDataUltimaMedicao(pacienteComMedicaoMaisRecente.ultimaMedicao?.data) : "N/A"} description={pacienteComMedicaoMaisRecente?.nome || "Nenhum paciente avaliado"} icon={<Calendar className="h-4 w-4 text-muted-foreground" />} />
         </div>
         <div onClick={() => navegarParaPacientesComFiltro("alerta")} className="cursor-pointer">
-          <StatsCard
-            title="Pacientes em Alerta"
-            value={pacientesAlertaMesAtual}
-            description={`${percentualPacientesAlerta}% dos pacientes`}
-            icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-            trend={trendPacientesAlerta}
-          />
+          <StatsCard title="Pacientes em Alerta" value={pacientesAlertaMesAtual} description={`${percentualPacientesAlerta}% dos pacientes`} icon={<AlertTriangle className="h-4 w-4 text-destructive" />} trend={trendPacientesAlerta} />
         </div>
       </div>
 
       {/* Charts Section - Responsive View */}
-      {!isMobile ? (
-        // Desktop View - Grid Layout with Clinic-Relevant Charts
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
+      {!isMobile ?
+    // Desktop View - Grid Layout with Clinic-Relevant Charts
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
           <div className="md:col-span-2">
             <PacientesMedicoesChart altura={350} />
           </div>
@@ -382,31 +320,22 @@ export default function Dashboard() {
             <MedicoesPorDiaChart altura={165} />
             <UrgentTasksCard />
           </div>
-        </div>
-      ) : (
-        // Mobile View - Only show UrgentTasksCard, hide charts
-        <div className="mt-6">
+        </div> :
+    // Mobile View - Only show UrgentTasksCard, hide charts
+    <div className="mt-6">
           <UrgentTasksCard />
-        </div>
-      )}
+        </div>}
 
       {/* Featured Patients Section */}
-      <div className="mt-6">
+      <div className="mt-6 py-[88px]">
         <h3 className="text-lg font-medium mb-4 transition-colors hover:text-primary/90">Pacientes em Destaque</h3>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {pacientes.length > 0 ? (
-            pacientes.slice(0,3).map((paciente) => (
-              <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer">
+          {pacientes.length > 0 ? pacientes.slice(0, 3).map(paciente => <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer px-[47px]">
                 <PacienteCard paciente={paciente} />
-              </div>
-            ))
-          ) : (
-            <div className="col-span-full py-8 text-center text-muted-foreground">
+              </div>) : <div className="col-span-full py-8 text-center text-muted-foreground">
               Nenhum paciente cadastrado. <Link to="/pacientes/registro" className="text-turquesa hover:underline">Adicione um paciente</Link>.
-            </div>
-          )}
+            </div>}
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
