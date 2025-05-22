@@ -27,6 +27,7 @@ import MultiAngleCapturaPage from "./pages/MultiAngleCapturaPage";
 import HeroLandingPage from "./pages/HeroLandingPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminUserManagement from "./pages/AdminUserManagement";
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUserManagement />} />
           
           <Route path="/" element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />

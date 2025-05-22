@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UsersManagement } from "@/components/admin/UsersManagement";
 
-export default function AdminDashboard() {
+export default function AdminUserManagement() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
@@ -48,18 +49,8 @@ export default function AdminDashboard() {
     navigate("/admin/login");
   };
 
-  const navigateToUsers = () => {
-    navigate("/admin/users");
-  };
-
-  const navigateToLogs = () => {
-    // This would be implemented in the future
-    alert("Funcionalidade de visualização de logs será implementada em breve!");
-  };
-
-  const navigateToSettings = () => {
-    // This would be implemented in the future
-    alert("Funcionalidade de configuração do sistema será implementada em breve!");
+  const handleBackToDashboard = () => {
+    navigate("/admin/dashboard");
   };
 
   if (loading) {
@@ -82,36 +73,18 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>User Management</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">Manage users and their permissions</p>
-            <Button className="w-full" onClick={navigateToUsers}>Manage Users</Button>
-          </CardContent>
-        </Card>
+      <div className="mb-4 flex items-center">
+        <Button 
+          variant="outline" 
+          onClick={handleBackToDashboard}
+          className="mb-4"
+        >
+          ← Voltar ao Dashboard
+        </Button>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Security Logs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">View security logs and login attempts</p>
-            <Button className="w-full" onClick={navigateToLogs}>View Logs</Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>System Configuration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">Configure system settings and parameters</p>
-            <Button className="w-full" onClick={navigateToSettings}>System Settings</Button>
-          </CardContent>
-        </Card>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <UsersManagement />
       </div>
     </div>
   );
