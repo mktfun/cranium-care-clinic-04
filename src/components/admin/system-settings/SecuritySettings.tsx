@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { SystemSetting } from "../SystemSettingsPanel";
+import { SystemSetting } from "./types";
 
 interface SecuritySettingsProps {
   settings: SystemSetting[];

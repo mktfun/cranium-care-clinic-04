@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import type { SystemSetting } from "../SystemSettingsPanel";
+import { SystemSetting } from "./types";
 
 interface MeasurementSettingsProps {
   settings: SystemSetting[];

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Download, RotateCcw, AlertCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { SystemSetting } from "../SystemSettingsPanel";
+import { SystemSetting } from "./types";
 
 interface BackupSettingsProps {
   settings: SystemSetting[];
