@@ -18,9 +18,9 @@ export function AdminLoginForm() {
   const [passwordStrength, setPasswordStrength] = useState<"weak" | "medium" | "strong" | null>(null);
   const navigate = useNavigate();
 
-  // Check if email has admin domain
+  // Check if email has admin domain - updated to use aminmedikran.com
   const isAdminEmail = (email: string) => {
-    return email.endsWith("@adminmedikran");
+    return email.endsWith("@aminmedikran.com");
   };
 
   // Check password strength
@@ -184,7 +184,7 @@ export function AdminLoginForm() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your-username@adminmedikran"
+                placeholder="your-username@aminmedikran.com"
                 required
               />
               <p className="text-xs text-muted-foreground">

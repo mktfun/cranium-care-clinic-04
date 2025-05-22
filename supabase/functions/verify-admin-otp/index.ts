@@ -29,8 +29,8 @@ serve(async (req) => {
       );
     }
 
-    // Verify email has adminmedikran domain
-    if (!email.endsWith("@adminmedikran")) {
+    // Verify email has aminmedikran.com domain (updated)
+    if (!email.endsWith("@aminmedikran.com")) {
       return new Response(
         JSON.stringify({ error: "Only administrative emails can use this function" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }

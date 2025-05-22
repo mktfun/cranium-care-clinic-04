@@ -14,8 +14,9 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Updated domain check to use aminmedikran.com
   const isAdminEmail = (email: string) => {
-    return email.endsWith("@adminmedikran");
+    return email.endsWith("@aminmedikran.com");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -22,7 +22,7 @@ export default function AdminLogin() {
         // If user is authenticated and has admin role, redirect to admin dashboard
         if (userData?.admin_role) {
           navigate("/admin/dashboard");
-        } else if (session.user.email?.endsWith("@adminmedikran")) {
+        } else if (session.user.email?.endsWith("@aminmedikran.com")) {
           // If user has admin email but no admin role yet, stay on this page
           // They'll need to complete OTP verification
         } else {
