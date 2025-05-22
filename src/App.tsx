@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from 'sonner';
@@ -23,6 +24,7 @@ import MedicaoPorFotoPage from "@/pages/MedicaoPorFotoPage";
 import ProntuarioMedico from "@/pages/ProntuarioMedico";
 import HistoricoCompletoPaciente from "@/pages/HistoricoCompletoPaciente";
 import MultiAngleCapturaPage from "./pages/MultiAngleCapturaPage";
+import HeroLandingPage from "./pages/HeroLandingPage";
 
 function App() {
   return (
@@ -32,6 +34,7 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
+          <Route path="/hero" element={<HeroLandingPage />} />
           
           <Route path="/" element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />

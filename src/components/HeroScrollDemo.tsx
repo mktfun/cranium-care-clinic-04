@@ -1,0 +1,50 @@
+
+"use client";
+import React from "react";
+import { ContainerScroll } from "@/components/ui/container-scroll-animation";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+
+export function HeroScrollDemo() {
+  return (
+    <div className="flex flex-col overflow-hidden pb-[500px] pt-20">
+      <ContainerScroll
+        titleComponent={
+          <>
+            <h1 className="text-4xl font-semibold text-black dark:text-white">
+              Bem-vindo ao <br />
+              <span className="text-4xl md:text-[6rem] font-bold mt-1 leading-none text-turquesa">
+                CraniumCare Clinic
+              </span>
+            </h1>
+            <p className="mt-4 text-xl text-gray-700 dark:text-gray-300 max-w-lg mx-auto">
+              Sistema avançado para medição e acompanhamento craniano em bebês
+            </p>
+            <div className="mt-8 flex gap-4 justify-center">
+              <Button asChild size="lg" className="bg-turquesa hover:bg-turquesa/90">
+                <Link to="/login">Entrar no Sistema</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link to="/registro">Criar Conta</Link>
+              </Button>
+            </div>
+          </>
+        }
+      >
+        <div className="flex items-center justify-center h-full">
+          <img
+            src="/placeholder.svg"
+            alt="CraniumCare Preview"
+            className="mx-auto rounded-2xl object-contain h-full max-w-3xl"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-white/20 dark:from-black/20 to-transparent rounded-2xl flex flex-col items-center justify-end pb-10">
+            <p className="text-center text-xl font-medium text-black dark:text-white">
+              Medições precisas e análises detalhadas para o acompanhamento craniano infantil
+            </p>
+          </div>
+        </div>
+      </ContainerScroll>
+    </div>
+  );
+}
