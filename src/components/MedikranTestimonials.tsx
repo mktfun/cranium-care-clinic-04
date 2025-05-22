@@ -33,7 +33,7 @@ export function MedikranTestimonials() {
           company: "Clínica Desenvolvimento Infantil",
           content: "O sistema de acompanhamento craniano do Medikran é excepcional. Consigo visualizar a evolução dos casos de plagiocefalia de forma clara e objetiva, o que facilita até mesmo a explicação para os pais.",
           rating: 5,
-          avatar: "/lovable-uploads/9e5616aa-d747-4ea9-beb9-fda796199ca7.png",
+          avatar: "https://randomuser.me/api/portraits/women/44.jpg",
         },
       ]}
       trustedCompanies={["Hospital Albert Einstein", "AACD", "Santa Casa", "Hospital Sírio-Libanês", "Sabará Hospital Infantil"]}

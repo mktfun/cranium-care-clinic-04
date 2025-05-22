@@ -28,7 +28,37 @@ export default function HeroLandingPage() {
       <main>
         <HeroScrollDemo />
         
-        
+        <section className="py-20 px-4 container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">Por que escolher o Medikran?</h2>
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Nossa plataforma oferece ferramentas avançadas para profissionais de saúde realizarem medições cranianas precisas e acompanhamento detalhado.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+              <h3 className="text-xl font-semibold mb-3">Medições Precisas</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Ferramentas de medição avançadas para avaliação de parâmetros cranianos com precisão clínica.
+              </p>
+            </div>
+            
+            <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+              <h3 className="text-xl font-semibold mb-3">Acompanhamento Completo</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Histórico detalhado e visualização do progresso das medições ao longo do tempo.
+              </p>
+            </div>
+            
+            <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+              <h3 className="text-xl font-semibold mb-3">Relatórios Detalhados</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Geração de relatórios profissionais para compartilhar com pacientes e outros profissionais.
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
       
       <footer className="bg-gray-100 dark:bg-gray-900 py-10">

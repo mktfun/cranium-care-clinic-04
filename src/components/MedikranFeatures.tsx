@@ -7,7 +7,7 @@ const features = [
     step: 'Etapa 1', 
     title: 'Avaliação Craniana',
     content: 'Realize medições precisas do crânio do bebê com ferramentas digitais avançadas.', 
-    image: '/lovable-uploads/8b6b2256-c8bf-49de-9c01-1e0f7fc1793b.png' 
+    image: 'https://images.unsplash.com/photo-1547398773-097c1412ba60?q=80&w=2070&auto=format&fit=crop' 
   },
   { 
     step: 'Etapa 2',
@@ -28,8 +28,9 @@ export function MedikranFeatures() {
     <div className="bg-white dark:bg-gray-950">
       <FeatureSteps 
         features={features}
-        className="pt-0 pb-8"
+        title="Como Funciona o Medikran"
         autoPlayInterval={5000}
+        className="pt-0 pb-8"
       />
     </div>
   )
