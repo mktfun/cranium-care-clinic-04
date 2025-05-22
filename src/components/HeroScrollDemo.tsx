@@ -33,9 +33,9 @@ export function HeroScrollDemo() {
       >
         <div className="flex items-center justify-center h-full">
           <img
-            src="/placeholder.svg"
-            alt="CraniumCare Preview"
-            className="mx-auto rounded-2xl object-contain h-full max-w-3xl"
+            src="/lovable-uploads/1c64556f-1265-455b-bd7b-b264f9ea1265.png"
+            alt="CraniumCare Dashboard Preview"
+            className="mx-auto rounded-2xl object-contain h-full max-w-full"
             draggable={false}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-white/20 dark:from-black/20 to-transparent rounded-2xl flex flex-col items-center justify-end pb-10">
