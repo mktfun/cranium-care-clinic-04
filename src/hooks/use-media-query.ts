@@ -1,11 +1,16 @@
 
 import { useState, useEffect } from "react";
 
-export function useMediaQuery(query: string): boolean {
+export function useMediaQuery(query: string | number): boolean {
   const [matches, setMatches] = useState(false);
 
   useEffect(() => {
-    const media = window.matchMedia(query);
+    // Convert number to a proper media query string if needed
+    const mediaQuery = typeof query === 'number' 
+      ? `(max-width: ${query}px)` 
+      : query;
+    
+    const media = window.matchMedia(mediaQuery);
     if (media.matches !== matches) {
       setMatches(media.matches);
     }
