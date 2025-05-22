@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Save, RotateCcw, Download, Upload } from "lucide-react";
+import { Loader2, Save, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { GeneralSettings } from "./system-settings/GeneralSettings";
 import { SecuritySettings } from "./system-settings/SecuritySettings";
@@ -58,9 +59,15 @@ export default function SystemSettingsPanel() {
       if (settingsError) {
         setError(settingsError.message);
         toast.error(`Erro ao carregar configurações: ${settingsError.message}`);
-      } else {
-        setSettings(settingsData || []);
-        setOriginalSettings(settingsData || []);
+      } else if (settingsData) {
+        // Ensure data types are properly mapped
+        const formattedSettings: SystemSetting[] = settingsData.map((setting: any) => ({
+          ...setting,
+          // Ensure other fields are properly typed if needed
+        }));
+        
+        setSettings(formattedSettings);
+        setOriginalSettings(formattedSettings);
       }
 
       setLoading(false);
@@ -77,7 +84,18 @@ export default function SystemSettingsPanel() {
         newSettings[settingIndex] = { ...newSettings[settingIndex], value };
         return newSettings;
       } else {
-        return [...prevSettings, { id: '', category: activeTab, key, value, description: '', is_sensitive: false, data_type: 'string', created_at: '', updated_at: '' }];
+        // When creating a new setting, ensure it has the proper type structure
+        return [...prevSettings, { 
+          id: '', 
+          category: activeTab, 
+          key, 
+          value, 
+          description: '', 
+          is_sensitive: false, 
+          data_type: 'string', 
+          created_at: '', 
+          updated_at: '' 
+        }];
       }
     });
   };
