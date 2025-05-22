@@ -29,6 +29,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminSecurityLogs from "./pages/AdminSecurityLogs";
+import AdminSystemSettings from "./pages/AdminSystemSettings";
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<AdminUserManagement />} />
           <Route path="/admin/logs" element={<AdminSecurityLogs />} />
+          <Route path="/admin/settings" element={<AdminSystemSettings />} />
           
           <Route path="/" element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />

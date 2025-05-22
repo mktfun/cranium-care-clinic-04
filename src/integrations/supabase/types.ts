@@ -429,6 +429,48 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          data_type: string
+          description: string | null
+          id: string
+          is_sensitive: boolean
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          data_type?: string
+          description?: string | null
+          id?: string
+          is_sensitive?: boolean
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          data_type?: string
+          description?: string | null
+          id?: string
+          is_sensitive?: boolean
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json | null
+        }
+        Relationships: []
+      }
       tarefas: {
         Row: {
           created_at: string | null
@@ -517,7 +559,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      restore_default_system_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       status_medicao: "normal" | "leve" | "moderada" | "severa"

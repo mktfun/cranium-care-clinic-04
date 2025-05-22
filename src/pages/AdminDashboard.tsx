@@ -57,8 +57,7 @@ export default function AdminDashboard() {
   };
 
   const navigateToSettings = () => {
-    // This would be implemented in the future
-    alert("Funcionalidade de configuração do sistema será implementada em breve!");
+    navigate("/admin/settings");
   };
 
   if (loading) {
