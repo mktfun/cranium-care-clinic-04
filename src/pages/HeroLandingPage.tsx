@@ -1,12 +1,10 @@
-
 import React from "react";
 import { HeroScrollDemo } from "@/components/HeroScrollDemo";
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
-
+import { MedikranFeatures } from "@/components/MedikranFeatures";
 export default function HeroLandingPage() {
-  return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
+  return <div className="min-h-screen bg-white dark:bg-gray-950">
       <header className="fixed w-full top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
@@ -30,8 +28,8 @@ export default function HeroLandingPage() {
       <main>
         <HeroScrollDemo />
         
-        <section className="py-16 px-4 container mx-auto">
-          <div className="text-center mb-12">
+        <section className="py-20 px-4 container mx-auto">
+          <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Por que escolher o Medikran?</h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Nossa plataforma oferece ferramentas avançadas para profissionais de saúde realizarem medições cranianas precisas e acompanhamento detalhado.
@@ -78,6 +76,5 @@ export default function HeroLandingPage() {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 }
