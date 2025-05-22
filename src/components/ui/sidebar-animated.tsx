@@ -1,6 +1,4 @@
 
-"use client";
-
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import React, { useState, createContext, useContext } from "react";
@@ -77,7 +75,7 @@ export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
     <>
       <DesktopSidebar {...props} />
       <MobileSidebar className={props.className}>
-        {props.children}
+        {props.children as React.ReactNode}
       </MobileSidebar>
     </>
   );
