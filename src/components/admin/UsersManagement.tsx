@@ -104,9 +104,13 @@ export const UsersManagement = () => {
 
       if (error) throw error;
       
-      // Add security log
+      // Get current session to get user ID for the log
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user.id;
+      
+      // Add security log with the required user_id
       await supabase.from("security_logs").insert({
-        user_id: authData.user.id,
+        user_id: currentUserId || authData.user.id, // Use current user ID or the new user ID as fallback
         action: "user_created",
         details: { email: user.email }
       });
@@ -130,9 +134,13 @@ export const UsersManagement = () => {
 
       if (error) throw error;
       
-      // Add security log
+      // Get current session to get user ID for the log
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user.id;
+      
+      // Add security log with the required user_id
       await supabase.from("security_logs").insert({
-        user_id: user.id,
+        user_id: currentUserId || user.id, // Use current user ID or the edited user ID as fallback
         action: "user_updated",
         details: { email: user.email }
       });
@@ -168,8 +176,13 @@ export const UsersManagement = () => {
 
       if (error && error.code !== "PGRST116") throw error; // PGRST116 means no rows affected
       
-      // Add security log
+      // Get current session to get user ID for the log
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user.id;
+      
+      // Add security log with the required user_id
       await supabase.from("security_logs").insert({
+        user_id: currentUserId || "00000000-0000-0000-0000-000000000000", // Use current user ID or a placeholder UUID
         action: "user_deleted",
         details: { email: userData?.email || "unknown" }
       });
