@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
 import { useIsMobile } from "@/hooks/use-mobile";
-
 interface TrendData {
   value: number;
   isPositive: boolean;
@@ -328,7 +327,7 @@ export default function Dashboard() {
         </div>}
 
       {/* Featured Patients Section - Adjusted padding for mobile navigation */}
-      <div className="mt-6 pb-20">
+      <div className="mt-6 pb-20 py-[73px]">
         <h3 className="text-lg font-medium mb-4 transition-colors hover:text-primary/90">Pacientes em Destaque</h3>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {pacientes.length > 0 ? pacientes.slice(0, 3).map(paciente => <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer px-[11px]">
