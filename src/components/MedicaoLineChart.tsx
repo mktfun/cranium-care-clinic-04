@@ -522,4 +522,3 @@ export function MedicaoLineChart({
       </div>
     </div>;
 }
-</edits_to_apply>
