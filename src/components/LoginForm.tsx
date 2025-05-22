@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,9 +13,9 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Updated domain check to use aminmedikran.com
+  // Updated to allow both aminmedikran.com and adminmedikran.com domains
   const isAdminEmail = (email: string) => {
-    return email.endsWith("@aminmedikran.com");
+    return email.endsWith("@aminmedikran.com") || email.endsWith("@adminmedikran.com");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,9 +17,9 @@ export function AdminLoginForm() {
   const [passwordStrength, setPasswordStrength] = useState<"weak" | "medium" | "strong" | null>(null);
   const navigate = useNavigate();
 
-  // Check if email has admin domain - updated to use aminmedikran.com
+  // Updated to allow both aminmedikran.com and adminmedikran.com domains
   const isAdminEmail = (email: string) => {
-    return email.endsWith("@aminmedikran.com");
+    return email.endsWith("@aminmedikran.com") || email.endsWith("@adminmedikran.com");
   };
 
   // Check password strength
@@ -184,7 +183,7 @@ export function AdminLoginForm() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your-username@aminmedikran.com"
+                placeholder="your-username@aminmedikran.com or your-username@adminmedikran.com"
                 required
               />
               <p className="text-xs text-muted-foreground">

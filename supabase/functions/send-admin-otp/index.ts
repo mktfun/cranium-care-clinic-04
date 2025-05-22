@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -34,8 +33,8 @@ serve(async (req) => {
       );
     }
 
-    // Verify email has aminmedikran.com domain (updated)
-    if (!email.endsWith("@aminmedikran.com")) {
+    // Verify email has proper admin domain (either aminmedikran.com or adminmedikran.com)
+    if (!email.endsWith("@aminmedikran.com") && !email.endsWith("@adminmedikran.com")) {
       return new Response(
         JSON.stringify({ error: "Only administrative emails can use this function" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
