@@ -4,11 +4,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { SystemSetting } from "../SystemSettingsPanel";
-import { Select } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Download, RotateCcw, AlertCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { SystemSetting } from "../SystemSettingsPanel";
 
 interface BackupSettingsProps {
   settings: SystemSetting[];
@@ -60,14 +60,18 @@ export function BackupSettings({ settings, updateSetting }: BackupSettingsProps)
           <div className="grid gap-2">
             <Label htmlFor="backup-frequency">Frequência</Label>
             <Select
-              id="backup-frequency"
               value={getSetting("backup_frequency", "daily")}
               onValueChange={(value) => updateSetting("backup_frequency", value)}
               disabled={!hasSetting("backup_frequency") || !getSetting("auto_backup_enabled", true)}
             >
-              <option value="daily">Diário</option>
-              <option value="weekly">Semanal</option>
-              <option value="monthly">Mensal</option>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a frequência" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Diário</SelectItem>
+                <SelectItem value="weekly">Semanal</SelectItem>
+                <SelectItem value="monthly">Mensal</SelectItem>
+              </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
               Frequência com que os backups automáticos são realizados

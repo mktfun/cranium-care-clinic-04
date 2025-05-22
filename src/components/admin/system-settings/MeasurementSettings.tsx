@@ -4,9 +4,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { SystemSetting } from "../SystemSettingsPanel";
-import { Select } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import type { SystemSetting } from "../SystemSettingsPanel";
 
 interface MeasurementSettingsProps {
   settings: SystemSetting[];
@@ -37,15 +37,19 @@ export function MeasurementSettings({ settings, updateSetting }: MeasurementSett
         <CardContent className="space-y-4">
           <div className="grid gap-2">
             <Label htmlFor="default-unit">Unidade Padrão</Label>
-            <Select
-              id="default-unit"
+            <Select 
               value={getSetting("default_unit", "mm")}
               onValueChange={(value) => updateSetting("default_unit", value)}
               disabled={!hasSetting("default_unit")}
             >
-              <option value="mm">Milímetros (mm)</option>
-              <option value="cm">Centímetros (cm)</option>
-              <option value="in">Polegadas (in)</option>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a unidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mm">Milímetros (mm)</SelectItem>
+                <SelectItem value="cm">Centímetros (cm)</SelectItem>
+                <SelectItem value="in">Polegadas (in)</SelectItem>
+              </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
               Unidade padrão utilizada para exibir medições cranianas
@@ -55,14 +59,18 @@ export function MeasurementSettings({ settings, updateSetting }: MeasurementSett
           <div className="grid gap-2">
             <Label htmlFor="precision">Precisão Decimal</Label>
             <Select
-              id="precision"
               value={getSetting("precision", "1")}
               onValueChange={(value) => updateSetting("precision", value)}
               disabled={!hasSetting("precision")}
             >
-              <option value="0">0 casas decimais</option>
-              <option value="1">1 casa decimal</option>
-              <option value="2">2 casas decimais</option>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a precisão" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">0 casas decimais</SelectItem>
+                <SelectItem value="1">1 casa decimal</SelectItem>
+                <SelectItem value="2">2 casas decimais</SelectItem>
+              </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
               Número de casas decimais exibidas nas medições
