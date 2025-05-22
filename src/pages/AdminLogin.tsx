@@ -24,8 +24,16 @@ export default function AdminLogin() {
           navigate("/admin/dashboard");
         } else if (session.user.email?.endsWith("@aminmedikran.com") || 
                    session.user.email?.endsWith("@adminmedikran.com")) {
-          // If user has admin email but no admin role yet, stay on this page
-          // They'll need to complete OTP verification
+          // For now, immediately set admin role to true for users with admin emails
+          // This is temporary until email domain access is available
+          const { error } = await supabase
+            .from("usuarios")
+            .update({ admin_role: true })
+            .eq("id", session.user.id);
+          
+          if (!error) {
+            navigate("/admin/dashboard");
+          }
         } else {
           // If user is not admin, redirect to regular dashboard
           navigate("/dashboard");

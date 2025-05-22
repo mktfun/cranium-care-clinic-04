@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,10 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 export function AdminLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otpCode, setOtpCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showOtpInput, setShowOtpInput] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<"weak" | "medium" | "strong" | null>(null);
   const navigate = useNavigate();
 
@@ -52,8 +51,8 @@ export function AdminLoginForm() {
     checkPasswordStrength(password);
   }, [password]);
 
-  // Handle first step login (email/password)
-  const handleFirstStepLogin = async (e: React.FormEvent) => {
+  // Handle login
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -75,82 +74,50 @@ export function AdminLoginForm() {
       return;
     }
 
-    // Check password strength
-    if (passwordStrength === "weak") {
-      setError("Your password doesn't meet the minimum security requirements");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
       // Try login with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      if (error) {
-        throw error;
+      if (loginError) {
+        throw loginError;
       }
 
-      // If login successful, send OTP
-      const { data: otpData, error: otpError } = await supabase.functions.invoke("send-admin-otp", {
-        body: { 
-          userId: data.user.id,
-          email: data.user.email
+      if (data.user) {
+        // Temporary: Set admin_role to true for this user
+        const { error: updateError } = await supabase
+          .from("usuarios")
+          .update({ admin_role: true })
+          .eq("id", data.user.id);
+
+        if (updateError) {
+          console.error("Error updating admin role:", updateError);
+          // Continue anyway
         }
-      });
 
-      if (otpError) {
-        throw otpError;
+        // Add security log
+        await supabase
+          .from("security_logs")
+          .insert({
+            user_id: data.user.id,
+            action: "admin_login_success",
+            details: {
+              email_domain: email.split('@')[1],
+              verification_method: "direct" // Temporary direct login
+            }
+          });
+
+        toast.success("Admin login successful!");
+        
+        // Redirect to admin dashboard
+        navigate("/admin/dashboard");
       }
-
-      // Show OTP input
-      setShowOtpInput(true);
-
-      // Log first login step success
-      toast.success("Verification code sent to your email");
-
     } catch (err: any) {
       setError(err.message || "Authentication failed. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle OTP verification
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (!otpCode) {
-      setError("Verification code is required");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Verify OTP via Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke("verify-admin-otp", {
-        body: { 
-          email,
-          otpCode
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success("Admin login successful!");
-      
-      // Redirect to admin dashboard
-      navigate("/admin/dashboard");
-
-    } catch (err: any) {
-      setError(err.message || "Invalid or expired verification code");
     } finally {
       setIsLoading(false);
     }
@@ -163,6 +130,11 @@ export function AdminLoginForm() {
         <CardDescription>
           Secure administrative access to Medikran
         </CardDescription>
+        {!process.env.NODE_ENV || process.env.NODE_ENV === "development" ? (
+          <p className="text-amber-500 text-xs mt-2 p-1 bg-amber-50 rounded">
+            Desenvolvimento: Acesso sem verificação OTP
+          </p>
+        ) : null}
       </CardHeader>
       
       {error && (
@@ -173,115 +145,72 @@ export function AdminLoginForm() {
         </CardContent>
       )}
       
-      {!showOtpInput ? (
-        <form onSubmit={handleFirstStepLogin}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Admin Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your-username@aminmedikran.com or your-username@adminmedikran.com"
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                Only authorized administrative accounts can access this area.
-              </p>
-            </div>
+      <form onSubmit={handleLogin}>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Admin Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your-username@aminmedikran.com or your-username@adminmedikran.com"
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Only authorized administrative accounts can access this area.
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              required
+            />
             
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                required
-              />
-              
-              {/* Password strength indicator */}
-              {passwordStrength && (
-                <div className="mt-2">
-                  <div className="flex items-center">
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                      <div 
-                        className={`h-2.5 rounded-full ${
-                          passwordStrength === "weak" ? "w-1/3 bg-red-500" : 
-                          passwordStrength === "medium" ? "w-2/3 bg-yellow-500" : 
-                          "w-full bg-green-500"
-                        }`}
-                      ></div>
-                    </div>
-                    <span className="ml-2 text-xs text-gray-500">
-                      {passwordStrength === "weak" ? "Weak" : 
-                       passwordStrength === "medium" ? "Medium" : 
-                       "Strong"}
-                    </span>
+            {/* Password strength indicator */}
+            {passwordStrength && (
+              <div className="mt-2">
+                <div className="flex items-center">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                    <div 
+                      className={`h-2.5 rounded-full ${
+                        passwordStrength === "weak" ? "w-1/3 bg-red-500" : 
+                        passwordStrength === "medium" ? "w-2/3 bg-yellow-500" : 
+                        "w-full bg-green-500"
+                      }`}
+                    ></div>
                   </div>
-                  
-                  <p className="text-xs text-gray-500 mt-1">
-                    Secure passwords should have at least 12 characters including uppercase & lowercase letters, numbers, and symbols.
-                  </p>
+                  <span className="ml-2 text-xs text-gray-500">
+                    {passwordStrength === "weak" ? "Weak" : 
+                     passwordStrength === "medium" ? "Medium" : 
+                     "Strong"}
+                  </span>
                 </div>
-              )}
-            </div>
-          </CardContent>
-          
-          <CardFooter>
-            <Button 
-              type="submit" 
-              className="w-full bg-turquesa hover:bg-turquesa/90" 
-              disabled={isLoading}
-            >
-              {isLoading ? "Authenticating..." : "Continue"}
-            </Button>
-          </CardFooter>
-        </form>
-      ) : (
-        <form onSubmit={handleVerifyOtp}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="otp">Verification Code</Label>
-              <Input
-                id="otp"
-                type="text"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                placeholder="Enter the code sent to your email"
-                required
-                autoComplete="one-time-code"
-              />
-              <p className="text-xs text-muted-foreground">
-                A verification code was sent to {email}. 
-                This code expires in 10 minutes.
-              </p>
-            </div>
-          </CardContent>
-          
-          <CardFooter className="flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full bg-turquesa hover:bg-turquesa/90" 
-              disabled={isLoading}
-            >
-              {isLoading ? "Verifying..." : "Verify & Login"}
-            </Button>
-            
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={() => setShowOtpInput(false)}
-              disabled={isLoading}
-            >
-              Back
-            </Button>
-          </CardFooter>
-        </form>
-      )}
+                
+                <p className="text-xs text-gray-500 mt-1">
+                  Secure passwords should have at least 12 characters including uppercase & lowercase letters, numbers, and symbols.
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+        
+        <CardFooter>
+          <Button 
+            type="submit" 
+            className="w-full bg-turquesa hover:bg-turquesa/90" 
+            disabled={isLoading}
+          >
+            {isLoading ? "Authenticating..." : "Login to Admin"}
+          </Button>
+        </CardFooter>
+      </form>
     </Card>
   );
 }
