@@ -4,7 +4,7 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { WelcomeTutorialModal } from "@/components/WelcomeTutorialModal";
-import { MobileNavBar } from "@/components/MobileNavBar";
+import { Navbar1 } from "@/components/ui/navbar-1";
 import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 
 export default function Layout() {
@@ -94,7 +94,7 @@ export default function Layout() {
           </div>
         </main>
       </div>
-      {isSmallScreen && <MobileNavBar />}
+      {isSmallScreen && <Navbar1 />}
       <WelcomeTutorialModal />
     </div>
   );
