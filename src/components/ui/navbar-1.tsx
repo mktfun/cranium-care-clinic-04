@@ -39,7 +39,7 @@ const Navbar1 = () => {
     return location.pathname === path;
   };
   return <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full py-4 px-4 pb-safe">
-      <div className="flex items-center justify-between bg-background rounded-full shadow-lg w-full max-w-xl relative z-10 border border-border mx-[8px] px-[25px] py-[10px] my-[44px]">
+      <div className="flex items-center justify-between bg-background rounded-full shadow-lg w-full max-w-xl relative z-10 border border-border mx-[8px] px-[25px] py-[10px] my-[23px]">
         <div className="flex items-center">
           <motion.div className="w-8 h-8" initial={{
           scale: 0.8
