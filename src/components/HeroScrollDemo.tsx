@@ -35,7 +35,7 @@ export function HeroScrollDemo() {
         </div>
       </ContainerScroll>
       
-      <div className="container mx-auto px-4 -mt-32 mb-20 relative z-10 my-[169px]">
+      <div className="container mx-auto px-4 -mt-32 mb-20 relative z-10 my-[198px]">
         <MedikranFeatures />
       </div>
 
