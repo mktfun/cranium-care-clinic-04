@@ -1,16 +1,17 @@
+
 import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, Calendar, Settings, LogOut, BarChart, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AnimatedSidebar } from "@/components/AnimatedSidebar";
+
 interface SidebarProps {
   className?: string;
   collapsed?: boolean;
   navigateToDashboard?: () => void;
 }
+
 export function Sidebar({
   className,
   collapsed = false,
@@ -71,9 +72,11 @@ export function Sidebar({
     }
     carregarClinica();
   }, []);
+
   const isActive = (path: string) => {
     return location.pathname === path;
   };
+
   const handleLogout = async () => {
     try {
       setCarregando(true);
@@ -92,5 +95,8 @@ export function Sidebar({
       setCarregando(false);
     }
   };
-  return;
+
+  return (
+    <AnimatedSidebar />
+  );
 }

@@ -73,16 +73,12 @@ export default function Layout() {
     <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
       {!isSmallScreen && (
         <Sidebar 
-          className={`fixed left-0 top-0 z-20 h-screen transition-all duration-300 ${
-            sidebarCollapsed ? "lg:-translate-x-[180px]" : "translate-x-0"
-          }`}
+          className="fixed left-0 top-0 z-20 h-screen transition-all duration-300"
           collapsed={sidebarCollapsed}
           navigateToDashboard={navigateToDashboard}
         />
       )}
-      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
-        sidebarCollapsed || isSmallScreen ? "lg:ml-[70px]" : "lg:ml-[250px]"
-      } ${isSmallScreen ? "ml-0" : ""}`}>
+      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 lg:ml-[70px] md:group-data-[state=expanded]/sidebar:lg:ml-[300px]">
         <Header 
           title={getCurrentPageTitle()}
           toggleSidebar={toggleSidebar}
