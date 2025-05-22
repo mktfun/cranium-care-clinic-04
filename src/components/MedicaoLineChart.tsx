@@ -42,6 +42,23 @@ const renderCustomDot = (fill: string) => (props: any) => {
   if (payload.paciente === null) return null;
   return <Dot key={`dot-${index}-${payload.idadeEmMeses || ""}`} cx={cx} cy={cy} r={4} fill={fill} stroke="#fff" strokeWidth={1} />;
 };
+
+// Função para formatar valores percentuais
+const formatPercentage = (value: number): number => {
+  // Verificar se o valor já está na faixa correta (de 0 a 100)
+  if (value > 0 && value <= 100) {
+    return value;
+  }
+  
+  // Se for um valor muito grande (acima de 100), assumimos que já está multiplicado por 100
+  // Então dividimos por 100 para obter o valor percentual correto
+  if (value > 100) {
+    return Number((value / 100).toFixed(1));
+  }
+  
+  return value;
+};
+
 export function MedicaoLineChart({
   titulo,
   descricao,
@@ -75,6 +92,15 @@ export function MedicaoLineChart({
       if (perimetro && perimetro > 200) {
         perimetro = perimetro / 10;
       }
+      
+      // Corrigir e formatar o índice craniano
+      const rawIndiceCraniano = Number(medicao.indice_craniano || medicao.indiceCraniano);
+      const formattedIndiceCraniano = formatPercentage(rawIndiceCraniano);
+      
+      // Corrigir e formatar o CVAI
+      const rawCvai = Number(medicao.cvai);
+      const formattedCvai = formatPercentage(rawCvai);
+      
       return {
         ...medicao,
         idadeEmMeses: idadeMeses,
@@ -84,8 +110,8 @@ export function MedicaoLineChart({
         diagonal_d: Number(medicao.diagonal_d || medicao.diagonalD),
         diagonal_e: Number(medicao.diagonal_e || medicao.diagonalE),
         diferenca_diagonais: Number(medicao.diferenca_diagonais || medicao.diferencaDiagonais),
-        indice_craniano: Number(medicao.indice_craniano || medicao.indiceCraniano),
-        cvai: Number(medicao.cvai),
+        indice_craniano: formattedIndiceCraniano,
+        cvai: formattedCvai,
         perimetro_cefalico: perimetro ? Number(perimetro) : undefined,
         paciente: true,
         // Marcar que são pontos do paciente
@@ -496,3 +522,4 @@ export function MedicaoLineChart({
       </div>
     </div>;
 }
+</edits_to_apply>
