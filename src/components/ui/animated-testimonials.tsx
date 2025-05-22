@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -164,11 +163,7 @@ export function AnimatedTestimonials({
         {trustedCompanies.length > 0 && <motion.div variants={itemVariants} initial="hidden" animate={controls} className="mt-24 text-center">
             <h3 className="text-sm font-medium text-muted-foreground mb-8">{trustedCompaniesTitle}</h3>
             <div className="flex flex-wrap justify-center gap-x-12 gap-y-8">
-              {trustedCompanies.map((company) => (
-                <div key={company} className="text-2xl font-semibold text-muted-foreground/50">
-                  {company}
-                </div>
-              ))}
+              {trustedCompanies.map(company => {})}
             </div>
           </motion.div>}
       </div>

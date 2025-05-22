@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from "react";
@@ -7,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { MedikranFeatures } from "@/components/MedikranFeatures";
 import { MedikranTestimonials } from "@/components/MedikranTestimonials";
-
 export function HeroScrollDemo() {
-  return <div className="flex flex-col overflow-hidden pb-[500px] pt-20 py-[100px]">
+  return <div className="flex flex-col overflow-hidden pb-[500px] pt-20 py-[75px]">
       <ContainerScroll titleComponent={<>
             <h1 className="text-4xl font-semibold text-black dark:text-white">
               Bem-vindo ao <br />
