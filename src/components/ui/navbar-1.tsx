@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -11,6 +12,7 @@ const Navbar1 = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [canDrag, setCanDrag] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
   
@@ -20,6 +22,12 @@ const Navbar1 = () => {
   const toggleMenu = () => {
     if (!isDragging) {
       setIsOpen(!isOpen);
+    }
+  };
+  
+  const toggleCompactMode = () => {
+    if (!isDragging) {
+      setIsCompact(!isCompact);
     }
   };
   
@@ -90,7 +98,13 @@ const Navbar1 = () => {
     <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full py-4 px-4 pb-safe">
       <motion.div 
         ref={navRef}
-        className="flex items-center justify-between bg-background rounded-full shadow-lg w-full max-w-xl relative z-10 border border-border mx-[8px] px-[25px] py-[10px] my-[23px]"
+        className={`flex items-center ${isCompact ? 'justify-center' : 'justify-between'} bg-background rounded-full shadow-lg relative z-10 border border-border mx-[8px] py-[10px] my-[23px] transition-all duration-300`}
+        style={{
+          width: isCompact ? '70px' : '100%',
+          maxWidth: isCompact ? '70px' : 'xl',
+          paddingLeft: isCompact ? '10px' : '25px',
+          paddingRight: isCompact ? '10px' : '25px',
+        }}
         drag={canDrag}
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
         dragElastic={0.1}
@@ -111,10 +125,14 @@ const Navbar1 = () => {
           <motion.div 
             className="w-8 h-8" 
             initial={{ scale: 0.8 }}
-            animate={{ scale: isOpen ? 1.1 : 1 }}
-            whileHover={{ rotate: 5 }}
+            animate={{ 
+              scale: isOpen ? 1.1 : 1,
+              rotate: isCompact ? 180 : 0 
+            }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             transition={{ duration: 0.3 }}
-            onClick={toggleMenu}
+            onClick={toggleCompactMode}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onTouchStart={handleMouseDown}
@@ -132,58 +150,64 @@ const Navbar1 = () => {
           </motion.div>
         </div>
         
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          {navItems.map(item => (
-            <motion.div
-              key={item.name}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <a
-                href="#"
-                onClick={e => {
-                  e.preventDefault();
-                  handleNavigation(item.path);
-                }}
-                className={`text-sm hover:text-primary transition-colors font-medium flex items-center gap-1.5 ${
-                  isActive(item.path) ? "text-primary" : "text-muted-foreground"
-                }`}
+        {/* Desktop Navigation - Hidden in compact mode */}
+        {!isCompact && (
+          <nav className="hidden md:flex items-center space-x-8">
+            {navItems.map(item => (
+              <motion.div
+                key={item.name}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                whileHover={{ scale: 1.05 }}
               >
-                <item.icon className="w-4 h-4" />
-                {item.name}
-              </a>
-            </motion.div>
-          ))}
-        </nav>
+                <a
+                  href="#"
+                  onClick={e => {
+                    e.preventDefault();
+                    handleNavigation(item.path);
+                  }}
+                  className={`text-sm hover:text-primary transition-colors font-medium flex items-center gap-1.5 ${
+                    isActive(item.path) ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.name}
+                </a>
+              </motion.div>
+            ))}
+          </nav>
+        )}
 
-        {/* Mobile Navigation Icons */}
-        <div className="md:hidden flex items-center space-x-6">
-          {navItems.slice(0, 3).map(item => (
-            <motion.div
-              key={item.name}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => handleNavigation(item.path)}
-            >
-              <item.icon
-                className={`w-5 h-5 ${
-                  isActive(item.path) ? "text-primary" : "text-muted-foreground"
-                }`}
-              />
-            </motion.div>
-          ))}
-        </div>
+        {/* Mobile Navigation Icons - Hidden in compact mode */}
+        {!isCompact && (
+          <div className="md:hidden flex items-center space-x-6">
+            {navItems.slice(0, 3).map(item => (
+              <motion.div
+                key={item.name}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => handleNavigation(item.path)}
+              >
+                <item.icon
+                  className={`w-5 h-5 ${
+                    isActive(item.path) ? "text-primary" : "text-muted-foreground"
+                  }`}
+                />
+              </motion.div>
+            ))}
+          </div>
+        )}
 
-        {/* Mobile Menu Button */}
-        <motion.button
-          className="md:hidden flex items-center"
-          onClick={toggleMenu}
-          whileTap={{ scale: 0.9 }}
-        >
-          <Menu className="h-6 w-6 text-primary" />
-        </motion.button>
+        {/* Mobile Menu Button - Hidden in compact mode */}
+        {!isCompact && (
+          <motion.button
+            className="md:hidden flex items-center"
+            onClick={toggleMenu}
+            whileTap={{ scale: 0.9 }}
+          >
+            <Menu className="h-6 w-6 text-primary" />
+          </motion.button>
+        )}
       </motion.div>
 
       {/* Mobile Menu Overlay */}
