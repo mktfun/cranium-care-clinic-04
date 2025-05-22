@@ -14,11 +14,21 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  const isAdminEmail = (email: string) => {
+    return email.endsWith("@adminmedikran");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
+      // Check if it's an admin email and redirect to admin login
+      if (isAdminEmail(email)) {
+        navigate("/admin/login");
+        return;
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -35,7 +45,7 @@ export function LoginForm() {
     } catch (error: any) {
       console.error("Erro no login:", error);
       
-      // Tratamento de erros específicos
+      // Specific error handling
       if (error.message.includes("Invalid login credentials")) {
         toast.error("Email ou senha incorretos");
       } else if (error.message.includes("Email not confirmed")) {

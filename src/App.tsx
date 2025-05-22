@@ -25,6 +25,8 @@ import ProntuarioMedico from "@/pages/ProntuarioMedico";
 import HistoricoCompletoPaciente from "@/pages/HistoricoCompletoPaciente";
 import MultiAngleCapturaPage from "./pages/MultiAngleCapturaPage";
 import HeroLandingPage from "./pages/HeroLandingPage";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -35,6 +37,10 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
           <Route path="/hero" element={<HeroLandingPage />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           
           <Route path="/" element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />

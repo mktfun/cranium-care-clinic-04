@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_otps: {
+        Row: {
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          otp_code: string
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          otp_code: string
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          used?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_rate_limits: {
+        Row: {
+          attempts: number | null
+          id: string
+          last_attempt: string | null
+          user_id: string
+        }
+        Insert: {
+          attempts?: number | null
+          id?: string
+          last_attempt?: string | null
+          user_id: string
+        }
+        Update: {
+          attempts?: number | null
+          id?: string
+          last_attempt?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       colaboradores: {
         Row: {
           created_at: string | null
@@ -351,6 +402,33 @@ export type Database = {
           },
         ]
       }
+      security_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tarefas: {
         Row: {
           created_at: string | null
@@ -400,6 +478,7 @@ export type Database = {
       }
       usuarios: {
         Row: {
+          admin_role: boolean | null
           avatar_url: string | null
           clinica_logo: string | null
           clinica_nome: string | null
@@ -410,6 +489,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          admin_role?: boolean | null
           avatar_url?: string | null
           clinica_logo?: string | null
           clinica_nome?: string | null
@@ -420,6 +500,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          admin_role?: boolean | null
           avatar_url?: string | null
           clinica_logo?: string | null
           clinica_nome?: string | null
