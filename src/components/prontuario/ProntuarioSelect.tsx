@@ -23,6 +23,7 @@ interface ProntuarioSelectProps {
   className?: string;
   placeholder?: string;
   disabled?: boolean;
+  customIcon?: React.ReactNode;
 }
 
 export function ProntuarioSelect({
@@ -33,6 +34,7 @@ export function ProntuarioSelect({
   className,
   placeholder = "Selecione uma opção...",
   disabled = false,
+  customIcon,
 }: ProntuarioSelectProps) {
   return (
     <div className={cn("space-y-2", className)}>
@@ -47,6 +49,9 @@ export function ProntuarioSelect({
           hover:border-primary/60 focus:ring-primary/30 active:scale-[0.98]"
         >
           <SelectValue placeholder={placeholder} />
+          {customIcon && (
+            <span className="ml-2 text-primary">{customIcon}</span>
+          )}
         </SelectTrigger>
         <SelectContent className="animate-enter border-primary/20 bg-card shadow-md">
           {options.map((option) => (

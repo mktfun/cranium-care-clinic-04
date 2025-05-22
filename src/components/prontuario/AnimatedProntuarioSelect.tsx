@@ -1,11 +1,14 @@
+
 import React, { useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, FileText, Calendar, Plus } from "lucide-react";
 import { ProntuarioSelect } from "./ProntuarioSelect";
+
 interface AnimatedProntuarioSelectProps {
   value: string;
   onChange: (value: string) => void;
 }
+
 export function AnimatedProntuarioSelect({
   value,
   onChange
@@ -33,11 +36,18 @@ export function AnimatedProntuarioSelect({
     const currentOption = options.find(opt => opt.value === value);
     return currentOption ? currentOption.label : "";
   }, [options, value]);
-  return <div className="relative">
-      
-      
+
+  return (
+    <div className="relative">
       <AnimatePresence>
-        <ProntuarioSelect value={value} options={options} onChange={onChange} className="mt-2" />
+        <ProntuarioSelect 
+          value={value} 
+          options={options} 
+          onChange={onChange} 
+          className="mt-2" 
+          customIcon={<Plus className="h-4 w-4" />}
+        />
       </AnimatePresence>
-    </div>;
+    </div>
+  );
 }
