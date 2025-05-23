@@ -36,8 +36,7 @@ export function MedikranTestimonials() {
           avatar: "https://randomuser.me/api/portraits/women/44.jpg",
         },
       ]}
-      trustedCompanies={["Hospital Albert Einstein", "AACD", "Santa Casa", "Hospital Sírio-Libanês", "Sabará Hospital Infantil"]}
-      trustedCompaniesTitle="Utilizado por profissionais de instituições renomadas"
+      // Removendo a seção de logos de hospitais conforme solicitado
     />
   );
 }
