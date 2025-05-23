@@ -17,10 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { SelectPatientDialog } from "@/components/SelectPatientDialog";
+
 interface TrendData {
   value: number;
   isPositive: boolean;
 }
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [clinicaNome, setClinicaNome] = useState("CraniumCare");
@@ -45,6 +48,10 @@ export default function Dashboard() {
   const [trendPacientesAlerta, setTrendPacientesAlerta] = useState<TrendData | undefined>(undefined);
   const [percentualPacientesAlerta, setPercentualPacientesAlerta] = useState(0);
   const isMobile = useIsMobile();
+  
+  // New state for patient selection dialog
+  const [patientDialogOpen, setPatientDialogOpen] = useState(false);
+
   useEffect(() => {
     async function carregarDados() {
       try {
@@ -251,16 +258,30 @@ export default function Dashboard() {
     if (pacienteId) {
       navigate(`/pacientes/${pacienteId}/medicao-por-foto`);
     } else {
-      // If no patient selected, go to patient selection first
-      navigate('/pacientes');
+      // If no patient selected, open the patient selection dialog
+      setPatientDialogOpen(true);
     }
   };
+
+  // Handle selected patient from dialog
+  const handlePatientSelected = (pacienteId: string) => {
+    navigate(`/pacientes/${pacienteId}/medicao-por-foto`);
+  };
+
   if (carregando) {
     return <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
       </div>;
   }
+  
   return <div className="space-y-6 animate-fade-in p-4 md:p-6">
+      {/* Patient selection dialog */}
+      <SelectPatientDialog
+        open={patientDialogOpen}
+        onOpenChange={setPatientDialogOpen}
+        onSelectPatient={handlePatientSelected}
+      />
+      
       <div>
         <h2 className="text-3xl font-bold transition-all duration-300 hover:text-primary">Olá, {usuario?.nome.split(" ")[0] || "Doutor(a)"}</h2>
         <p className="text-muted-foreground">
@@ -279,13 +300,10 @@ export default function Dashboard() {
               <Plus className="h-4 w-4 mr-2" />
               Novo Paciente
             </Button>
-            {pacientes.length > 0 ? <Button onClick={() => handleQuickAction(pacientes[0]?.id)} variant="outline" className="transition-all duration-300 hover:border-primary/60 hover:bg-primary/5">
-                <Camera className="h-4 w-4 mr-2" />
-                Nova Medição
-              </Button> : <Button onClick={() => navigate('/pacientes/registro')} variant="outline" disabled={pacientes.length === 0}>
-                <Camera className="h-4 w-4 mr-2" />
-                Nova Medição
-              </Button>}
+            <Button onClick={() => handleQuickAction()} variant="outline" className="transition-all duration-300 hover:border-primary/60 hover:bg-primary/5">
+              <Camera className="h-4 w-4 mr-2" />
+              Nova Medição
+            </Button>
             <Button onClick={() => navigate('/historico')} variant="outline" className="transition-all duration-300 hover:border-primary/60 hover:bg-primary/5">
               Ver Histórico
             </Button>
