@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface HistoricoGestacionalSectionProps {
   prontuarioId: string;
@@ -24,10 +26,34 @@ export function HistoricoGestacionalSection({
   const [idadeCorrigida, setIdadeCorrigida] = useState(initialData.idadeCorrigida || "");
   const [observacoesAnamnese, setObservacoesAnamnese] = useState(initialData.observacoesAnamnese || "");
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
-    // Implementar salvamento no banco
-    setIsEditing(false);
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('prontuarios')
+        .update({ 
+          idade_gestacional: idadeGestacional,
+          idade_corrigida: idadeCorrigida,
+          observacoes_anamnese: observacoesAnamnese
+        })
+        .eq('id', prontuarioId);
+
+      if (error) {
+        console.error('Erro ao salvar histórico gestacional:', error);
+        toast.error('Erro ao salvar histórico gestacional.');
+        return;
+      }
+
+      toast.success('Histórico gestacional salvo com sucesso!');
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      toast.error('Erro inesperado ao salvar.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -69,11 +95,11 @@ export function HistoricoGestacionalSection({
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleSave} size="sm">
+              <Button onClick={handleSave} size="sm" disabled={isSaving}>
                 <Save className="h-4 w-4 mr-2" />
-                Salvar
+                {isSaving ? 'Salvando...' : 'Salvar'}
               </Button>
-              <Button variant="outline" onClick={() => setIsEditing(false)} size="sm">
+              <Button variant="outline" onClick={() => setIsEditing(false)} size="sm" disabled={isSaving}>
                 Cancelar
               </Button>
             </div>
