@@ -316,7 +316,7 @@ export function Header({
     });
   };
   return <header className={cn("border-b bg-background fixed top-0 right-0 left-0 z-10 transition-all duration-300 pt-safe", !isMobile && (sidebarCollapsed ? "lg:pl-[70px]" : "lg:pl-[250px]"), className)}>
-      <div className="flex h-16 items-center px-4 gap-4">
+      <div className="flex h-16 items-center gap-4 px-[21px]">
         {!isMobile}
         
         {isMobile ? <div className="flex-1 flex justify-between items-center">

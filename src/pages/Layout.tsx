@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
@@ -6,40 +5,34 @@ import { Header } from "@/components/Header";
 import { WelcomeTutorialModal } from "@/components/WelcomeTutorialModal";
 import { Navbar1 } from "@/components/ui/navbar-1";
 import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
-
 export default function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const isSmallScreen = useIsMobileOrTabletPortrait();
   const navigate = useNavigate();
   const location = useLocation();
-  
   useEffect(() => {
     // Colapsar sidebar automaticamente em tablet e mobile
     const checkScreenSize = () => {
-      if (window.innerWidth < 1024 || (window.innerWidth >= 600 && window.innerWidth <= 900 && window.innerHeight > window.innerWidth)) {
+      if (window.innerWidth < 1024 || window.innerWidth >= 600 && window.innerWidth <= 900 && window.innerHeight > window.innerWidth) {
         setSidebarCollapsed(true);
       } else {
         setSidebarCollapsed(false);
       }
     };
-    
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
-    
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
-  
+
   // Auto-hide sidebar on mobile when navigating
   useEffect(() => {
     if (isSmallScreen) {
       setSidebarCollapsed(true);
     }
   }, [location.pathname, isSmallScreen]);
-  
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
-
   const navigateToDashboard = () => {
     navigate('/dashboard');
   };
@@ -55,9 +48,8 @@ export default function Layout() {
       "/configuracoes": "Configurações",
       "/tarefas": "Tarefas",
       "/notificacoes": "Notificações",
-      "/perfil": "Perfil",
+      "/perfil": "Perfil"
     };
-    
     if (path.startsWith("/pacientes/") && path.includes("/nova-medicao")) return "Nova Medição";
     if (path.startsWith("/pacientes/") && path.includes("/medicao-por-foto")) return "Medição por Foto";
     if (path.startsWith("/pacientes/") && path.includes("/relatorio")) return "Relatório";
@@ -65,33 +57,19 @@ export default function Layout() {
     if (path.startsWith("/pacientes/") && path.includes("/historico")) return "Histórico do Paciente";
     if (path.startsWith("/pacientes/") && path.split('/').length === 3) return "Detalhes do Paciente";
     if (path === "/pacientes/registro") return "Novo Paciente";
-    
     return routeNames[path] || "Dashboard";
   };
-
-  return (
-    <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
-      {!isSmallScreen && (
-        <Sidebar 
-          className="fixed left-0 top-0 z-20 h-screen transition-all duration-300"
-          collapsed={sidebarCollapsed}
-          navigateToDashboard={navigateToDashboard}
-        />
-      )}
+  return <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
+      {!isSmallScreen && <Sidebar className="fixed left-0 top-0 z-20 h-screen transition-all duration-300" collapsed={sidebarCollapsed} navigateToDashboard={navigateToDashboard} />}
       <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 lg:ml-[70px] md:group-data-[state=expanded]/sidebar:lg:ml-[300px]">
-        <Header 
-          title={getCurrentPageTitle()}
-          toggleSidebar={toggleSidebar}
-          sidebarCollapsed={sidebarCollapsed}
-        />
-        <main className="flex-1 overflow-auto mt-16 pb-20 md:pb-6">
-          <div className="p-3 md:p-6 max-w-7xl mx-auto w-full">
+        <Header title={getCurrentPageTitle()} toggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
+        <main className="flex-1 overflow-auto mt-16 pb-20 md:pb-6 my-[66px]">
+          <div className="p-3 md:p-6 max-w-7xl mx-auto w-full px-0">
             <Outlet />
           </div>
         </main>
       </div>
       {isSmallScreen && <Navbar1 />}
       <WelcomeTutorialModal />
-    </div>
-  );
+    </div>;
 }
