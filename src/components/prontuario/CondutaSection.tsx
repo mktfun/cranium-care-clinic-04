@@ -4,8 +4,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface CondutaSectionProps {
   prontuarioId: string;
@@ -15,30 +13,10 @@ interface CondutaSectionProps {
 export function CondutaSection({ prontuarioId, initialValue = "" }: CondutaSectionProps) {
   const [conduta, setConduta] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from('prontuarios')
-        .update({ conduta: conduta })
-        .eq('id', prontuarioId);
-
-      if (error) {
-        console.error('Erro ao salvar conduta:', error);
-        toast.error('Erro ao salvar conduta.');
-        return;
-      }
-
-      toast.success('Conduta salva com sucesso!');
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Erro inesperado:', error);
-      toast.error('Erro inesperado ao salvar.');
-    } finally {
-      setIsSaving(false);
-    }
+    // Implementar salvamento no banco
+    setIsEditing(false);
   };
 
   return (
@@ -56,11 +34,11 @@ export function CondutaSection({ prontuarioId, initialValue = "" }: CondutaSecti
               className="min-h-[120px]"
             />
             <div className="flex gap-2">
-              <Button onClick={handleSave} size="sm" disabled={isSaving}>
+              <Button onClick={handleSave} size="sm">
                 <Save className="h-4 w-4 mr-2" />
-                {isSaving ? 'Salvando...' : 'Salvar'}
+                Salvar
               </Button>
-              <Button variant="outline" onClick={() => setIsEditing(false)} size="sm" disabled={isSaving}>
+              <Button variant="outline" onClick={() => setIsEditing(false)} size="sm">
                 Cancelar
               </Button>
             </div>
