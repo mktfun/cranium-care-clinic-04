@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface DiagnosticoSectionProps {
   prontuarioId: string;
@@ -21,10 +23,33 @@ export function DiagnosticoSection({
   const [diagnostico, setDiagnostico] = useState(initialDiagnostico);
   const [cid, setCid] = useState(initialCid);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
-    // Implementar salvamento no banco
-    setIsEditing(false);
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('prontuarios')
+        .update({ 
+          diagnostico: diagnostico,
+          cid: cid
+        })
+        .eq('id', prontuarioId);
+
+      if (error) {
+        console.error('Erro ao salvar diagnóstico:', error);
+        toast.error('Erro ao salvar diagnóstico.');
+        return;
+      }
+
+      toast.success('Diagnóstico salvo com sucesso!');
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      toast.error('Erro inesperado ao salvar.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -55,11 +80,11 @@ export function DiagnosticoSection({
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleSave} size="sm">
+              <Button onClick={handleSave} size="sm" disabled={isSaving}>
                 <Save className="h-4 w-4 mr-2" />
-                Salvar
+                {isSaving ? 'Salvando...' : 'Salvar'}
               </Button>
-              <Button variant="outline" onClick={() => setIsEditing(false)} size="sm">
+              <Button variant="outline" onClick={() => setIsEditing(false)} size="sm" disabled={isSaving}>
                 Cancelar
               </Button>
             </div>

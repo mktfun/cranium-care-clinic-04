@@ -359,36 +359,60 @@ export type Database = {
         Row: {
           alergias: string | null
           altura: number | null
+          atestado: string | null
+          cid: string | null
+          conduta: string | null
           created_at: string | null
           data_criacao: string | null
+          diagnostico: string | null
           id: string
+          idade_corrigida: string | null
+          idade_gestacional: string | null
+          observacoes_anamnese: string | null
           observacoes_gerais: string | null
           paciente_id: string
           peso: number | null
+          queixa_principal: string | null
           tipo_sanguineo: string | null
           updated_at: string | null
         }
         Insert: {
           alergias?: string | null
           altura?: number | null
+          atestado?: string | null
+          cid?: string | null
+          conduta?: string | null
           created_at?: string | null
           data_criacao?: string | null
+          diagnostico?: string | null
           id?: string
+          idade_corrigida?: string | null
+          idade_gestacional?: string | null
+          observacoes_anamnese?: string | null
           observacoes_gerais?: string | null
           paciente_id: string
           peso?: number | null
+          queixa_principal?: string | null
           tipo_sanguineo?: string | null
           updated_at?: string | null
         }
         Update: {
           alergias?: string | null
           altura?: number | null
+          atestado?: string | null
+          cid?: string | null
+          conduta?: string | null
           created_at?: string | null
           data_criacao?: string | null
+          diagnostico?: string | null
           id?: string
+          idade_corrigida?: string | null
+          idade_gestacional?: string | null
+          observacoes_anamnese?: string | null
           observacoes_gerais?: string | null
           paciente_id?: string
           peso?: number | null
+          queixa_principal?: string | null
           tipo_sanguineo?: string | null
           updated_at?: string | null
         }
