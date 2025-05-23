@@ -87,4 +87,13 @@ export interface Prontuario {
   data_criacao?: string;
   created_at?: string;
   updated_at?: string;
+  // Added fields that were included in the SQL schema update
+  queixa_principal?: string;
+  idade_gestacional?: string;
+  idade_corrigida?: string;
+  observacoes_anamnese?: string;
+  diagnostico?: string;
+  cid?: string;
+  conduta?: string; // Added this field to fix the TypeScript error
+  atestado?: string;
 }
