@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ChevronLeft, FilePlus, FileText, Calendar, User } from "lucide-react";
+import { Loader2, ChevronLeft, FilePlus, FileText, Calendar, User, Clipboard, Stethoscope } from "lucide-react";
 import { formatAgeHeader } from "@/lib/age-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,10 +12,13 @@ import { DadosPessoaisTab } from "@/components/prontuario/DadosPessoaisTab";
 import { HistoricoMedicoTab } from "@/components/prontuario/HistoricoMedicoTab";
 import { ConsultasTab } from "@/components/prontuario/ConsultasTab";
 import { AvaliacoesCraniaisTab } from "@/components/prontuario/AvaliacoesCraniaisTab";
+import { AvaliacaoTab } from "@/components/prontuario/AvaliacaoTab";
+import { CondutaTab } from "@/components/prontuario/CondutaTab";
 import { NovoProntuarioDialog } from "@/components/prontuario/NovoProntuarioDialog";
 import { AnimatedProntuarioSelect } from "@/components/prontuario/AnimatedProntuarioSelect";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Prontuario } from "@/types";
+
 export default function ProntuarioMedico() {
   const {
     id
@@ -27,6 +30,7 @@ export default function ProntuarioMedico() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dados-pessoais");
   const isMobile = useIsMobile();
+  
   useEffect(() => {
     async function fetchData() {
       if (id) {
@@ -73,6 +77,7 @@ export default function ProntuarioMedico() {
     }
     fetchData();
   }, [id, navigate]);
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
@@ -85,6 +90,7 @@ export default function ProntuarioMedico() {
         <Button onClick={() => navigate("/pacientes")}>Voltar para Pacientes</Button>
       </div>;
   }
+
   const formatarData = (dataString: string) => {
     if (!dataString) return "N/A";
     const data = new Date(dataString);
@@ -92,6 +98,7 @@ export default function ProntuarioMedico() {
     return data.toLocaleDateString('pt-BR');
   };
   const idadeAtual = formatAgeHeader(paciente.data_nascimento);
+
   return <div className="space-y-6 animate-fade-in p-4 md:p-6">
       {/* Cabeçalho centralizado com apenas uma seta */}
       <div className="flex flex-col items-center mb-2">
@@ -153,6 +160,14 @@ export default function ProntuarioMedico() {
                         <FileText className="h-4 w-4" />
                         Avaliações Craniais
                       </TabsTrigger>
+                      <TabsTrigger value="avaliacao" className="flex items-center gap-1">
+                        <Clipboard className="h-4 w-4" />
+                        Avaliação
+                      </TabsTrigger>
+                      <TabsTrigger value="conduta" className="flex items-center gap-1">
+                        <Stethoscope className="h-4 w-4" />
+                        Conduta
+                      </TabsTrigger>
                     </TabsList>
                   </div>}
                 <Separator className="my-0" />
@@ -167,6 +182,12 @@ export default function ProntuarioMedico() {
                 </TabsContent>
                 <TabsContent value="avaliacoes-craniais" className="p-6">
                   <AvaliacoesCraniaisTab pacienteId={id || ''} />
+                </TabsContent>
+                <TabsContent value="avaliacao" className="p-6">
+                  <AvaliacaoTab />
+                </TabsContent>
+                <TabsContent value="conduta" className="p-6">
+                  <CondutaTab prontuario={prontuario} pacienteId={id || ''} />
                 </TabsContent>
               </Tabs>
             </CardContent>
