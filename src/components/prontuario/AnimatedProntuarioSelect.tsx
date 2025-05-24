@@ -19,7 +19,7 @@ export function AnimatedProntuarioSelect({
     icon: <User className="h-4 w-4" />
   }, {
     value: "historico-medico",
-    label: "Histórico Médico",
+    label: "Histórico",
     icon: <FileText className="h-4 w-4" />
   }, {
     value: "consultas",

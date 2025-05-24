@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -126,7 +127,7 @@ export default function ProntuarioMedico() {
                 <div>
                   <CardTitle className="flex items-center gap-2 font-normal text-base">
                     <FileText className="h-5 w-5 text-turquesa" /> 
-                    Prontuário Médico
+                    Prontuário
                   </CardTitle>
                   <CardDescription>
                     Criado em: {formatarData(prontuario.data_criacao)}
@@ -151,7 +152,7 @@ export default function ProntuarioMedico() {
                       </TabsTrigger>
                       <TabsTrigger value="historico-medico" className="flex items-center gap-1">
                         <FileText className="h-4 w-4" />
-                        Histórico Médico
+                        Histórico
                       </TabsTrigger>
                       <TabsTrigger value="consultas" className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
@@ -205,7 +206,7 @@ export default function ProntuarioMedico() {
             <FileText className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-2xl font-semibold mb-2">Nenhum prontuário encontrado</h3>
             <p className="text-muted-foreground mb-6">
-              Este paciente ainda não possui um prontuário médico cadastrado no sistema.
+              Este paciente ainda não possui um prontuário cadastrado no sistema.
             </p>
             <Button onClick={() => setIsDialogOpen(true)} className="bg-turquesa hover:bg-turquesa/90">
               <FilePlus className="h-4 w-4 mr-2" />

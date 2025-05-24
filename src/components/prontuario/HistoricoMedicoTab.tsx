@@ -9,10 +9,12 @@ import { toast } from "sonner";
 import { Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { HistoricoMedicoList } from "@/components/historico/HistoricoMedicoList";
+
 interface HistoricoMedicoTabProps {
   prontuario: any;
   pacienteId: string;
 }
+
 export function HistoricoMedicoTab({
   prontuario,
   pacienteId
@@ -28,6 +30,7 @@ export function HistoricoMedicoTab({
     tratamento: "",
     observacoes: ""
   });
+
   useEffect(() => {
     async function fetchHistoricoMedico() {
       try {
@@ -55,6 +58,7 @@ export function HistoricoMedicoTab({
       fetchHistoricoMedico();
     }
   }, [pacienteId]);
+
   const handleOpenDialog = (item?: any) => {
     if (item) {
       setFormData({
@@ -78,6 +82,7 @@ export function HistoricoMedicoTab({
     }
     setDialogOpen(true);
   };
+
   const handleSave = async () => {
     try {
       setLoading(true);
@@ -144,6 +149,7 @@ export function HistoricoMedicoTab({
       setLoading(false);
     }
   };
+
   const handleDelete = async (id: string) => {
     try {
       setLoading(true);
@@ -164,9 +170,10 @@ export function HistoricoMedicoTab({
       setLoading(false);
     }
   };
+
   return <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Histórico </h3>
+        <h3 className="text-lg font-semibold">Histórico</h3>
         <Button onClick={() => handleOpenDialog()} className="flex items-center gap-1 bg-turquesa hover:bg-turquesa/90" disabled={loading}>
           <Plus className="h-4 w-4" /> Adicionar
         </Button>
@@ -174,15 +181,15 @@ export function HistoricoMedicoTab({
       
       {loading && historicoMedico.length === 0 ? <div className="text-center py-8">
           <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-          <p className="mt-2 text-muted-foreground">Carregando histórico médico...</p>
+          <p className="mt-2 text-muted-foreground">Carregando histórico...</p>
         </div> : <HistoricoMedicoList historico={historicoMedico} onEdit={handleOpenDialog} onDelete={handleDelete} />}
       
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingItemId ? 'Editar' : 'Adicionar'} Registro Médico</DialogTitle>
+            <DialogTitle>{editingItemId ? 'Editar' : 'Adicionar'} Registro</DialogTitle>
             <DialogDescription>
-              Preencha os detalhes do registro médico abaixo.
+              Preencha os detalhes do registro abaixo.
             </DialogDescription>
           </DialogHeader>
           
