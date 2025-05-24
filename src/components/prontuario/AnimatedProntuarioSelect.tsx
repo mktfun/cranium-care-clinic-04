@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, FileText, Calendar, Plus, Clipboard, Stethoscope } from "lucide-react";
+import { User, FileText, Calendar, Plus, Clipboard, Stethoscope, Activity } from "lucide-react";
 import { ProntuarioSelect } from "./ProntuarioSelect";
 
 interface AnimatedProntuarioSelectProps {
@@ -37,6 +37,10 @@ export function AnimatedProntuarioSelect({
     value: "conduta",
     label: "Conduta",
     icon: <Stethoscope className="h-4 w-4" />
+  }, {
+    value: "diagnostico",
+    label: "Diagnóstico",
+    icon: <Activity className="h-4 w-4" />
   }], []);
 
   // Find the current option label

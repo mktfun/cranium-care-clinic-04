@@ -360,6 +360,7 @@ export type Database = {
           alergias: string | null
           altura: number | null
           atestado: string | null
+          avaliacao: string | null
           cid: string | null
           conduta: string | null
           created_at: string | null
@@ -380,6 +381,7 @@ export type Database = {
           alergias?: string | null
           altura?: number | null
           atestado?: string | null
+          avaliacao?: string | null
           cid?: string | null
           conduta?: string | null
           created_at?: string | null
@@ -400,6 +402,7 @@ export type Database = {
           alergias?: string | null
           altura?: number | null
           atestado?: string | null
+          avaliacao?: string | null
           cid?: string | null
           conduta?: string | null
           created_at?: string | null

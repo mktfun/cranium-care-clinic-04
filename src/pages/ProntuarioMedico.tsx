@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ChevronLeft, FilePlus, FileText, Calendar, User, Clipboard, Stethoscope } from "lucide-react";
+import { Loader2, ChevronLeft, FilePlus, FileText, Calendar, User, Clipboard, Stethoscope, Activity } from "lucide-react";
 import { formatAgeHeader } from "@/lib/age-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import { ConsultasTab } from "@/components/prontuario/ConsultasTab";
 import { AvaliacoesCraniaisTab } from "@/components/prontuario/AvaliacoesCraniaisTab";
 import { AvaliacaoTab } from "@/components/prontuario/AvaliacaoTab";
 import { CondutaTab } from "@/components/prontuario/CondutaTab";
+import { DiagnosticoTab } from "@/components/prontuario/DiagnosticoTab";
 import { NovoProntuarioDialog } from "@/components/prontuario/NovoProntuarioDialog";
 import { AnimatedProntuarioSelect } from "@/components/prontuario/AnimatedProntuarioSelect";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -168,6 +169,10 @@ export default function ProntuarioMedico() {
                         <Stethoscope className="h-4 w-4" />
                         Conduta
                       </TabsTrigger>
+                      <TabsTrigger value="diagnostico" className="flex items-center gap-1">
+                        <Activity className="h-4 w-4" />
+                        Diagnóstico
+                      </TabsTrigger>
                     </TabsList>
                   </div>}
                 <Separator className="my-0" />
@@ -188,6 +193,9 @@ export default function ProntuarioMedico() {
                 </TabsContent>
                 <TabsContent value="conduta" className="p-6">
                   <CondutaTab prontuario={prontuario} pacienteId={id || ''} />
+                </TabsContent>
+                <TabsContent value="diagnostico" className="p-6">
+                  <DiagnosticoTab prontuario={prontuario} pacienteId={id || ''} />
                 </TabsContent>
               </Tabs>
             </CardContent>

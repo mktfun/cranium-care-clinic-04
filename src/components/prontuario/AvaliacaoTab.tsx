@@ -1,22 +1,56 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Prontuario } from "@/types";
 
-// Este componente é apenas de interface e não tem vínculo com banco de dados ainda
-export function AvaliacaoTab() {
-  const [avaliacaoContent, setAvaliacaoContent] = useState("");
+interface AvaliacaoTabProps {
+  prontuario: Prontuario | null;
+  pacienteId: string;
+}
+
+export function AvaliacaoTab({ prontuario, pacienteId }: AvaliacaoTabProps) {
+  const [avaliacao, setAvaliacao] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  
-  // Esta é uma função simulada que não faz nada ainda
-  const handleSave = () => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Carrega os dados existentes
+  useEffect(() => {
+    if (prontuario?.avaliacao) {
+      setAvaliacao(prontuario.avaliacao);
+    }
+  }, [prontuario]);
+
+  // Salva a avaliação no banco de dados
+  const handleSalvarAvaliacao = async () => {
+    if (!prontuario) return;
+    
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      const { error } = await supabase
+        .from('prontuarios')
+        .update({ avaliacao })
+        .eq('id', prontuario.id);
+
+      if (error) throw error;
+      toast.success("Avaliação salva com sucesso!");
+    } catch (error) {
+      console.error("Erro ao salvar avaliação:", error);
+      toast.error("Erro ao salvar avaliação. Tente novamente.");
+    } finally {
       setIsSaving(false);
-    }, 1000);
+    }
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center p-6">
+      <Loader2 className="h-6 w-6 animate-spin text-turquesa" />
+    </div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -29,11 +63,11 @@ export function AvaliacaoTab() {
             <Textarea 
               className="min-h-[200px] resize-y"
               placeholder="Descreva a avaliação do paciente..."
-              value={avaliacaoContent}
-              onChange={(e) => setAvaliacaoContent(e.target.value)}
+              value={avaliacao}
+              onChange={(e) => setAvaliacao(e.target.value)}
             />
             <Button 
-              onClick={handleSave} 
+              onClick={handleSalvarAvaliacao} 
               disabled={isSaving}
               className="bg-turquesa hover:bg-turquesa/90">
               {isSaving ? (
@@ -45,9 +79,6 @@ export function AvaliacaoTab() {
                 "Salvar Avaliação"
               )}
             </Button>
-            <p className="text-xs text-muted-foreground italic">
-              Nota: A funcionalidade de salvamento desta seção será implementada em breve.
-            </p>
           </div>
         </CardContent>
       </Card>

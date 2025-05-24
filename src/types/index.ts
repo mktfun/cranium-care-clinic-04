@@ -1,4 +1,3 @@
-
 // Types of asymmetry - using export type for isolatedModules compatibility
 import type { AsymmetryType, SeverityLevel } from "@/lib/cranial-utils";
 
@@ -94,6 +93,7 @@ export interface Prontuario {
   observacoes_anamnese?: string;
   diagnostico?: string;
   cid?: string;
-  conduta?: string; // Added this field to fix the TypeScript error
+  conduta?: string;
+  avaliacao?: string; // Added new field
   atestado?: string;
 }
