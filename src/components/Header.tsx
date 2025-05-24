@@ -35,6 +35,7 @@ interface Usuario {
   email: string;
   avatar_url?: string;
   clinica_nome?: string;
+  cargo?: string;
 }
 const NOTIFICACOES_LIDAS_STORAGE_KEY = "craniumCareNotificacoesLidas";
 const ULTIMA_VERIFICACAO_STORAGE_KEY = "craniumCareUltimaVerificacaoNotificacoes";
@@ -234,7 +235,7 @@ export function Header({
         if (!session?.user) return;
         const {
           data: usuarioData
-        } = await supabase.from('usuarios').select('nome, email, avatar_url, clinica_nome').eq('id', session.user.id).single();
+        } = await supabase.from('usuarios').select('nome, email, avatar_url, clinica_nome, cargo').eq('id', session.user.id).single();
         if (usuarioData) {
           setUsuario(usuarioData);
           if (usuarioData.clinica_nome) {
@@ -399,7 +400,7 @@ export function Header({
                 </Avatar>
                 {!isMobile && <div className="hidden md:block text-sm font-medium text-left">
                     <div>{usuario?.nome || "Carregando..."}</div>
-                    <div className="text-xs text-muted-foreground">Médico(a)</div>
+                    <div className="text-xs text-muted-foreground">{usuario?.cargo || "sem cargo"}</div>
                   </div>}
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </Button>
