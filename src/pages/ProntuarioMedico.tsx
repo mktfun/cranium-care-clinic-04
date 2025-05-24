@@ -189,7 +189,7 @@ export default function ProntuarioMedico() {
                   <AvaliacoesCraniaisTab pacienteId={id || ''} />
                 </TabsContent>
                 <TabsContent value="avaliacao" className="p-6">
-                  <AvaliacaoTab />
+                  <AvaliacaoTab prontuario={prontuario} pacienteId={id || ''} />
                 </TabsContent>
                 <TabsContent value="conduta" className="p-6">
                   <CondutaTab prontuario={prontuario} pacienteId={id || ''} />
