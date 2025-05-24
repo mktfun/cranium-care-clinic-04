@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { 
   Card, 
@@ -29,6 +30,7 @@ interface Usuario {
   nome: string;
   email: string;
   clinica_nome?: string;
+  cargo?: string;
   avatar_url?: string;
   created_at?: string;
   updated_at?: string;
@@ -74,6 +76,7 @@ export default function Configuracoes() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [nome, setNome] = useState("");
   const [clinicaNome, setClinicaNome] = useState("");
+  const [cargo, setCargo] = useState("");
   const [email, setEmail] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -133,6 +136,7 @@ export default function Configuracoes() {
           setNome(usuarioData.nome || '');
           setEmail(usuarioData.email || '');
           setClinicaNome(usuarioData.clinica_nome || '');
+          setCargo(usuarioData.cargo || '');
           
           if (usuarioData.avatar_url) {
             setAvatarUrl(usuarioData.avatar_url);
@@ -191,6 +195,7 @@ export default function Configuracoes() {
         .update({
           nome: nome,
           clinica_nome: clinicaNome || 'CraniumCare',
+          cargo: cargo,
           email: email
         })
         .eq('id', session.user.id);
@@ -669,6 +674,17 @@ export default function Configuracoes() {
                     id="nome" 
                     value={nome} 
                     onChange={(e) => setNome(e.target.value)} 
+                    className="transition-all focus:border-primary/30 focus:shadow-sm"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="cargo">Cargo/Título</Label>
+                  <Input 
+                    id="cargo" 
+                    value={cargo} 
+                    placeholder="Ex: Médico(a), Fisioterapeuta, Enfermeiro(a)"
+                    onChange={(e) => setCargo(e.target.value)} 
                     className="transition-all focus:border-primary/30 focus:shadow-sm"
                   />
                 </div>

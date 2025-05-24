@@ -549,6 +549,7 @@ export type Database = {
         Row: {
           admin_role: boolean | null
           avatar_url: string | null
+          cargo: string | null
           clinica_logo: string | null
           clinica_nome: string | null
           created_at: string | null
@@ -560,6 +561,7 @@ export type Database = {
         Insert: {
           admin_role?: boolean | null
           avatar_url?: string | null
+          cargo?: string | null
           clinica_logo?: string | null
           clinica_nome?: string | null
           created_at?: string | null
@@ -571,6 +573,7 @@ export type Database = {
         Update: {
           admin_role?: boolean | null
           avatar_url?: string | null
+          cargo?: string | null
           clinica_logo?: string | null
           clinica_nome?: string | null
           created_at?: string | null
