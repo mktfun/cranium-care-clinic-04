@@ -36,7 +36,5 @@ export function FeatureSteps({
     }, 100);
     return () => clearInterval(timer);
   }, [progress, features.length, autoPlayInterval]);
-  return <div className={cn("py-16 px-4", className)}>
-      
-    </div>;
+  return;
 }
