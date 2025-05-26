@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -6,9 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { MedikranFeatures } from "@/components/MedikranFeatures";
 import { MedikranTestimonials } from "@/components/MedikranTestimonials";
+import { MedikranBentoFeatures } from "@/components/MedikranBentoFeatures";
+
 export function HeroScrollDemo() {
-  return <div className="flex flex-col overflow-hidden pb-[500px] pt-20 py-0">
-      <ContainerScroll titleComponent={<>
+  return (
+    <div className="flex flex-col overflow-hidden pb-[500px] pt-20 py-0">
+      <ContainerScroll
+        titleComponent={
+          <>
             <h1 className="text-4xl font-semibold text-black dark:text-white">
               Bem-vindo ao <br />
               <span className="text-4xl md:text-[6rem] font-bold mt-1 leading-none text-turquesa">
@@ -26,22 +32,33 @@ export function HeroScrollDemo() {
                 <Link to="/registro">Criar Conta</Link>
               </Button>
             </div>
-          </>}>
+          </>
+        }
+      >
         <div className="flex items-center justify-center h-full">
-          <img src="/lovable-uploads/1c64556f-1265-455b-bd7b-b264f9ea1265.png" alt="Medikran Dashboard Preview" className="mx-auto rounded-2xl object-contain h-full max-w-full" draggable={false} />
-          <div className="absolute inset-0 bg-gradient-to-t from-white/20 dark:from-black/20 to-transparent rounded-2xl flex flex-col items-center justify-end pb-10">
-            
-          </div>
+          <img
+            src="/lovable-uploads/1c64556f-1265-455b-bd7b-b264f9ea1265.png"
+            alt="Medikran Dashboard Preview"
+            className="mx-auto rounded-2xl object-contain h-full max-w-full"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-white/20 dark:from-black/20 to-transparent rounded-2xl flex flex-col items-center justify-end pb-10"></div>
         </div>
       </ContainerScroll>
-      
+
       <div className="container mx-auto px-4 -mt-32 mb-20 relative z-10 my-[198px]">
         <MedikranFeatures />
+      </div>
+
+      {/* New Bento Grid Features Section */}
+      <div className="relative z-10 mb-20">
+        <MedikranBentoFeatures />
       </div>
 
       {/* Testimonials Section */}
       <div className="relative z-10">
         <MedikranTestimonials />
       </div>
-    </div>;
+    </div>
+  );
 }
