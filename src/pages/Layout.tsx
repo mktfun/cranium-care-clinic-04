@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
@@ -63,8 +64,8 @@ export default function Layout() {
       {!isSmallScreen && <Sidebar className="fixed left-0 top-0 z-20 h-screen transition-all duration-300" collapsed={sidebarCollapsed} navigateToDashboard={navigateToDashboard} />}
       <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 lg:ml-[70px] md:group-data-[state=expanded]/sidebar:lg:ml-[300px]">
         <Header title={getCurrentPageTitle()} toggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
-        <main className="flex-1 overflow-auto mt-16 pb-20 md:pb-6 my-[66px]">
-          <div className="p-3 md:p-6 max-w-7xl mx-auto w-full px-0">
+        <main className="flex-1 overflow-auto mt-16 md:pb-6">
+          <div className="p-3 md:p-6 max-w-7xl mx-auto w-full">
             <Outlet />
           </div>
         </main>

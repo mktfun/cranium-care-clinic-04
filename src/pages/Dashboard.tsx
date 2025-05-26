@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -344,11 +345,11 @@ export default function Dashboard() {
           <UrgentTasksCard />
         </div>}
 
-      {/* Featured Patients Section - Adjusted padding for mobile navigation */}
-      <div className="mt-6 pb-20 py-[73px]">
+      {/* Featured Patients Section - Removed excessive padding */}
+      <div className="mt-6">
         <h3 className="text-lg font-medium mb-4 transition-colors hover:text-primary/90">Pacientes em Destaque</h3>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {pacientes.length > 0 ? pacientes.slice(0, 3).map(paciente => <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer px-[11px]">
+          {pacientes.length > 0 ? pacientes.slice(0, 3).map(paciente => <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer">
                 <PacienteCard paciente={paciente} />
               </div>) : <div className="col-span-full py-8 text-center text-muted-foreground">
               Nenhum paciente cadastrado. <Link to="/pacientes/registro" className="text-turquesa hover:underline">Adicione um paciente</Link>.
