@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Eye, BarChart2 } from "lucide-react";
 import { AsymmetryType, SeverityLevel } from "@/types";
 import CranialSilhouette from './CranialSilhouette';
