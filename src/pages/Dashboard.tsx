@@ -345,15 +345,23 @@ export default function Dashboard() {
           <UrgentTasksCard />
         </div>}
 
-      {/* Featured Patients Section - Removed excessive padding */}
-      <div className="mt-6">
-        <h3 className="text-lg font-medium mb-4 transition-colors hover:text-primary/90">Pacientes em Destaque</h3>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {pacientes.length > 0 ? pacientes.slice(0, 3).map(paciente => <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer">
-                <PacienteCard paciente={paciente} />
-              </div>) : <div className="col-span-full py-8 text-center text-muted-foreground">
-              Nenhum paciente cadastrado. <Link to="/pacientes/registro" className="text-turquesa hover:underline">Adicione um paciente</Link>.
-            </div>}
+      {/* Main Layout with Patients and Tasks */}
+      <div className="grid gap-6 lg:grid-cols-3 mt-6">
+        {/* Featured Patients Section - Takes 2/3 of the space */}
+        <div className="lg:col-span-2">
+          <h3 className="text-lg font-medium mb-4 transition-colors hover:text-primary/90">Pacientes em Destaque</h3>
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            {pacientes.length > 0 ? pacientes.slice(0, 2).map(paciente => <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer">
+                  <PacienteCard paciente={paciente} />
+                </div>) : <div className="col-span-full py-8 text-center text-muted-foreground">
+                Nenhum paciente cadastrado. <Link to="/pacientes/registro" className="text-turquesa hover:underline">Adicione um paciente</Link>.
+              </div>}
+          </div>
+        </div>
+
+        {/* Urgent Tasks Section - Takes 1/3 of the space */}
+        <div className="lg:col-span-1">
+          <UrgentTasksCard />
         </div>
       </div>
     </div>;
