@@ -1,12 +1,13 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Eye, BarChart2 } from "lucide-react";
 import { AsymmetryType, SeverityLevel } from "@/types";
 import CranialSilhouette from './CranialSilhouette';
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { useMediaQuery } from "@/hooks/use-media-query";
+
 interface CranialVisualizationProps {
   currentMeasurement: {
     comprimento: number;
@@ -30,6 +31,7 @@ interface CranialVisualizationProps {
   severity: SeverityLevel;
   sexoPaciente?: 'M' | 'F';
 }
+
 export default function CranialVisualization({
   currentMeasurement,
   measurementHistory,
@@ -37,7 +39,6 @@ export default function CranialVisualization({
   severity,
   sexoPaciente
 }: CranialVisualizationProps) {
-  const [viewType, setViewType] = useState<"superior" | "frontal" | "lateral">("superior");
   const [metricType, setMetricType] = useState<'indiceCraniano' | 'cvai' | 'perimetroCefalico'>('indiceCraniano');
 
   // Use media queries for responsive design
@@ -81,21 +82,12 @@ export default function CranialVisualization({
     return 400;
   };
   const chartHeight = getChartHeight();
-  return <div className="border-primary/20 shadow-lg">
+
+  return (
+    <div className="border-primary/20 shadow-lg">
       <CardHeader className="bg-card/50">
-        <CardTitle className="text-card-foreground flex items-center justify-between">
-          <span>Visualização Craniana</span>
-          <div className="flex space-x-2">
-            <Button variant={viewType === "superior" ? "default" : "outline"} size={isMobile ? "sm" : "sm"} onClick={() => setViewType("superior")} className="h-8 px-2">
-              Superior
-            </Button>
-            <Button variant={viewType === "frontal" ? "default" : "outline"} size={isMobile ? "sm" : "sm"} onClick={() => setViewType("frontal")} className="h-8 px-2">
-              Frontal
-            </Button>
-            <Button variant={viewType === "lateral" ? "default" : "outline"} size={isMobile ? "sm" : "sm"} onClick={() => setViewType("lateral")} className="h-8 px-2">
-              Lateral
-            </Button>
-          </div>
+        <CardTitle className="text-card-foreground">
+          Visualização Craniana - Vista Superior
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6 px-[25px] py-[45px] my-0">
@@ -112,7 +104,12 @@ export default function CranialVisualization({
           </TabsList>
           
           <TabsContent value="silhouette" className="mt-4">
-            <CranialSilhouette measurements={currentMeasurement} asymmetryType={asymmetryType} severity={severity} viewType={viewType} />
+            <CranialSilhouette 
+              measurements={currentMeasurement} 
+              asymmetryType={asymmetryType} 
+              severity={severity} 
+              viewType="superior" 
+            />
             
             <div className="mt-6 grid grid-cols-2 gap-4">
               <div className="space-y-1 text-center">
@@ -134,31 +131,78 @@ export default function CranialVisualization({
             <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
               <div className="text-sm font-medium">Evolução das Medidas</div>
               <div className="flex flex-wrap gap-2">
-                <Button variant={metricType === "indiceCraniano" ? "default" : "outline"} size="sm" onClick={() => setMetricType("indiceCraniano")} className="h-7 px-2 text-xs">
+                <Button 
+                  variant={metricType === "indiceCraniano" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setMetricType("indiceCraniano")} 
+                  className="h-7 px-2 text-xs"
+                >
                   Índice Craniano
                 </Button>
-                <Button variant={metricType === "cvai" ? "default" : "outline"} size="sm" onClick={() => setMetricType("cvai")} className="h-7 px-2 text-xs">
+                <Button 
+                  variant={metricType === "cvai" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setMetricType("cvai")} 
+                  className="h-7 px-2 text-xs"
+                >
                   CVAI
                 </Button>
-                <Button variant={metricType === "perimetroCefalico" ? "default" : "outline"} size="sm" onClick={() => setMetricType("perimetroCefalico")} className="h-7 px-2 text-xs">
+                <Button 
+                  variant={metricType === "perimetroCefalico" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setMetricType("perimetroCefalico")} 
+                  className="h-7 px-2 text-xs"
+                >
                   Perímetro
                 </Button>
               </div>
             </div>
             
             <div className="chart-container pb-6" style={{
-            height: `${chartHeight}px`,
-            position: 'relative',
-            marginBottom: '40px'
-          }}>
-              {metricType === "indiceCraniano" && <MedicaoLineChart titulo="Evolução do Índice Craniano" descricao="O Índice Craniano mede a proporção entre largura e comprimento do crânio. Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade." altura={chartHeight} medicoes={medicoesFiltradas} dataNascimento={new Date().toISOString()} tipoGrafico="indiceCraniano" linhaCorTheme="rose" />}
+              height: `${chartHeight}px`,
+              position: 'relative',
+              marginBottom: '40px'
+            }}>
+              {metricType === "indiceCraniano" && (
+                <MedicaoLineChart 
+                  titulo="Evolução do Índice Craniano" 
+                  descricao="O Índice Craniano mede a proporção entre largura e comprimento do crânio. Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade." 
+                  altura={chartHeight} 
+                  medicoes={medicoesFiltradas} 
+                  dataNascimento={new Date().toISOString()} 
+                  tipoGrafico="indiceCraniano" 
+                  linhaCorTheme="rose" 
+                />
+              )}
               
-              {metricType === "cvai" && <MedicaoLineChart titulo="Evolução da Plagiocefalia" descricao="O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana. Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa. A área verde representa a faixa de normalidade." altura={chartHeight} medicoes={medicoesFiltradas} dataNascimento={new Date().toISOString()} tipoGrafico="cvai" linhaCorTheme="amber" />}
+              {metricType === "cvai" && (
+                <MedicaoLineChart 
+                  titulo="Evolução da Plagiocefalia" 
+                  descricao="O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana. Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa. A área verde representa a faixa de normalidade." 
+                  altura={chartHeight} 
+                  medicoes={medicoesFiltradas} 
+                  dataNascimento={new Date().toISOString()} 
+                  tipoGrafico="cvai" 
+                  linhaCorTheme="amber" 
+                />
+              )}
               
-              {metricType === "perimetroCefalico" && <MedicaoLineChart titulo="Evolução do Perímetro Cefálico" descricao="O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte mais protuberante do occipital. As linhas coloridas representam os percentis de referência para meninos da mesma idade, sendo P50 a média populacional." altura={chartHeight} medicoes={medicoesFiltradas} dataNascimento={new Date().toISOString()} tipoGrafico="perimetro" sexoPaciente={sexoPaciente} linhaCorTheme="blue" />}
+              {metricType === "perimetroCefalico" && (
+                <MedicaoLineChart 
+                  titulo="Evolução do Perímetro Cefálico" 
+                  descricao="O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte mais protuberante do occipital. As linhas coloridas representam os percentis de referência para meninos da mesma idade, sendo P50 a média populacional." 
+                  altura={chartHeight} 
+                  medicoes={medicoesFiltradas} 
+                  dataNascimento={new Date().toISOString()} 
+                  tipoGrafico="perimetro" 
+                  sexoPaciente={sexoPaciente} 
+                  linhaCorTheme="blue" 
+                />
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </CardContent>
-    </div>;
+    </div>
+  );
 }
