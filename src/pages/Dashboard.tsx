@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -329,21 +328,17 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Section - Responsive View */}
-      {!isMobile ?
-    // Desktop View - Grid Layout with Clinic-Relevant Charts
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
+      {!isMobile && (
+        // Desktop View - Grid Layout with Clinic-Relevant Charts
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
           <div className="md:col-span-2">
             <PacientesMedicoesChart altura={350} />
           </div>
           <div className="space-y-6">
             <MedicoesPorDiaChart altura={165} />
-            <UrgentTasksCard />
           </div>
-        </div> :
-    // Mobile View - Only show UrgentTasksCard, hide charts
-    <div className="mt-6">
-          <UrgentTasksCard />
-        </div>}
+        </div>
+      )}
 
       {/* Main Layout with Patients and Tasks */}
       <div className="grid gap-6 lg:grid-cols-3 mt-6">
