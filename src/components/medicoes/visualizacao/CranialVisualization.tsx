@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -86,9 +85,10 @@ export default function CranialVisualization({
 
   return (
     <div className="border-primary/20 shadow-lg">
-      <CardHeader className="bg-card/50">
-        <CardTitle className="text-card-foreground">
-          Visualização Craniana - Vista Superior
+      <CardHeader className="bg-gradient-to-r from-card/40 to-card/60">
+        <CardTitle className="text-card-foreground flex items-center gap-2">
+          <Eye className="h-5 w-5 text-primary" />
+          Visualização Craniana Científica
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6 px-[25px] py-[45px] my-0">
@@ -96,7 +96,7 @@ export default function CranialVisualization({
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="silhouette" className="flex items-center">
               <Eye className="h-4 w-4 mr-2" />
-              Silhueta
+              Vista Superior
             </TabsTrigger>
             <TabsTrigger value="evolution" className="flex items-center">
               <BarChart2 className="h-4 w-4 mr-2" />
@@ -104,26 +104,65 @@ export default function CranialVisualization({
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="silhouette" className="mt-4">
-            <CranialSilhouette 
-              measurements={currentMeasurement} 
-              asymmetryType={asymmetryType} 
-              severity={severity} 
-              viewType="superior" 
-            />
-            
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <div className="space-y-1 text-center">
-                <p className="text-sm text-muted-foreground">Índice Craniano</p>
-                <p className={`text-xl font-bold ${indiceCraniano >= 85 || indiceCraniano <= 75 ? "text-red-500" : indiceCraniano >= 81 || indiceCraniano <= 76 ? "text-amber-500" : "text-green-600"}`}>
-                  {indiceCraniano.toFixed(2)}%
-                </p>
-              </div>
-              <div className="space-y-1 text-center">
-                <p className="text-sm text-muted-foreground">CVAI</p>
-                <p className={`text-xl font-bold ${cvai >= 8.75 ? "text-red-500" : cvai >= 6.25 ? "text-amber-500" : cvai >= 3.5 ? "text-yellow-500" : "text-green-600"}`}>
-                  {cvai.toFixed(2)}%
-                </p>
+          <TabsContent value="silhouette" className="mt-6">
+            <div className="space-y-6">
+              <CranialSilhouette 
+                measurements={currentMeasurement} 
+                asymmetryType={asymmetryType} 
+                severity={severity} 
+                viewType="superior" 
+              />
+              
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2 text-center p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
+                  <p className="text-sm font-medium text-blue-700">Índice Craniano</p>
+                  <p className={`text-2xl font-bold ${
+                    indiceCraniano >= 85 || indiceCraniano <= 75 
+                      ? "text-red-600" 
+                      : indiceCraniano >= 81 || indiceCraniano <= 76 
+                        ? "text-amber-600" 
+                        : "text-green-600"
+                  }`}>
+                    {indiceCraniano.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-blue-600 font-medium">
+                    {indiceCraniano >= 85 
+                      ? "Hiperbraquicefalia" 
+                      : indiceCraniano >= 81 
+                        ? "Braquicefalia" 
+                        : indiceCraniano >= 76 
+                          ? "Mesocefalia" 
+                          : indiceCraniano >= 71 
+                            ? "Dolicocefalia" 
+                            : "Hiperdolicocefalia"
+                    }
+                  </p>
+                </div>
+                
+                <div className="space-y-2 text-center p-4 rounded-lg bg-gradient-to-br from-rose-50 to-rose-100 border border-rose-200">
+                  <p className="text-sm font-medium text-rose-700">CVAI (Assimetria)</p>
+                  <p className={`text-2xl font-bold ${
+                    cvai >= 8.75 
+                      ? "text-red-600" 
+                      : cvai >= 6.25 
+                        ? "text-amber-600" 
+                        : cvai >= 3.5 
+                          ? "text-yellow-600" 
+                          : "text-green-600"
+                  }`}>
+                    {cvai.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-rose-600 font-medium">
+                    {cvai >= 8.75 
+                      ? "Severa" 
+                      : cvai >= 6.25 
+                        ? "Moderada" 
+                        : cvai >= 3.5 
+                          ? "Leve" 
+                          : "Normal"
+                    }
+                  </p>
+                </div>
               </div>
             </div>
           </TabsContent>
