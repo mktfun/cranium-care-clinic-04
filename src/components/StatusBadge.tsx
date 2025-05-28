@@ -67,12 +67,18 @@ export function StatusBadge({
   };
 
   const getStatusText = () => {
-    // If we have an official diagnosis, use that
+    // Se temos um diagnóstico oficial, usar esse texto
     if (diagnosis) {
+      // Para casos normais, exibir apenas "Normal"
+      if (diagnosis.type === "Normal" || diagnosis.severity === "normal") {
+        return "Normal";
+      }
+      
+      // Para outros casos, exibir o diagnóstico completo com severidade
       return diagnosis.diagnosis;
     }
     
-    // Fallback to existing logic
+    // Fallback para lógica existente
     if (showAsymmetryType && asymmetryType !== "Normal") {
       return `${asymmetryType} ${status === "normal" ? "" : status}`;
     }
