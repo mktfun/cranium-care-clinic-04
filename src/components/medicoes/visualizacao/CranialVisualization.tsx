@@ -5,9 +5,9 @@ import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, BarChart2 } from "lucide-react";
 import { AsymmetryType, SeverityLevel } from "@/types";
-import { StatusBadge } from "@/components/StatusBadge"; // Add missing import
+import { StatusBadge } from "@/components/StatusBadge";
 import CranialSilhouette from './CranialSilhouette';
-import { MedicaoLineChart } from "@/components/MedicaoLineChart";
+import MeasurementEvolutionChart from './MeasurementEvolutionChart';
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { type CranialDiagnosis, type IndividualClassification, getIndividualClassificationText } from "@/lib/cranial-classification-utils";
 
@@ -35,6 +35,7 @@ interface CranialVisualizationProps {
   sexoPaciente?: 'M' | 'F';
   diagnosis?: CranialDiagnosis;
   individualClassifications?: IndividualClassification;
+  dataNascimento: string; // Add birth date prop
 }
 
 export default function CranialVisualization({
@@ -44,7 +45,8 @@ export default function CranialVisualization({
   severity,
   sexoPaciente,
   diagnosis,
-  individualClassifications
+  individualClassifications,
+  dataNascimento
 }: CranialVisualizationProps) {
   const [metricType, setMetricType] = useState<'indiceCraniano' | 'cvai' | 'perimetroCefalico'>('indiceCraniano');
 
@@ -67,20 +69,6 @@ export default function CranialVisualization({
 
   // Combinar medição atual com histórico para o gráfico
   const allMeasurements = [currentMeasurementWithIndices, ...measurementHistory.filter(m => m.data !== currentMeasurement.data)];
-  const medicoesFiltradas = allMeasurements.map(m => ({
-    id: Math.random().toString(),
-    paciente_id: '',
-    data: m.data,
-    comprimento: m.comprimento,
-    largura: m.largura,
-    diagonal_d: m.diagonalD || 0,
-    diagonal_e: m.diagonalE || 0,
-    indice_craniano: m.indice_craniano,
-    diferenca_diagonais: Math.abs((m.diagonalD || 0) - (m.diagonalE || 0)),
-    cvai: m.cvai,
-    perimetro_cefalico: m.perimetroCefalico || undefined,
-    status: severity
-  }));
 
   // Adjust chart height based on device size
   const getChartHeight = () => {
@@ -227,42 +215,13 @@ export default function CranialVisualization({
               position: 'relative',
               marginBottom: '40px'
             }}>
-              {metricType === "indiceCraniano" && (
-                <MedicaoLineChart 
-                  titulo="Evolução do Índice Craniano" 
-                  descricao="O Índice Craniano mede a proporção entre largura e comprimento do crânio. Valores acima de 80% indicam tendência à braquicefalia, enquanto valores abaixo de 76% indicam tendência à dolicocefalia. A área verde representa a faixa de normalidade." 
-                  altura={chartHeight} 
-                  medicoes={medicoesFiltradas} 
-                  dataNascimento={new Date().toISOString()} 
-                  tipoGrafico="indiceCraniano" 
-                  linhaCorTheme="rose" 
-                />
-              )}
-              
-              {metricType === "cvai" && (
-                <MedicaoLineChart 
-                  titulo="Evolução da Plagiocefalia" 
-                  descricao="O índice CVAI (Cranial Vault Asymmetry Index) mede o grau de assimetria craniana. Valores acima de 3.5% indicam assimetria leve, acima de 6.25% moderada, e acima de 8.5% severa. A área verde representa a faixa de normalidade." 
-                  altura={chartHeight} 
-                  medicoes={medicoesFiltradas} 
-                  dataNascimento={new Date().toISOString()} 
-                  tipoGrafico="cvai" 
-                  linhaCorTheme="amber" 
-                />
-              )}
-              
-              {metricType === "perimetroCefalico" && (
-                <MedicaoLineChart 
-                  titulo="Evolução do Perímetro Cefálico" 
-                  descricao="O perímetro cefálico é o contorno da cabeça medido na altura da testa e da parte mais protuberante do occipital. As linhas coloridas representam os percentis de referência para meninos da mesma idade, sendo P50 a média populacional." 
-                  altura={chartHeight} 
-                  medicoes={medicoesFiltradas} 
-                  dataNascimento={new Date().toISOString()} 
-                  tipoGrafico="perimetro" 
-                  sexoPaciente={sexoPaciente} 
-                  linhaCorTheme="blue" 
-                />
-              )}
+              <MeasurementEvolutionChart
+                measurementHistory={allMeasurements}
+                metricType={metricType}
+                colorTheme={metricType === "indiceCraniano" ? "rose" : metricType === "cvai" ? "amber" : "blue"}
+                sexoPaciente={sexoPaciente}
+                dataNascimento={dataNascimento}
+              />
             </div>
           </TabsContent>
         </Tabs>

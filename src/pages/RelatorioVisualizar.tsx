@@ -192,7 +192,7 @@ export default function RelatorioVisualizar() {
             idadeNaAvaliacao={formatAge(paciente.data_nascimento, medicao.data)}
             severityLevel={severityLevel}
             asymmetryType={asymmetryType}
-            diagnosis={diagnosis} // Pass the new diagnosis
+            diagnosis={diagnosis}
           />
         )}
       </div>
@@ -205,8 +205,9 @@ export default function RelatorioVisualizar() {
           asymmetryType={asymmetryType}
           severity={severityLevel}
           sexoPaciente={paciente.sexo}
-          diagnosis={diagnosis} // Pass the new diagnosis
-          individualClassifications={individualClassifications} // Pass individual classifications
+          diagnosis={diagnosis}
+          individualClassifications={individualClassifications}
+          dataNascimento={paciente.data_nascimento}
         />
       )}
       

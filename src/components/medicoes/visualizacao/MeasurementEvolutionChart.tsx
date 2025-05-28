@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { Card, CardContent } from "@/components/ui/card";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { calculateAge } from "@/lib/age-utils";
 
 interface MeasurementHistoryProps {
   measurementHistory: Array<{
@@ -29,13 +30,15 @@ interface MeasurementHistoryProps {
   metricType: 'indiceCraniano' | 'cvai' | 'perimetroCefalico';
   colorTheme?: string;
   sexoPaciente?: 'M' | 'F';
+  dataNascimento: string; // Add birth date prop
 }
 
 export default function MeasurementEvolutionChart({
   measurementHistory,
   metricType = 'indiceCraniano',
   colorTheme = "blue",
-  sexoPaciente
+  sexoPaciente,
+  dataNascimento
 }: MeasurementHistoryProps) {
   const isMobile = useMediaQuery(768);
   
@@ -56,9 +59,9 @@ export default function MeasurementEvolutionChart({
   const chartData = sortedHistory.map(m => {
     const date = new Date(m.data);
     
-    // Calcular a idade em meses para o eixo X
-    const dataPartes = m.data.split('T')[0].split('-');
-    const medicaoData = new Date(parseInt(dataPartes[0]), parseInt(dataPartes[1]) - 1, parseInt(dataPartes[2]));
+    // Calcular a idade correta em meses para esta medição
+    const ageAtMeasurement = calculateAge(dataNascimento, m.data);
+    const ageInMonths = ageAtMeasurement.months + (ageAtMeasurement.days / 30);
     
     // Escolher o campo correto baseado no tipo de métrica
     let value;
@@ -73,7 +76,9 @@ export default function MeasurementEvolutionChart({
     return {
       date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
       valor: value,
-      dataCompleta: m.data
+      dataCompleta: m.data,
+      idadeEmMeses: ageInMonths,
+      idadeFormatada: `${ageAtMeasurement.months} ${ageAtMeasurement.months === 1 ? 'mês' : 'meses'}${ageAtMeasurement.days > 0 ? ` e ${ageAtMeasurement.days} ${ageAtMeasurement.days === 1 ? 'dia' : 'dias'}` : ''}`
     };
   });
   
@@ -154,10 +159,18 @@ export default function MeasurementEvolutionChart({
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.6} />
           <XAxis 
-            dataKey="date" 
-            stroke="#64748b"
+            dataKey="idadeEmMeses"
+            label={{
+              value: 'Idade (meses)',
+              position: 'insideBottomRight',
+              offset: -15
+            }}
             tick={{ fontSize: getFontSize() }}
             tickMargin={10}
+            type="number"
+            domain={[0, 'dataMax + 2']}
+            allowDecimals={false}
+            tickFormatter={(value) => value === Math.floor(value) ? `${value}m` : ''}
           />
           <YAxis 
             domain={yDomain}
@@ -221,7 +234,7 @@ export default function MeasurementEvolutionChart({
           
           <Tooltip
             formatter={valueFormatter}
-            labelFormatter={(label) => `Data: ${label}`}
+            labelFormatter={(label) => `Idade: ${label} meses`}
             contentStyle={{ 
               backgroundColor: 'rgba(255, 255, 255, 0.9)',
               border: '1px solid #e5e7eb',
