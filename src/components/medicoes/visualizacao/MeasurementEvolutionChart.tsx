@@ -14,7 +14,6 @@ import {
 } from 'recharts';
 import { Card, CardContent } from "@/components/ui/card";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { calculateAge } from "@/lib/age-utils";
 
 interface MeasurementHistoryProps {
   measurementHistory: Array<{
@@ -30,7 +29,37 @@ interface MeasurementHistoryProps {
   metricType: 'indiceCraniano' | 'cvai' | 'perimetroCefalico';
   colorTheme?: string;
   sexoPaciente?: 'M' | 'F';
-  dataNascimento: string; // Add birth date prop
+  dataNascimento?: string; // Adicionado para calcular idade correta
+}
+
+// Função para calcular idade em meses com precisão decimal
+function calcularIdadeEmMeses(dataNascimento: string, dataMedicao: string): number {
+  const nascimento = new Date(dataNascimento);
+  const medicao = new Date(dataMedicao);
+  
+  // Calcular diferença em anos e meses
+  let anos = medicao.getFullYear() - nascimento.getFullYear();
+  let meses = medicao.getMonth() - nascimento.getMonth();
+  let dias = medicao.getDate() - nascimento.getDate();
+  
+  // Ajustar se os dias são negativos
+  if (dias < 0) {
+    meses--;
+    // Adicionar os dias do mês anterior
+    const ultimoDiaMesAnterior = new Date(medicao.getFullYear(), medicao.getMonth(), 0).getDate();
+    dias += ultimoDiaMesAnterior;
+  }
+  
+  // Ajustar se os meses são negativos
+  if (meses < 0) {
+    anos--;
+    meses += 12;
+  }
+  
+  // Converter para meses decimais (aproximando dias como fração do mês)
+  const totalMeses = anos * 12 + meses + (dias / 30);
+  
+  return Math.round(totalMeses * 100) / 100; // Arredondar para 2 casas decimais
 }
 
 export default function MeasurementEvolutionChart({
@@ -59,9 +88,15 @@ export default function MeasurementEvolutionChart({
   const chartData = sortedHistory.map(m => {
     const date = new Date(m.data);
     
-    // Calcular a idade correta em meses para esta medição
-    const ageAtMeasurement = calculateAge(dataNascimento, m.data);
-    const ageInMonths = ageAtMeasurement.months + (ageAtMeasurement.days / 30);
+    // Calcular a idade em meses corretamente usando a data de nascimento
+    let idadeEmMeses = 0;
+    if (dataNascimento) {
+      idadeEmMeses = calcularIdadeEmMeses(dataNascimento, m.data);
+    } else {
+      // Fallback: usar índice da medição se não tiver data de nascimento
+      console.warn('Data de nascimento não fornecida para cálculo correto da idade');
+      idadeEmMeses = sortedHistory.indexOf(m) * 2; // Aproximação de 2 meses entre medições
+    }
     
     // Escolher o campo correto baseado no tipo de métrica
     let value;
@@ -77,10 +112,24 @@ export default function MeasurementEvolutionChart({
       date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
       valor: value,
       dataCompleta: m.data,
-      idadeEmMeses: ageInMonths,
-      idadeFormatada: `${ageAtMeasurement.months} ${ageAtMeasurement.months === 1 ? 'mês' : 'meses'}${ageAtMeasurement.days > 0 ? ` e ${ageAtMeasurement.days} ${ageAtMeasurement.days === 1 ? 'dia' : 'dias'}` : ''}`
+      idadeEmMeses: idadeEmMeses,
+      idadeFormatada: formatarIdade(idadeEmMeses)
     };
   });
+  
+  // Função para formatar idade de forma legível
+  function formatarIdade(meses: number): string {
+    const mesesInteiros = Math.floor(meses);
+    const diasRestantes = Math.round((meses - mesesInteiros) * 30);
+    
+    if (mesesInteiros === 0) {
+      return `${diasRestantes} ${diasRestantes === 1 ? 'dia' : 'dias'}`;
+    } else if (diasRestantes === 0) {
+      return `${mesesInteiros} ${mesesInteiros === 1 ? 'mês' : 'meses'}`;
+    } else {
+      return `${mesesInteiros} ${mesesInteiros === 1 ? 'mês' : 'meses'} e ${diasRestantes} ${diasRestantes === 1 ? 'dia' : 'dias'}`;
+    }
+  }
   
   // Configurar limites e referências baseados no tipo de métrica
   let yDomain, normalMin, normalMax, referenceLines, gradientColors;
@@ -150,6 +199,10 @@ export default function MeasurementEvolutionChart({
     };
   };
   
+  // Determinar o domínio do eixo X baseado na idade máxima
+  const maxIdade = Math.max(...chartData.map(d => d.idadeEmMeses), 12); // Mínimo de 12 meses para visualização
+  const xDomain = [0, Math.ceil(maxIdade * 1.1)]; // Adicionar 10% de margem
+  
   return (
     <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">
@@ -159,18 +212,19 @@ export default function MeasurementEvolutionChart({
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.6} />
           <XAxis 
-            dataKey="idadeEmMeses"
-            label={{
-              value: 'Idade (meses)',
-              position: 'insideBottomRight',
-              offset: -15
-            }}
+            dataKey="idadeEmMeses" 
+            stroke="#64748b"
             tick={{ fontSize: getFontSize() }}
             tickMargin={10}
+            domain={xDomain}
             type="number"
-            domain={[0, 'dataMax + 2']}
-            allowDecimals={false}
-            tickFormatter={(value) => value === Math.floor(value) ? `${value}m` : ''}
+            tickFormatter={(value) => `${Math.round(value)}m`}
+            label={{ 
+              value: 'Idade (meses)', 
+              position: 'insideBottomRight', 
+              offset: -10,
+              style: { fontSize: getFontSize(), fill: '#64748b' }
+            }}
           />
           <YAxis 
             domain={yDomain}
@@ -233,8 +287,8 @@ export default function MeasurementEvolutionChart({
           ))}
           
           <Tooltip
-            formatter={valueFormatter}
-            labelFormatter={(label) => `Idade: ${label} meses`}
+            formatter={(value, name) => [valueFormatter(value as number), name]}
+            labelFormatter={(value) => `Idade: ${formatarIdade(value as number)}`}
             contentStyle={{ 
               backgroundColor: 'rgba(255, 255, 255, 0.9)',
               border: '1px solid #e5e7eb',

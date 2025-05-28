@@ -12,7 +12,7 @@ interface CranialVisualizationCardProps {
   sexoPaciente?: 'M' | 'F';
   diagnosis?: CranialDiagnosis;
   individualClassifications?: IndividualClassification;
-  dataNascimento: string; // Add birth date prop
+  dataNascimento?: string; // Adicionado para calcular idade correta
 }
 
 export default function CranialVisualizationCard({
