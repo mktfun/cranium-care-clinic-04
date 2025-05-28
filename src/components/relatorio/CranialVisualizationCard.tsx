@@ -12,6 +12,7 @@ interface CranialVisualizationCardProps {
   sexoPaciente?: 'M' | 'F';
   diagnosis?: CranialDiagnosis;
   individualClassifications?: IndividualClassification;
+  dataNascimento?: string; // Adicionado para calcular idade correta
 }
 
 export default function CranialVisualizationCard({
@@ -21,7 +22,8 @@ export default function CranialVisualizationCard({
   severity,
   sexoPaciente,
   diagnosis,
-  individualClassifications
+  individualClassifications,
+  dataNascimento
 }: CranialVisualizationCardProps) {
   // Transform medicao to the expected format
   const currentMeasurement = {
@@ -59,6 +61,7 @@ export default function CranialVisualizationCard({
           sexoPaciente={sexoPaciente}
           diagnosis={diagnosis}
           individualClassifications={individualClassifications}
+          dataNascimento={dataNascimento}
         />
       </CardContent>
     </Card>
