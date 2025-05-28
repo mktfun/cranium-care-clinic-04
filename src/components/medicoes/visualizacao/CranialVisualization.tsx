@@ -7,6 +7,7 @@ import { AsymmetryType, SeverityLevel } from "@/types";
 import CranialSilhouette from './CranialSilhouette';
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { type CranialDiagnosis, type IndividualClassification, getIndividualClassificationText } from "@/lib/cranial-classification-utils";
 
 interface CranialVisualizationProps {
   currentMeasurement: {
@@ -30,6 +31,8 @@ interface CranialVisualizationProps {
   asymmetryType: AsymmetryType;
   severity: SeverityLevel;
   sexoPaciente?: 'M' | 'F';
+  diagnosis?: CranialDiagnosis;
+  individualClassifications?: IndividualClassification;
 }
 
 export default function CranialVisualization({
@@ -37,7 +40,9 @@ export default function CranialVisualization({
   measurementHistory,
   asymmetryType,
   severity,
-  sexoPaciente
+  sexoPaciente,
+  diagnosis,
+  individualClassifications
 }: CranialVisualizationProps) {
   const [metricType, setMetricType] = useState<'indiceCraniano' | 'cvai' | 'perimetroCefalico'>('indiceCraniano');
 
@@ -89,6 +94,17 @@ export default function CranialVisualization({
         <CardTitle className="text-card-foreground flex items-center gap-2">
           <Eye className="h-5 w-5 text-primary" />
           Visualização Craniana Científica
+          {diagnosis && (
+            <div className="ml-auto">
+              <StatusBadge 
+                status={severity}
+                asymmetryType={asymmetryType}
+                diagnosis={diagnosis}
+                variant="enhanced"
+                className="text-xs"
+              />
+            </div>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6 px-[25px] py-[45px] my-0">
@@ -117,24 +133,27 @@ export default function CranialVisualization({
                 <div className="space-y-2 text-center p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
                   <p className="text-sm font-medium text-blue-700">Índice Craniano</p>
                   <p className={`text-2xl font-bold ${
-                    indiceCraniano >= 85 || indiceCraniano <= 75 
+                    indiceCraniano >= 91 
                       ? "text-red-600" 
-                      : indiceCraniano >= 81 || indiceCraniano <= 76 
+                      : indiceCraniano >= 86 
                         ? "text-amber-600" 
-                        : "text-green-600"
+                        : indiceCraniano <= 74 
+                          ? "text-orange-600"
+                          : "text-green-600"
                   }`}>
                     {indiceCraniano.toFixed(1)}%
                   </p>
                   <p className="text-xs text-blue-600 font-medium">
-                    {indiceCraniano >= 85 
-                      ? "Hiperbraquicefalia" 
-                      : indiceCraniano >= 81 
+                    {individualClassifications ? 
+                      getIndividualClassificationText("braquicefalia", individualClassifications.braquicefalia) :
+                      (indiceCraniano >= 91 
                         ? "Braquicefalia" 
-                        : indiceCraniano >= 76 
-                          ? "Mesocefalia" 
-                          : indiceCraniano >= 71 
+                        : indiceCraniano >= 86 
+                          ? "Braquicefalia Leve" 
+                          : indiceCraniano <= 74 
                             ? "Dolicocefalia" 
-                            : "Hiperdolicocefalia"
+                            : "Normal"
+                      )
                     }
                   </p>
                 </div>
@@ -153,13 +172,16 @@ export default function CranialVisualization({
                     {cvai.toFixed(1)}%
                   </p>
                   <p className="text-xs text-rose-600 font-medium">
-                    {cvai >= 8.75 
-                      ? "Severa" 
-                      : cvai >= 6.25 
-                        ? "Moderada" 
-                        : cvai >= 3.5 
-                          ? "Leve" 
-                          : "Normal"
+                    {individualClassifications ? 
+                      getIndividualClassificationText("plagiocefalia", individualClassifications.plagiocefalia) :
+                      (cvai >= 8.75 
+                        ? "Grave" 
+                        : cvai >= 6.25 
+                          ? "Moderada" 
+                          : cvai >= 3.5 
+                            ? "Leve" 
+                            : "Normal"
+                      )
                     }
                   </p>
                 </div>

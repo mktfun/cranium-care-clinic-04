@@ -1,32 +1,29 @@
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CranialVisualization from "@/components/medicoes/visualizacao/CranialVisualization";
 import { AsymmetryType, SeverityLevel } from "@/types";
-import CranialVisualization from "../medicoes/visualizacao/CranialVisualization";
+import { type CranialDiagnosis, type IndividualClassification } from "@/lib/cranial-classification-utils";
+
 interface CranialVisualizationCardProps {
-  medicao: {
-    id: string;
-    data: string;
-    comprimento: number;
-    largura: number;
-    diagonal_d: number;
-    diagonal_e: number;
-    perimetro_cefalico?: number;
-    indice_craniano: number;
-    cvai: number;
-  };
+  medicao: any;
   medicoes: any[];
   asymmetryType: AsymmetryType;
   severity: SeverityLevel;
   sexoPaciente?: 'M' | 'F';
+  diagnosis?: CranialDiagnosis;
+  individualClassifications?: IndividualClassification;
 }
+
 export default function CranialVisualizationCard({
   medicao,
   medicoes,
   asymmetryType,
   severity,
-  sexoPaciente
+  sexoPaciente,
+  diagnosis,
+  individualClassifications
 }: CranialVisualizationCardProps) {
-  // Formatar os dados da medição atual para o componente de visualização
+  // Transform medicao to the expected format
   const currentMeasurement = {
     comprimento: medicao.comprimento,
     largura: medicao.largura,
@@ -36,9 +33,8 @@ export default function CranialVisualizationCard({
     data: medicao.data
   };
 
-  // Formatar o histórico de medições para o componente de visualização
-  const measurementHistory = medicoes.filter((m: any) => m.id !== medicao.id) // Excluir medição atual
-  .map((m: any) => ({
+  // Transform medicoes to expected format
+  const measurementHistory = medicoes.map(m => ({
     data: m.data,
     comprimento: m.comprimento,
     largura: m.largura,
@@ -48,9 +44,23 @@ export default function CranialVisualizationCard({
     indice_craniano: m.indice_craniano,
     cvai: m.cvai
   }));
-  return <Card className="overflow-hidden shadow-none py-0">
-      <CardContent className="p-0">
-        <CranialVisualization currentMeasurement={currentMeasurement} measurementHistory={measurementHistory} asymmetryType={asymmetryType} severity={severity} sexoPaciente={sexoPaciente} />
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Visualização Craniana</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <CranialVisualization
+          currentMeasurement={currentMeasurement}
+          measurementHistory={measurementHistory}
+          asymmetryType={asymmetryType}
+          severity={severity}
+          sexoPaciente={sexoPaciente}
+          diagnosis={diagnosis}
+          individualClassifications={individualClassifications}
+        />
       </CardContent>
-    </Card>;
+    </Card>
+  );
 }

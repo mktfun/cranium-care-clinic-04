@@ -134,9 +134,17 @@ export default function RelatorioVisualizar() {
   
   const idadeAtual = formatAge(paciente.data_nascimento);
   
-  const { asymmetryType, severityLevel } = medicao
+  // Use the new classification system
+  const cranialStatusInfo = medicao
     ? getCranialStatus(medicao.indice_craniano, medicao.cvai)
-    : { asymmetryType: "Normal" as AsymmetryType, severityLevel: "normal" as SeverityLevel };
+    : { 
+        asymmetryType: "Normal" as AsymmetryType, 
+        severityLevel: "normal" as SeverityLevel,
+        diagnosis: { type: "Normal", severity: "normal", diagnosis: "Normal" },
+        individualClassifications: { plagiocefalia: "normal", braquicefalia: "normal", dolicocefalia: "normal" }
+      };
+  
+  const { asymmetryType, severityLevel, diagnosis, individualClassifications } = cranialStatusInfo;
   
   const handleVoltar = () => {
     navigate(`/pacientes/${id}`);
@@ -176,6 +184,7 @@ export default function RelatorioVisualizar() {
             idadeNaAvaliacao={formatAge(paciente.data_nascimento, medicao.data)}
             severityLevel={severityLevel}
             asymmetryType={asymmetryType}
+            diagnosis={diagnosis} // Pass the new diagnosis
           />
         )}
       </div>
@@ -188,6 +197,8 @@ export default function RelatorioVisualizar() {
           asymmetryType={asymmetryType}
           severity={severityLevel}
           sexoPaciente={paciente.sexo}
+          diagnosis={diagnosis} // Pass the new diagnosis
+          individualClassifications={individualClassifications} // Pass individual classifications
         />
       )}
       

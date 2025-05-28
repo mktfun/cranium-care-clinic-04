@@ -1,6 +1,6 @@
-
 import { Badge } from "@/components/ui/badge";
 import { AsymmetryType, SeverityLevel } from "@/types";
+import { type CranialDiagnosis } from "@/lib/cranial-classification-utils";
 
 export interface StatusBadgeProps {
   status: SeverityLevel;
@@ -9,6 +9,7 @@ export interface StatusBadgeProps {
   className?: string;
   variant?: "default" | "enhanced" | "subtle";
   showIcon?: boolean;
+  diagnosis?: CranialDiagnosis; // New prop for showing official diagnosis
 }
 
 export function StatusBadge({ 
@@ -17,7 +18,8 @@ export function StatusBadge({
   showAsymmetryType = false, 
   className = "",
   variant = "default",
-  showIcon = false
+  showIcon = false,
+  diagnosis
 }: StatusBadgeProps) {
   
   const getBadgeColor = () => {
@@ -65,6 +67,12 @@ export function StatusBadge({
   };
 
   const getStatusText = () => {
+    // If we have an official diagnosis, use that
+    if (diagnosis) {
+      return diagnosis.diagnosis;
+    }
+    
+    // Fallback to existing logic
     if (showAsymmetryType && asymmetryType !== "Normal") {
       return `${asymmetryType} ${status === "normal" ? "" : status}`;
     }

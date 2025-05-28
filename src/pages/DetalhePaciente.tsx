@@ -15,6 +15,7 @@ import { MedicoesHistoricoTable } from "@/components/relatorio/MedicoesHistorico
 import { formatAge } from "@/lib/age-utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getCranialStatus } from "@/lib/cranial-utils";
+import { getIndividualClassificationText } from "@/lib/cranial-classification-utils";
 
 export default function DetalhePaciente() {
   const { id } = useParams();
