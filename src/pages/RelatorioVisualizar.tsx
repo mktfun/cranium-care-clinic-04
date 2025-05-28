@@ -207,7 +207,6 @@ export default function RelatorioVisualizar() {
           sexoPaciente={paciente.sexo}
           diagnosis={diagnosis} // Pass the new diagnosis
           individualClassifications={individualClassifications} // Pass individual classifications
-          dataNascimento={paciente.data_nascimento} // Pass birth date for correct age calculation
         />
       )}
       
