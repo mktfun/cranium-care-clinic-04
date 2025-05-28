@@ -140,8 +140,16 @@ export default function RelatorioVisualizar() {
     : { 
         asymmetryType: "Normal" as AsymmetryType, 
         severityLevel: "normal" as SeverityLevel,
-        diagnosis: { type: "Normal", severity: "normal", diagnosis: "Normal" },
-        individualClassifications: { plagiocefalia: "normal", braquicefalia: "normal", dolicocefalia: "normal" }
+        diagnosis: {
+          type: "Normal" as const,
+          severity: "normal" as const,
+          diagnosis: "Normal"
+        },
+        individualClassifications: {
+          plagiocefalia: "normal" as const,
+          braquicefalia: "normal" as const,
+          dolicocefalia: "normal" as const
+        }
       };
   
   const { asymmetryType, severityLevel, diagnosis, individualClassifications } = cranialStatusInfo;

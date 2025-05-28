@@ -1,3 +1,4 @@
+
 // Define types for asymmetry and severity
 export type AsymmetryType = "Braquicefalia" | "Dolicocefalia" | "Plagiocefalia" | "Misto" | "Normal";
 export type SeverityLevel = "normal" | "leve" | "moderada" | "severa";
@@ -128,8 +129,13 @@ export function getCranialStatus(indiceCraniano: number, cvai: number): {
       asymmetryType = "Normal";
   }
   
-  // Map severity from new system to existing SeverityLevel
-  const severityLevel: SeverityLevel = diagnosis.severity;
+  // Map severity from new system to existing SeverityLevel (convert "grave" to "severa")
+  let severityLevel: SeverityLevel;
+  if (diagnosis.severity === "grave") {
+    severityLevel = "severa";
+  } else {
+    severityLevel = diagnosis.severity as SeverityLevel;
+  }
   
   return {
     asymmetryType,

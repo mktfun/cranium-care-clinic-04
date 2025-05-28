@@ -7,7 +7,7 @@
  * including individual classifications and mixed case logic.
  */
 
-export type CranialSeverity = "normal" | "leve" | "moderada" | "grave";
+export type CranialSeverity = "normal" | "leve" | "moderada" | "severa"; // Changed "grave" to "severa"
 export type CranialType = "Normal" | "Plagiocefalia" | "Braquicefalia" | "Dolicocefalia" | "Misto";
 
 export interface IndividualClassification {
@@ -30,7 +30,7 @@ export function classifyPlagiocefalia(cvai: number): CranialSeverity {
   if (cvai < 3.5) return "normal";
   if (cvai >= 3.5 && cvai <= 6.25) return "leve";
   if (cvai >= 6.25 && cvai <= 8.75) return "moderada";
-  return "grave"; // > 8.75%
+  return "severa"; // > 8.75% (changed from "grave" to "severa")
 }
 
 /**
@@ -41,7 +41,7 @@ export function classifyBraquicefalia(indiceCraniano: number): CranialSeverity {
   if (indiceCraniano >= 75 && indiceCraniano <= 85) return "normal";
   if (indiceCraniano >= 86 && indiceCraniano <= 90) return "leve";
   if (indiceCraniano >= 91 && indiceCraniano <= 95) return "moderada";
-  if (indiceCraniano > 95) return "grave";
+  if (indiceCraniano > 95) return "severa"; // changed from "grave" to "severa"
   
   // Se for menor que 75%, não é braquicefalia
   return "normal";
@@ -55,7 +55,7 @@ export function classifyDolicocefalia(indiceCraniano: number): CranialSeverity {
   if (indiceCraniano >= 75 && indiceCraniano <= 85) return "normal";
   if (indiceCraniano >= 70 && indiceCraniano <= 74) return "leve";
   if (indiceCraniano >= 65 && indiceCraniano <= 69) return "moderada";
-  if (indiceCraniano < 65) return "grave";
+  if (indiceCraniano < 65) return "severa"; // changed from "grave" to "severa"
   
   // Se for maior que 85%, não é dolicocefalia
   return "normal";
@@ -82,8 +82,8 @@ export function getMostSevereSeverity(classifications: IndividualClassification)
     classifications.dolicocefalia
   ];
   
-  // Ordem de prioridade: grave > moderada > leve > normal
-  if (severities.includes("grave")) return "grave";
+  // Ordem de prioridade: severa > moderada > leve > normal (changed "grave" to "severa")
+  if (severities.includes("severa")) return "severa";
   if (severities.includes("moderada")) return "moderada";
   if (severities.includes("leve")) return "leve";
   return "normal";
@@ -138,7 +138,7 @@ export function generateCranialDiagnosis(indiceCraniano: number, cvai: number): 
   }
   
   if (conditionType === "Plagiocefalia") {
-    const severityText = classifications.plagiocefalia.charAt(0).toUpperCase() + classifications.plagiocefalia.slice(1);
+    const severityText = classifications.plagiocefalia === "severa" ? "Grave" : classifications.plagiocefalia.charAt(0).toUpperCase() + classifications.plagiocefalia.slice(1);
     return {
       type: "Plagiocefalia",
       severity: classifications.plagiocefalia,
@@ -147,7 +147,7 @@ export function generateCranialDiagnosis(indiceCraniano: number, cvai: number): 
   }
   
   if (conditionType === "Braquicefalia") {
-    const severityText = classifications.braquicefalia.charAt(0).toUpperCase() + classifications.braquicefalia.slice(1);
+    const severityText = classifications.braquicefalia === "severa" ? "Grave" : classifications.braquicefalia.charAt(0).toUpperCase() + classifications.braquicefalia.slice(1);
     return {
       type: "Braquicefalia",
       severity: classifications.braquicefalia,
@@ -156,7 +156,7 @@ export function generateCranialDiagnosis(indiceCraniano: number, cvai: number): 
   }
   
   if (conditionType === "Dolicocefalia") {
-    const severityText = classifications.dolicocefalia.charAt(0).toUpperCase() + classifications.dolicocefalia.slice(1);
+    const severityText = classifications.dolicocefalia === "severa" ? "Grave" : classifications.dolicocefalia.charAt(0).toUpperCase() + classifications.dolicocefalia.slice(1);
     return {
       type: "Dolicocefalia",
       severity: classifications.dolicocefalia,
@@ -166,7 +166,7 @@ export function generateCranialDiagnosis(indiceCraniano: number, cvai: number): 
   
   // Caso Misto - aplicar o princípio da condição mais grave
   if (conditionType === "Misto") {
-    const severityText = mostSevere.charAt(0).toUpperCase() + mostSevere.slice(1);
+    const severityText = mostSevere === "severa" ? "Grave" : mostSevere.charAt(0).toUpperCase() + mostSevere.slice(1);
     return {
       type: "Misto",
       severity: mostSevere,
