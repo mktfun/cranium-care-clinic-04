@@ -50,55 +50,6 @@ export default function CranialVisualization({
 
   return (
     <div className="space-y-6">
-      {/* Status Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Status Geral</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <StatusBadge 
-              status={severity} 
-              asymmetryType={asymmetryType}
-              diagnosis={diagnosis}
-              variant="enhanced"
-              showIcon={true}
-              className="w-full justify-center"
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Índice Craniano</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{indiceCraniano.toFixed(1)}%</div>
-            {individualClassifications && (
-              <Badge variant="outline" className="mt-1">
-                {individualClassifications.braquicefalia === 'normal' ? 'Normal' : 
-                 `Braquicefalia ${individualClassifications.braquicefalia}`}
-              </Badge>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">CVAI</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{cvai.toFixed(1)}%</div>
-            {individualClassifications && (
-              <Badge variant="outline" className="mt-1">
-                {individualClassifications.plagiocefalia === 'normal' ? 'Normal' : 
-                 `Plagiocefalia ${individualClassifications.plagiocefalia}`}
-              </Badge>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Evolution Charts Only */}
       <div className="grid gap-6">
         <Card>
