@@ -22,6 +22,28 @@ const CVAIEvolutionChart: React.FC<CVAIEvolutionChartProps> = ({ data }) => {
   // Ordenar dados por idade
   const sortedData = [...data].sort((a, b) => a.ageMonths - b.ageMonths);
 
+  // Calcular range dinâmico para o eixo X
+  const minAge = sortedData.length > 0 ? Math.max(0, sortedData[0].ageMonths - 1) : 0;
+  const maxAge = sortedData.length > 0 ? sortedData[sortedData.length - 1].ageMonths + 2 : 24;
+  
+  // Calcular range dinâmico para o eixo Y
+  const cvaiValues = sortedData.map(d => d.cvai);
+  const minCVAI = cvaiValues.length > 0 ? Math.min(...cvaiValues, 0) : 0;
+  const maxCVAI = cvaiValues.length > 0 ? Math.max(...cvaiValues, 10) : 10;
+  const yPadding = Math.max(1, (maxCVAI - minCVAI) * 0.1);
+  const yMin = Math.max(0, minCVAI - yPadding);
+  const yMax = Math.min(15, maxCVAI + yPadding);
+
+  // Gerar ticks dinâmicos para o eixo X
+  const generateXTicks = () => {
+    const tickInterval = maxAge <= 12 ? 2 : maxAge <= 24 ? 3 : 6;
+    const ticks = [];
+    for (let i = Math.ceil(minAge / tickInterval) * tickInterval; i <= maxAge; i += tickInterval) {
+      ticks.push(i);
+    }
+    return ticks;
+  };
+
   const formatTooltip = (value: any, name: string) => {
     if (name === "cvai") {
       return [`${value.toFixed(1)}%`, "CVAI"];
@@ -29,7 +51,9 @@ const CVAIEvolutionChart: React.FC<CVAIEvolutionChartProps> = ({ data }) => {
     return [value, name];
   };
 
-  const formatXAxisLabel = (value: number) => `${value}m`;
+  const formatXAxisLabel = (value: number) => `${Math.round(value * 10) / 10}m`;
+  
+  const formatYAxisLabel = (value: number) => `${Math.round(value * 10) / 10}%`;
 
   return (
     <ResponsiveContainer width="100%" height={350}>
@@ -42,16 +66,18 @@ const CVAIEvolutionChart: React.FC<CVAIEvolutionChartProps> = ({ data }) => {
           dataKey="ageMonths"
           label={{ value: 'Idade (meses)', position: 'insideBottom', offset: -10 }}
           type="number"
-          domain={[0, 'dataMax + 2']}
+          domain={[minAge, maxAge]}
+          ticks={generateXTicks()}
           tickFormatter={formatXAxisLabel}
         />
         <YAxis
           label={{ value: 'CVAI (%)', angle: -90, position: 'insideLeft' }}
-          domain={[0, 15]}
+          domain={[yMin, yMax]}
+          tickFormatter={formatYAxisLabel}
         />
         <Tooltip 
           formatter={formatTooltip}
-          labelFormatter={(label) => `Idade: ${label} meses`}
+          labelFormatter={(label) => `Idade: ${Math.round(label * 10) / 10} meses`}
           contentStyle={{ 
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
             border: '1px solid #ccc',
@@ -68,8 +94,8 @@ const CVAIEvolutionChart: React.FC<CVAIEvolutionChartProps> = ({ data }) => {
         {Object.entries(cvaiRanges).map(([severity, range]) => (
           <ReferenceArea
             key={severity}
-            y1={range.min}
-            y2={range.max}
+            y1={Math.max(range.min, yMin)}
+            y2={Math.min(range.max, yMax)}
             strokeOpacity={0.3}
             fill={range.color}
             fillOpacity={0.6}

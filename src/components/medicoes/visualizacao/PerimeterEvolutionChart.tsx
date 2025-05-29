@@ -94,8 +94,25 @@ const PerimeterEvolutionChart: React.FC<PerimeterEvolutionChartProps> = ({ patie
   // Ordenar dados do paciente por idade
   const sortedPatientData = [...patientData].sort((a, b) => a.ageMonths - b.ageMonths);
 
+  // Calcular range dinâmico para o eixo X
+  const minAge = sortedPatientData.length > 0 ? Math.max(0, sortedPatientData[0].ageMonths - 1) : 0;
+  const maxAge = sortedPatientData.length > 0 ? Math.min(24, sortedPatientData[sortedPatientData.length - 1].ageMonths + 2) : 24;
+
+  // Filtrar dados normativos para o range de idade relevante
+  const relevantNormativeData = normativeData.filter(d => d.Month >= minAge && d.Month <= maxAge);
+
+  // Calcular range dinâmico para o eixo Y
+  const perimeterValues = sortedPatientData.map(d => d.perimeter);
+  const normativeValues = relevantNormativeData.flatMap(d => [d.P3, d.P15, d.P50, d.P85, d.P97]);
+  const allValues = [...perimeterValues, ...normativeValues];
+  const minPerimeter = allValues.length > 0 ? Math.min(...allValues) : 300;
+  const maxPerimeter = allValues.length > 0 ? Math.max(...allValues) : 550;
+  const yPadding = (maxPerimeter - minPerimeter) * 0.1;
+  const yMin = Math.max(280, minPerimeter - yPadding);
+  const yMax = Math.min(600, maxPerimeter + yPadding);
+
   // Combinar dados do paciente com dados normativos
-  const combinedData = normativeData.map(normPoint => {
+  const combinedData = relevantNormativeData.map(normPoint => {
     const patientPoint = sortedPatientData.find(p => 
       Math.abs(p.ageMonths - normPoint.Month) < 0.5
     );
@@ -119,14 +136,26 @@ const PerimeterEvolutionChart: React.FC<PerimeterEvolutionChartProps> = ({ patie
   // Ordenar dados combinados
   combinedData.sort((a, b) => a.Month - b.Month);
 
+  // Gerar ticks dinâmicos para o eixo X
+  const generateXTicks = () => {
+    const tickInterval = maxAge <= 12 ? 2 : maxAge <= 24 ? 3 : 6;
+    const ticks = [];
+    for (let i = Math.ceil(minAge / tickInterval) * tickInterval; i <= maxAge; i += tickInterval) {
+      ticks.push(i);
+    }
+    return ticks;
+  };
+
   const chartTitle = `Perímetro Cefálico (${sex === 'M' ? 'Meninos' : 'Meninas'})`;
 
   const formatTooltip = (value: any, name: string) => {
     if (value === null) return ['-', name];
-    return [`${value} mm`, name];
+    return [`${Math.round(value)} mm`, name];
   };
 
-  const formatXAxisLabel = (value: number) => `${value}m`;
+  const formatXAxisLabel = (value: number) => `${Math.round(value * 10) / 10}m`;
+
+  const formatYAxisLabel = (value: number) => `${Math.round(value)} mm`;
 
   return (
     <div>
@@ -141,17 +170,18 @@ const PerimeterEvolutionChart: React.FC<PerimeterEvolutionChartProps> = ({ patie
             dataKey="Month"
             label={{ value: 'Idade (meses)', position: 'insideBottom', offset: -10 }}
             type="number"
-            domain={[0, 24]}
-            ticks={[0, 3, 6, 9, 12, 15, 18, 21, 24]}
+            domain={[minAge, maxAge]}
+            ticks={generateXTicks()}
             tickFormatter={formatXAxisLabel}
           />
           <YAxis
             label={{ value: 'Perímetro Cefálico (mm)', angle: -90, position: 'insideLeft' }}
-            domain={[300, 550]}
+            domain={[yMin, yMax]}
+            tickFormatter={formatYAxisLabel}
           />
           <Tooltip
             formatter={formatTooltip}
-            labelFormatter={(label) => `Idade: ${label} meses`}
+            labelFormatter={(label) => `Idade: ${Math.round(label * 10) / 10} meses`}
             contentStyle={{ 
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
               border: '1px solid #ccc',
