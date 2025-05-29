@@ -192,12 +192,12 @@ export default function RelatorioVisualizar() {
             idadeNaAvaliacao={formatAge(paciente.data_nascimento, medicao.data)}
             severityLevel={severityLevel}
             asymmetryType={asymmetryType}
-            diagnosis={diagnosis} // Pass the new diagnosis
+            diagnosis={diagnosis}
           />
         )}
       </div>
 
-      {/* Nova visualização craniana */}
+      {/* Visualização craniana consolidada */}
       {!modoConsolidado && medicao && (
         <CranialVisualizationCard
           medicao={medicao}
@@ -205,13 +205,13 @@ export default function RelatorioVisualizar() {
           asymmetryType={asymmetryType}
           severity={severityLevel}
           sexoPaciente={paciente.sexo}
-          diagnosis={diagnosis} // Pass the new diagnosis
-          individualClassifications={individualClassifications} // Pass individual classifications
-          dataNascimento={paciente.data_nascimento} // Pass birth date for correct age calculation
+          diagnosis={diagnosis}
+          individualClassifications={individualClassifications}
+          dataNascimento={paciente.data_nascimento}
         />
       )}
       
-      {modoConsolidado ? (
+      {modoConsolidado && (
         <Card>
           <CardHeader>
             <CardTitle>Histórico de Medições</CardTitle>
@@ -224,19 +224,7 @@ export default function RelatorioVisualizar() {
             />
           </CardContent>
         </Card>
-      ) : medicao ? (
-        <ParametrosCraniaisCard 
-          dataFormatada={formatarData(medicao.data)}
-          comprimento={medicao.comprimento}
-          largura={medicao.largura}
-          indiceCraniano={medicao.indice_craniano}
-          diagonalD={medicao.diagonal_d}
-          diagonalE={medicao.diagonal_e}
-          diferencaDiagonais={medicao.diferenca_diagonais}
-          cvai={medicao.cvai}
-          perimetroCefalico={medicao.perimetro_cefalico}
-        />
-      ) : null}
+      )}
       
       {medicao && (
         <RecomendacoesCard 
