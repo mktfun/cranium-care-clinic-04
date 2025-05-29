@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -186,7 +187,7 @@ export default function CranialVisualization({
                     dataNascimento={dataNascimento}
                   />
                 </CardContent>
-              </Card>
+                </Card>
             )}
           </div>
         </TabsContent>
@@ -198,10 +199,13 @@ export default function CranialVisualization({
             </CardHeader>
             <CardContent>
               <CranialSilhouette
-                comprimento={currentMeasurement.comprimento}
-                largura={currentMeasurement.largura}
-                diagonalD={currentMeasurement.diagonalD}
-                diagonalE={currentMeasurement.diagonalE}
+                measurements={{
+                  comprimento: currentMeasurement.comprimento,
+                  largura: currentMeasurement.largura,
+                  diagonalD: currentMeasurement.diagonalD,
+                  diagonalE: currentMeasurement.diagonalE,
+                  perimetroCefalico: currentMeasurement.perimetroCefalico
+                }}
                 asymmetryType={asymmetryType}
                 severity={severity}
               />
