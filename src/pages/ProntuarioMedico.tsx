@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -70,12 +69,14 @@ export default function ProntuarioMedico() {
             console.error('Erro ao carregar prontuários:', prontuariosError);
             toast.error('Erro ao carregar prontuários.');
           } else {
+            console.log('Prontuários carregados:', prontuariosData);
             setProntuarios(prontuariosData as Prontuario[]);
             
             // Se há um prontuarioId específico na URL, buscar esse prontuário
             if (prontuarioId && prontuariosData) {
               const selectedProntuario = prontuariosData.find(p => p.id === prontuarioId);
               if (selectedProntuario) {
+                console.log('Prontuário selecionado:', selectedProntuario);
                 setCurrentProntuario(selectedProntuario as Prontuario);
               } else {
                 toast.error('Prontuário não encontrado.');
@@ -83,6 +84,7 @@ export default function ProntuarioMedico() {
               }
             } else if (prontuariosData && prontuariosData.length > 0) {
               // Selecionar o mais recente por padrão
+              console.log('Selecionando prontuário mais recente:', prontuariosData[0]);
               setCurrentProntuario(prontuariosData[0] as Prontuario);
               // Atualizar URL para refletir o prontuário selecionado
               navigate(`/pacientes/${id}/prontuario/${prontuariosData[0].id}`, { replace: true });
@@ -109,6 +111,7 @@ export default function ProntuarioMedico() {
   };
 
   const handleSelecionarProntuario = (prontuario: Prontuario) => {
+    console.log('Selecionando prontuário:', prontuario);
     setCurrentProntuario(prontuario);
     navigate(`/pacientes/${id}/prontuario/${prontuario.id}`);
   };
@@ -116,11 +119,14 @@ export default function ProntuarioMedico() {
   const handleUpdateProntuario = async (field: string, value: any) => {
     if (!currentProntuario) return;
     
-    console.log(`Salvando campo ${field} com valor:`, value);
+    console.log(`Atualizando campo ${field} com valor:`, value);
     try {
       const { error } = await supabase
         .from('prontuarios')
-        .update({ [field]: value, updated_at: new Date().toISOString() })
+        .update({ 
+          [field]: value, 
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', currentProntuario.id);
       
       if (error) {
@@ -130,12 +136,13 @@ export default function ProntuarioMedico() {
       
       // Atualizar estado local
       const updatedProntuario = { ...currentProntuario, [field]: value };
+      console.log('Prontuário atualizado localmente:', updatedProntuario);
       setCurrentProntuario(updatedProntuario);
       setProntuarios(prev => prev.map(p => 
         p.id === currentProntuario.id ? updatedProntuario : p
       ));
       
-      console.log(`Campo ${field} salvo com sucesso`);
+      console.log(`Campo ${field} salvo com sucesso no banco de dados`);
     } catch (err) {
       console.error('Erro ao salvar:', err);
       throw err;

@@ -391,6 +391,7 @@ export type Database = {
           queixa_principal: string | null
           tipo_sanguineo: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           alergias?: string | null
@@ -414,6 +415,7 @@ export type Database = {
           queixa_principal?: string | null
           tipo_sanguineo?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           alergias?: string | null
@@ -437,6 +439,7 @@ export type Database = {
           queixa_principal?: string | null
           tipo_sanguineo?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {

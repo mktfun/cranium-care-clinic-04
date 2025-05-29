@@ -26,6 +26,7 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
+    console.log("Carregando dados do prontuário:", prontuario);
     const peso = prontuario?.peso?.toString() || "";
     const altura = prontuario?.altura?.toString() || "";
     const tipoSanguineo = prontuario?.tipo_sanguineo || "";
@@ -38,10 +39,14 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
     setLocalAlergias(alergias);
     setLocalObservacoesGerais(observacoesGerais);
     setHasChanges(false);
+
+    console.log("Estados locais definidos:", { peso, altura, tipoSanguineo, alergias, observacoesGerais });
   }, [prontuario]);
 
   // Verificar mudanças
   useEffect(() => {
+    if (!prontuario) return;
+
     const currentPeso = prontuario?.peso?.toString() || "";
     const currentAltura = prontuario?.altura?.toString() || "";
     const currentTipoSanguineo = prontuario?.tipo_sanguineo || "";
@@ -66,23 +71,43 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
 
     setIsSaving(true);
     try {
-      // Salvar cada campo modificado
       const updates = [];
 
-      if (localPeso !== (prontuario?.peso?.toString() || "")) {
-        updates.push(onUpdate?.("peso", localPeso ? parseFloat(localPeso) : null));
+      // Verificar cada campo individualmente e preparar as atualizações
+      const currentPeso = prontuario?.peso?.toString() || "";
+      const currentAltura = prontuario?.altura?.toString() || "";
+      const currentTipoSanguineo = prontuario?.tipo_sanguineo || "";
+      const currentAlergias = prontuario?.alergias || "";
+      const currentObservacoesGerais = prontuario?.observacoes_gerais || "";
+
+      if (localPeso !== currentPeso) {
+        const pesoValue = localPeso.trim() ? parseFloat(localPeso) : null;
+        updates.push(onUpdate?.("peso", pesoValue));
+        console.log("Salvando peso:", pesoValue);
       }
-      if (localAltura !== (prontuario?.altura?.toString() || "")) {
-        updates.push(onUpdate?.("altura", localAltura ? parseFloat(localAltura) : null));
+      
+      if (localAltura !== currentAltura) {
+        const alturaValue = localAltura.trim() ? parseFloat(localAltura) : null;
+        updates.push(onUpdate?.("altura", alturaValue));
+        console.log("Salvando altura:", alturaValue);
       }
-      if (localTipoSanguineo !== (prontuario?.tipo_sanguineo || "")) {
-        updates.push(onUpdate?.("tipo_sanguineo", localTipoSanguineo || null));
+      
+      if (localTipoSanguineo !== currentTipoSanguineo) {
+        const tipoValue = localTipoSanguineo.trim() || null;
+        updates.push(onUpdate?.("tipo_sanguineo", tipoValue));
+        console.log("Salvando tipo sanguíneo:", tipoValue);
       }
-      if (localAlergias !== (prontuario?.alergias || "")) {
-        updates.push(onUpdate?.("alergias", localAlergias || null));
+      
+      if (localAlergias !== currentAlergias) {
+        const alergiasValue = localAlergias.trim() || null;
+        updates.push(onUpdate?.("alergias", alergiasValue));
+        console.log("Salvando alergias:", alergiasValue);
       }
-      if (localObservacoesGerais !== (prontuario?.observacoes_gerais || "")) {
-        updates.push(onUpdate?.("observacoes_gerais", localObservacoesGerais || null));
+      
+      if (localObservacoesGerais !== currentObservacoesGerais) {
+        const observacoesValue = localObservacoesGerais.trim() || null;
+        updates.push(onUpdate?.("observacoes_gerais", observacoesValue));
+        console.log("Salvando observações gerais:", observacoesValue);
       }
 
       await Promise.all(updates.filter(Boolean));

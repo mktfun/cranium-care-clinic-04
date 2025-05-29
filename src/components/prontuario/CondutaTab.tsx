@@ -22,16 +22,27 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
-    setLocalConduta(prontuario?.conduta || "");
-    setLocalAtestado(prontuario?.atestado || "");
+    console.log("Carregando dados de conduta:", prontuario);
+    const conduta = prontuario?.conduta || "";
+    const atestado = prontuario?.atestado || "";
+
+    setLocalConduta(conduta);
+    setLocalAtestado(atestado);
     setHasChanges(false);
+
+    console.log("Estados locais de conduta definidos:", { conduta, atestado });
   }, [prontuario]);
 
   // Verificar mudanças
   useEffect(() => {
+    if (!prontuario) return;
+
+    const currentConduta = prontuario?.conduta || "";
+    const currentAtestado = prontuario?.atestado || "";
+
     const changed = 
-      localConduta !== (prontuario?.conduta || "") ||
-      localAtestado !== (prontuario?.atestado || "");
+      localConduta !== currentConduta ||
+      localAtestado !== currentAtestado;
 
     setHasChanges(changed);
   }, [localConduta, localAtestado, prontuario]);
@@ -46,11 +57,20 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
     try {
       const updates = [];
 
-      if (localConduta !== (prontuario?.conduta || "")) {
-        updates.push(onUpdate?.("conduta", localConduta || null));
+      // Verificar cada campo individualmente e preparar as atualizações
+      const currentConduta = prontuario?.conduta || "";
+      const currentAtestado = prontuario?.atestado || "";
+
+      if (localConduta !== currentConduta) {
+        const condutaValue = localConduta.trim() || null;
+        updates.push(onUpdate?.("conduta", condutaValue));
+        console.log("Salvando conduta:", condutaValue);
       }
-      if (localAtestado !== (prontuario?.atestado || "")) {
-        updates.push(onUpdate?.("atestado", localAtestado || null));
+      
+      if (localAtestado !== currentAtestado) {
+        const atestadoValue = localAtestado.trim() || null;
+        updates.push(onUpdate?.("atestado", atestadoValue));
+        console.log("Salvando atestado:", atestadoValue);
       }
 
       await Promise.all(updates.filter(Boolean));

@@ -21,13 +21,22 @@ export function PrescricaoTab({ prontuario, pacienteId, onUpdate }: PrescricaoTa
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
-    setLocalPrescricao(prontuario?.prescricao || "");
+    console.log("Carregando dados de prescrição:", prontuario);
+    const prescricao = prontuario?.prescricao || "";
+
+    setLocalPrescricao(prescricao);
     setHasChanges(false);
+
+    console.log("Estados locais de prescrição definidos:", { prescricao });
   }, [prontuario]);
 
   // Verificar mudanças
   useEffect(() => {
-    const changed = localPrescricao !== (prontuario?.prescricao || "");
+    if (!prontuario) return;
+
+    const currentPrescricao = prontuario?.prescricao || "";
+    const changed = localPrescricao !== currentPrescricao;
+
     setHasChanges(changed);
   }, [localPrescricao, prontuario]);
 
@@ -39,8 +48,12 @@ export function PrescricaoTab({ prontuario, pacienteId, onUpdate }: PrescricaoTa
 
     setIsSaving(true);
     try {
-      if (localPrescricao !== (prontuario?.prescricao || "")) {
-        await onUpdate?.("prescricao", localPrescricao || null);
+      const currentPrescricao = prontuario?.prescricao || "";
+      
+      if (localPrescricao !== currentPrescricao) {
+        const prescricaoValue = localPrescricao.trim() || null;
+        await onUpdate?.("prescricao", prescricaoValue);
+        console.log("Salvando prescrição:", prescricaoValue);
       }
       
       setHasChanges(false);

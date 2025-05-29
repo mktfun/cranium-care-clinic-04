@@ -23,16 +23,27 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
-    setLocalDiagnostico(prontuario?.diagnostico || "");
-    setLocalCid(prontuario?.cid || "");
+    console.log("Carregando dados de diagnóstico:", prontuario);
+    const diagnostico = prontuario?.diagnostico || "";
+    const cid = prontuario?.cid || "";
+
+    setLocalDiagnostico(diagnostico);
+    setLocalCid(cid);
     setHasChanges(false);
+
+    console.log("Estados locais de diagnóstico definidos:", { diagnostico, cid });
   }, [prontuario]);
 
   // Verificar mudanças
   useEffect(() => {
+    if (!prontuario) return;
+
+    const currentDiagnostico = prontuario?.diagnostico || "";
+    const currentCid = prontuario?.cid || "";
+
     const changed = 
-      localDiagnostico !== (prontuario?.diagnostico || "") ||
-      localCid !== (prontuario?.cid || "");
+      localDiagnostico !== currentDiagnostico ||
+      localCid !== currentCid;
 
     setHasChanges(changed);
   }, [localDiagnostico, localCid, prontuario]);
@@ -59,11 +70,20 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
     try {
       const updates = [];
 
-      if (localDiagnostico !== (prontuario?.diagnostico || "")) {
-        updates.push(onUpdate?.("diagnostico", localDiagnostico || null));
+      // Verificar cada campo individualmente e preparar as atualizações
+      const currentDiagnostico = prontuario?.diagnostico || "";
+      const currentCid = prontuario?.cid || "";
+
+      if (localDiagnostico !== currentDiagnostico) {
+        const diagnosticoValue = localDiagnostico.trim() || null;
+        updates.push(onUpdate?.("diagnostico", diagnosticoValue));
+        console.log("Salvando diagnóstico:", diagnosticoValue);
       }
-      if (localCid !== (prontuario?.cid || "")) {
-        updates.push(onUpdate?.("cid", localCid || null));
+      
+      if (localCid !== currentCid) {
+        const cidValue = localCid.trim() || null;
+        updates.push(onUpdate?.("cid", cidValue));
+        console.log("Salvando CID:", cidValue);
       }
 
       await Promise.all(updates.filter(Boolean));
@@ -97,7 +117,7 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space/y-4">
           <div>
             <Label htmlFor="diagnostico">Diagnóstico Clínico</Label>
             <Textarea

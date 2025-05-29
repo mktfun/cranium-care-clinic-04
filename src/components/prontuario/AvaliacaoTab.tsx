@@ -26,22 +26,41 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
-    setLocalQueixaPrincipal(prontuario?.queixa_principal || "");
-    setLocalIdadeGestacional(prontuario?.idade_gestacional || "");
-    setLocalIdadeCorrigida(prontuario?.idade_corrigida || "");
-    setLocalObservacoesAnamnese(prontuario?.observacoes_anamnese || "");
-    setLocalAvaliacao(prontuario?.avaliacao || "");
+    console.log("Carregando dados de avaliação:", prontuario);
+    const queixaPrincipal = prontuario?.queixa_principal || "";
+    const idadeGestacional = prontuario?.idade_gestacional || "";
+    const idadeCorrigida = prontuario?.idade_corrigida || "";
+    const observacoesAnamnese = prontuario?.observacoes_anamnese || "";
+    const avaliacao = prontuario?.avaliacao || "";
+
+    setLocalQueixaPrincipal(queixaPrincipal);
+    setLocalIdadeGestacional(idadeGestacional);
+    setLocalIdadeCorrigida(idadeCorrigida);
+    setLocalObservacoesAnamnese(observacoesAnamnese);
+    setLocalAvaliacao(avaliacao);
     setHasChanges(false);
+
+    console.log("Estados locais de avaliação definidos:", { 
+      queixaPrincipal, idadeGestacional, idadeCorrigida, observacoesAnamnese, avaliacao 
+    });
   }, [prontuario]);
 
   // Verificar mudanças
   useEffect(() => {
+    if (!prontuario) return;
+
+    const currentQueixaPrincipal = prontuario?.queixa_principal || "";
+    const currentIdadeGestacional = prontuario?.idade_gestacional || "";
+    const currentIdadeCorrigida = prontuario?.idade_corrigida || "";
+    const currentObservacoesAnamnese = prontuario?.observacoes_anamnese || "";
+    const currentAvaliacao = prontuario?.avaliacao || "";
+
     const changed = 
-      localQueixaPrincipal !== (prontuario?.queixa_principal || "") ||
-      localIdadeGestacional !== (prontuario?.idade_gestacional || "") ||
-      localIdadeCorrigida !== (prontuario?.idade_corrigida || "") ||
-      localObservacoesAnamnese !== (prontuario?.observacoes_anamnese || "") ||
-      localAvaliacao !== (prontuario?.avaliacao || "");
+      localQueixaPrincipal !== currentQueixaPrincipal ||
+      localIdadeGestacional !== currentIdadeGestacional ||
+      localIdadeCorrigida !== currentIdadeCorrigida ||
+      localObservacoesAnamnese !== currentObservacoesAnamnese ||
+      localAvaliacao !== currentAvaliacao;
 
     setHasChanges(changed);
   }, [localQueixaPrincipal, localIdadeGestacional, localIdadeCorrigida, localObservacoesAnamnese, localAvaliacao, prontuario]);
@@ -56,20 +75,41 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
     try {
       const updates = [];
 
-      if (localQueixaPrincipal !== (prontuario?.queixa_principal || "")) {
-        updates.push(onUpdate?.("queixa_principal", localQueixaPrincipal || null));
+      // Verificar cada campo individualmente e preparar as atualizações
+      const currentQueixaPrincipal = prontuario?.queixa_principal || "";
+      const currentIdadeGestacional = prontuario?.idade_gestacional || "";
+      const currentIdadeCorrigida = prontuario?.idade_corrigida || "";
+      const currentObservacoesAnamnese = prontuario?.observacoes_anamnese || "";
+      const currentAvaliacao = prontuario?.avaliacao || "";
+
+      if (localQueixaPrincipal !== currentQueixaPrincipal) {
+        const queixaValue = localQueixaPrincipal.trim() || null;
+        updates.push(onUpdate?.("queixa_principal", queixaValue));
+        console.log("Salvando queixa principal:", queixaValue);
       }
-      if (localIdadeGestacional !== (prontuario?.idade_gestacional || "")) {
-        updates.push(onUpdate?.("idade_gestacional", localIdadeGestacional || null));
+      
+      if (localIdadeGestacional !== currentIdadeGestacional) {
+        const idadeGestValue = localIdadeGestacional.trim() || null;
+        updates.push(onUpdate?.("idade_gestacional", idadeGestValue));
+        console.log("Salvando idade gestacional:", idadeGestValue);
       }
-      if (localIdadeCorrigida !== (prontuario?.idade_corrigida || "")) {
-        updates.push(onUpdate?.("idade_corrigida", localIdadeCorrigida || null));
+      
+      if (localIdadeCorrigida !== currentIdadeCorrigida) {
+        const idadeCorrValue = localIdadeCorrigida.trim() || null;
+        updates.push(onUpdate?.("idade_corrigida", idadeCorrValue));
+        console.log("Salvando idade corrigida:", idadeCorrValue);
       }
-      if (localObservacoesAnamnese !== (prontuario?.observacoes_anamnese || "")) {
-        updates.push(onUpdate?.("observacoes_anamnese", localObservacoesAnamnese || null));
+      
+      if (localObservacoesAnamnese !== currentObservacoesAnamnese) {
+        const obsAnamValue = localObservacoesAnamnese.trim() || null;
+        updates.push(onUpdate?.("observacoes_anamnese", obsAnamValue));
+        console.log("Salvando observações anamnese:", obsAnamValue);
       }
-      if (localAvaliacao !== (prontuario?.avaliacao || "")) {
-        updates.push(onUpdate?.("avaliacao", localAvaliacao || null));
+      
+      if (localAvaliacao !== currentAvaliacao) {
+        const avaliacaoValue = localAvaliacao.trim() || null;
+        updates.push(onUpdate?.("avaliacao", avaliacaoValue));
+        console.log("Salvando avaliação:", avaliacaoValue);
       }
 
       await Promise.all(updates.filter(Boolean));
