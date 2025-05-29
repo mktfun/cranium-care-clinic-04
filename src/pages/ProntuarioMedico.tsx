@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ChevronLeft, FilePlus, FileText, Calendar, User, Clipboard, Stethoscope, Activity } from "lucide-react";
+import { Loader2, ChevronLeft, FilePlus, FileText, Calendar, User, Clipboard, Stethoscope, Activity, Baby, Brain, FileCheck } from "lucide-react";
 import { formatAgeHeader } from "@/lib/age-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -22,15 +22,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Prontuario } from "@/types";
 
 export default function ProntuarioMedico() {
-  const {
-    id
-  } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const [paciente, setPaciente] = useState<any>(null);
   const [prontuario, setProntuario] = useState<Prontuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("dados-pessoais");
+  const [activeTab, setActiveTab] = useState("dados-nascimento");
   const isMobile = useIsMobile();
   
   useEffect(() => {
@@ -39,30 +37,35 @@ export default function ProntuarioMedico() {
         setLoading(true);
         try {
           // Buscar dados do paciente
-          const {
-            data: pacienteData,
-            error: pacienteError
-          } = await supabase.from('pacientes').select('*').eq('id', id).maybeSingle();
+          const { data: pacienteData, error: pacienteError } = await supabase
+            .from('pacientes')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle();
+          
           if (pacienteError) {
             console.error('Erro ao carregar dados do paciente:', pacienteError);
             toast.error('Erro ao carregar dados do paciente.');
             setLoading(false);
             return;
           }
+          
           if (!pacienteData) {
             toast.error('Paciente não encontrado.');
             navigate('/pacientes');
             return;
           }
+          
           setPaciente(pacienteData);
 
           // Buscar dados do prontuário usando o supabase client
-          const {
-            data: prontuarioData,
-            error: prontuarioError
-          } = await supabase.from('prontuarios').select('*').eq('paciente_id', id).order('data_criacao', {
-            ascending: false
-          }).maybeSingle();
+          const { data: prontuarioData, error: prontuarioError } = await supabase
+            .from('prontuarios')
+            .select('*')
+            .eq('paciente_id', id)
+            .order('data_criacao', { ascending: false })
+            .maybeSingle();
+          
           if (prontuarioError) {
             console.error('Erro ao carregar prontuário:', prontuarioError);
             toast.error('Erro ao carregar prontuário.');
@@ -81,16 +84,21 @@ export default function ProntuarioMedico() {
   }, [id, navigate]);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">
+    return (
+      <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
-      </div>;
+      </div>
+    );
   }
+  
   if (!paciente) {
-    return <div className="p-8 text-center">
+    return (
+      <div className="p-8 text-center">
         <h2 className="text-2xl font-semibold mb-4">Paciente não encontrado</h2>
         <p className="text-muted-foreground mb-6">O paciente que você está procurando não foi encontrado no sistema.</p>
         <Button onClick={() => navigate("/pacientes")}>Voltar para Pacientes</Button>
-      </div>;
+      </div>
+    );
   }
 
   const formatarData = (dataString: string) => {
@@ -99,9 +107,11 @@ export default function ProntuarioMedico() {
     if (isNaN(data.getTime())) return "Data inválida";
     return data.toLocaleDateString('pt-BR');
   };
+  
   const idadeAtual = formatAgeHeader(paciente.data_nascimento);
 
-  return <div className="space-y-6 animate-fade-in p-4 md:p-6">
+  return (
+    <div className="space-y-6 animate-fade-in p-4 md:p-6">
       {/* Cabeçalho centralizado com apenas uma seta */}
       <div className="flex flex-col items-center mb-2">
         <Button variant="ghost" size="icon" onClick={() => navigate(`/pacientes/${id}`)} className="mb-2">
@@ -114,13 +124,19 @@ export default function ProntuarioMedico() {
           </p>
         </div>
 
-        {!prontuario && <Button className="flex items-center gap-2 bg-turquesa hover:bg-turquesa/90 mt-4" onClick={() => setIsDialogOpen(true)}>
+        {!prontuario && (
+          <Button 
+            className="flex items-center gap-2 bg-turquesa hover:bg-turquesa/90 mt-4" 
+            onClick={() => setIsDialogOpen(true)}
+          >
             <FilePlus className="h-4 w-4" />
             <span>Criar Prontuário</span>
-          </Button>}
+          </Button>
+        )}
       </div>
       
-      {prontuario ? <>
+      {prontuario ? (
+        <>
           <Card>
             <CardHeader>
               <div className="flex justify-between items-start">
@@ -134,7 +150,11 @@ export default function ProntuarioMedico() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => navigate(`/pacientes/${id}/prontuario/imprimir`)} className="flex items-center gap-1">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate(`/pacientes/${id}/prontuario/imprimir`)} 
+                    className="flex items-center gap-1"
+                  >
                     Imprimir
                   </Button>
                 </div>
@@ -142,29 +162,28 @@ export default function ProntuarioMedico() {
             </CardHeader>
             <CardContent className="p-0">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                {isMobile ? <div className="p-4">
+                {isMobile ? (
+                  <div className="p-4">
                     <AnimatedProntuarioSelect value={activeTab} onChange={setActiveTab} />
-                  </div> : <div className="px-6">
+                  </div>
+                ) : (
+                  <div className="px-6">
                     <TabsList className="w-full justify-start">
-                      <TabsTrigger value="dados-pessoais" className="flex items-center gap-1">
+                      <TabsTrigger value="dados-nascimento" className="flex items-center gap-1">
+                        <Baby className="h-4 w-4" />
+                        Dados de Nascimento
+                      </TabsTrigger>
+                      <TabsTrigger value="dados-atuais" className="flex items-center gap-1">
                         <User className="h-4 w-4" />
-                        Dados Pessoais
+                        Dados Atuais
                       </TabsTrigger>
-                      <TabsTrigger value="historico-medico" className="flex items-center gap-1">
-                        <FileText className="h-4 w-4" />
-                        Histórico
-                      </TabsTrigger>
-                      <TabsTrigger value="consultas" className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        Consultas
-                      </TabsTrigger>
-                      <TabsTrigger value="avaliacoes-craniais" className="flex items-center gap-1">
-                        <FileText className="h-4 w-4" />
-                        Avaliações Craniais
-                      </TabsTrigger>
-                      <TabsTrigger value="avaliacao" className="flex items-center gap-1">
+                      <TabsTrigger value="anamnese-avaliacao" className="flex items-center gap-1">
                         <Clipboard className="h-4 w-4" />
-                        Avaliação
+                        Anamnese/Avaliação
+                      </TabsTrigger>
+                      <TabsTrigger value="avaliacao-cranio" className="flex items-center gap-1">
+                        <Brain className="h-4 w-4" />
+                        Avaliação Crânio
                       </TabsTrigger>
                       <TabsTrigger value="conduta" className="flex items-center gap-1">
                         <Stethoscope className="h-4 w-4" />
@@ -174,34 +193,60 @@ export default function ProntuarioMedico() {
                         <Activity className="h-4 w-4" />
                         Diagnóstico
                       </TabsTrigger>
+                      <TabsTrigger value="prescricao" className="flex items-center gap-1">
+                        <FileCheck className="h-4 w-4" />
+                        Prescrição
+                      </TabsTrigger>
                     </TabsList>
-                  </div>}
+                  </div>
+                )}
                 <Separator className="my-0" />
-                <TabsContent value="dados-pessoais" className="p-6">
+                
+                <TabsContent value="dados-nascimento" className="p-6">
                   <DadosPessoaisTab paciente={paciente} prontuario={prontuario} />
                 </TabsContent>
-                <TabsContent value="historico-medico" className="p-6">
-                  <HistoricoMedicoTab prontuario={prontuario} pacienteId={id || ''} />
+                
+                <TabsContent value="dados-atuais" className="p-6">
+                  <DadosPessoaisTab paciente={paciente} prontuario={prontuario} />
                 </TabsContent>
-                <TabsContent value="consultas" className="p-6">
-                  <ConsultasTab pacienteId={id || ''} />
-                </TabsContent>
-                <TabsContent value="avaliacoes-craniais" className="p-6">
-                  <AvaliacoesCraniaisTab pacienteId={id || ''} />
-                </TabsContent>
-                <TabsContent value="avaliacao" className="p-6">
+                
+                <TabsContent value="anamnese-avaliacao" className="p-6">
                   <AvaliacaoTab prontuario={prontuario} pacienteId={id || ''} />
                 </TabsContent>
+                
+                <TabsContent value="avaliacao-cranio" className="p-6">
+                  <AvaliacoesCraniaisTab pacienteId={id || ''} />
+                </TabsContent>
+                
                 <TabsContent value="conduta" className="p-6">
                   <CondutaTab prontuario={prontuario} pacienteId={id || ''} />
                 </TabsContent>
+                
                 <TabsContent value="diagnostico" className="p-6">
                   <DiagnosticoTab prontuario={prontuario} pacienteId={id || ''} />
+                </TabsContent>
+                
+                <TabsContent value="prescricao" className="p-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Prescrição Médica</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">Seção de prescrição em desenvolvimento.</p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Esta seção permitirá a criação e gestão de prescrições médicas.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
-        </> : <Card>
+        </>
+      ) : (
+        <Card>
           <CardContent className="p-10 flex flex-col items-center justify-center text-center">
             <FileText className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-2xl font-semibold mb-2">Nenhum prontuário encontrado</h3>
@@ -213,11 +258,18 @@ export default function ProntuarioMedico() {
               Criar Prontuário
             </Button>
           </CardContent>
-        </Card>}
+        </Card>
+      )}
       
-      <NovoProntuarioDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} pacienteId={id || ''} onSuccess={novoProntuario => {
-      setProntuario(novoProntuario);
-      toast.success("Prontuário criado com sucesso!");
-    }} />
-    </div>;
+      <NovoProntuarioDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen} 
+        pacienteId={id || ''} 
+        onSuccess={(novoProntuario) => {
+          setProntuario(novoProntuario);
+          toast.success("Prontuário criado com sucesso!");
+        }} 
+      />
+    </div>
+  );
 }
