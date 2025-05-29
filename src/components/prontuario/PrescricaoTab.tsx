@@ -56,7 +56,6 @@ export function PrescricaoTab({ prontuario, pacienteId, onUpdate }: PrescricaoTa
         console.log("Salvando prescrição:", prescricaoValue);
       }
       
-      setHasChanges(false);
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
       toast.error("Erro ao salvar dados.");

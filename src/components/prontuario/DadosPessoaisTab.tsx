@@ -73,7 +73,7 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
     try {
       const updates = [];
 
-      // Verificar cada campo individualmente e preparar as atualizações
+      // Verificar cada campo individualmente e salvar no banco
       const currentPeso = prontuario?.peso?.toString() || "";
       const currentAltura = prontuario?.altura?.toString() || "";
       const currentTipoSanguineo = prontuario?.tipo_sanguineo || "";
@@ -110,9 +110,9 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
         console.log("Salvando observações gerais:", observacoesValue);
       }
 
+      // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
       
-      setHasChanges(false);
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
       toast.error("Erro ao salvar dados.");

@@ -70,7 +70,7 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
     try {
       const updates = [];
 
-      // Verificar cada campo individualmente e preparar as atualizações
+      // Verificar cada campo individualmente e salvar no banco
       const currentDiagnostico = prontuario?.diagnostico || "";
       const currentCid = prontuario?.cid || "";
 
@@ -86,9 +86,9 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
         console.log("Salvando CID:", cidValue);
       }
 
+      // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
       
-      setHasChanges(false);
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
       toast.error("Erro ao salvar dados.");
@@ -117,7 +117,7 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space/y-4">
+        <CardContent className="space-y-4">
           <div>
             <Label htmlFor="diagnostico">Diagnóstico Clínico</Label>
             <Textarea

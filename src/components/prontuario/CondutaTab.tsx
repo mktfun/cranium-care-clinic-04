@@ -57,7 +57,7 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
     try {
       const updates = [];
 
-      // Verificar cada campo individualmente e preparar as atualizações
+      // Verificar cada campo individualmente e salvar no banco
       const currentConduta = prontuario?.conduta || "";
       const currentAtestado = prontuario?.atestado || "";
 
@@ -73,9 +73,9 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
         console.log("Salvando atestado:", atestadoValue);
       }
 
+      // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
-      
-      setHasChanges(false);
+
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
       toast.error("Erro ao salvar dados.");

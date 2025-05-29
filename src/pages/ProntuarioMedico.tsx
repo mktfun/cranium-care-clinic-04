@@ -30,6 +30,35 @@ export default function ProntuarioMedico() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dados-do-bebe");
   const isMobile = useIsMobile();
+
+  // Função para recarregar dados do prontuário atual
+  const reloadCurrentProntuario = async () => {
+    if (!currentProntuario?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('prontuarios')
+        .select('*')
+        .eq('id', currentProntuario.id)
+        .single();
+      
+      if (error) {
+        console.error('Erro ao recarregar prontuário:', error);
+        return;
+      }
+      
+      if (data) {
+        console.log('Dados recarregados do banco:', data);
+        setCurrentProntuario(data as Prontuario);
+        // Também atualizar na lista de prontuários
+        setProntuarios(prev => prev.map(p => 
+          p.id === data.id ? data as Prontuario : p
+        ));
+      }
+    } catch (err) {
+      console.error('Erro ao recarregar prontuário:', err);
+    }
+  };
   
   useEffect(() => {
     async function fetchData() {
@@ -119,7 +148,7 @@ export default function ProntuarioMedico() {
   const handleUpdateProntuario = async (field: string, value: any) => {
     if (!currentProntuario) return;
     
-    console.log(`Atualizando campo ${field} com valor:`, value);
+    console.log(`Salvando campo ${field} no banco de dados com valor:`, value);
     try {
       const { error } = await supabase
         .from('prontuarios')
@@ -130,19 +159,15 @@ export default function ProntuarioMedico() {
         .eq('id', currentProntuario.id);
       
       if (error) {
-        console.error('Erro ao salvar:', error);
+        console.error('Erro ao salvar no banco:', error);
         throw error;
       }
       
-      // Atualizar estado local
-      const updatedProntuario = { ...currentProntuario, [field]: value };
-      console.log('Prontuário atualizado localmente:', updatedProntuario);
-      setCurrentProntuario(updatedProntuario);
-      setProntuarios(prev => prev.map(p => 
-        p.id === currentProntuario.id ? updatedProntuario : p
-      ));
-      
       console.log(`Campo ${field} salvo com sucesso no banco de dados`);
+      
+      // Recarregar dados do banco após salvar
+      await reloadCurrentProntuario();
+      
     } catch (err) {
       console.error('Erro ao salvar:', err);
       throw err;

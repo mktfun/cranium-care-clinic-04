@@ -75,7 +75,7 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
     try {
       const updates = [];
 
-      // Verificar cada campo individualmente e preparar as atualizações
+      // Verificar cada campo individualmente e salvar no banco
       const currentQueixaPrincipal = prontuario?.queixa_principal || "";
       const currentIdadeGestacional = prontuario?.idade_gestacional || "";
       const currentIdadeCorrigida = prontuario?.idade_corrigida || "";
@@ -112,9 +112,9 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
         console.log("Salvando avaliação:", avaliacaoValue);
       }
 
+      // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
       
-      setHasChanges(false);
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
       toast.error("Erro ao salvar dados.");
