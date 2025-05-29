@@ -327,6 +327,7 @@ export type Database = {
           created_at: string | null
           data_nascimento: string
           id: string
+          local_nascimento: string | null
           nome: string
           responsaveis: Json | null
           sexo: string | null
@@ -337,6 +338,7 @@ export type Database = {
           created_at?: string | null
           data_nascimento: string
           id?: string
+          local_nascimento?: string | null
           nome: string
           responsaveis?: Json | null
           sexo?: string | null
@@ -347,6 +349,7 @@ export type Database = {
           created_at?: string | null
           data_nascimento?: string
           id?: string
+          local_nascimento?: string | null
           nome?: string
           responsaveis?: Json | null
           sexo?: string | null

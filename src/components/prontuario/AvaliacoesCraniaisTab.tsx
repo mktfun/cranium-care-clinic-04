@@ -1,15 +1,30 @@
 
 import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { formatAge } from "@/lib/age-utils";
-import { getCranialStatus } from "@/lib/cranial-utils";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Eye, FileBarChart2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Loader2, Brain, Plus, TrendingUp, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Medicao } from "@/types";
+import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { formatAge } from "@/lib/age-utils";
+import { getSeverityInfo } from "@/lib/cranial-classification-utils";
+
+interface Medicao {
+  id: string;
+  data: string;
+  comprimento: number;
+  largura: number;
+  diagonal_d: number;
+  diagonal_e: number;
+  perimetro_cefalico?: number;
+  indice_craniano: number;
+  diferenca_diagonais?: number;
+  cvai: number;
+  status: string;
+  observacoes?: string;
+  recomendacoes?: string[];
+}
 
 interface AvaliacoesCraniaisTabProps {
   pacienteId: string;
@@ -22,168 +37,228 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
   const navigate = useNavigate();
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        
-        // Buscar dados do paciente para data de nascimento
-        const { data: pacienteData, error: pacienteError } = await supabase
-          .from('pacientes')
-          .select('data_nascimento')
-          .eq('id', pacienteId)
-          .single();
-        
-        if (pacienteError) {
-          console.error('Erro ao carregar dados do paciente:', pacienteError);
-          toast.error('Erro ao carregar dados do paciente.');
-        } else {
-          setPaciente(pacienteData);
-        }
-        
-        // Buscar medições
-        const response = await supabase
-          .from('medicoes')
-          .select('*')
-          .eq('paciente_id', pacienteId)
-          .order('data', { ascending: false });
-        
-        if (response.error) {
-          console.error('Erro ao carregar medições:', response.error);
-          toast.error('Erro ao carregar medições.');
-        } else {
-          // Map the database fields to our Medicao interface
-          const medicoesData = (response.data || []).map(item => ({
-            id: item.id,
-            paciente_id: item.paciente_id,
-            data: item.data,
-            comprimento: item.comprimento || 0,
-            largura: item.largura || 0,
-            diagonal_d: item.diagonal_d,
-            diagonal_e: item.diagonal_e,
-            diferenca_diagonais: item.diferenca_diagonais || 0,
-            cvai: item.cvai,
-            indice_craniano: item.indice_craniano,
-            perimetro_cefalico: item.perimetro_cefalico,
-            status: item.status,
-            observacoes: item.observacoes,
-            created_at: item.created_at,
-            updated_at: item.updated_at
-          })) as Medicao[];
-          
-          setMedicoes(medicoesData);
-        }
-      } catch (err) {
-        console.error('Erro inesperado:', err);
-        toast.error('Erro ao carregar dados.');
-      } finally {
-        setLoading(false);
-      }
-    }
-    
     fetchData();
   }, [pacienteId]);
-  
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar dados do paciente
+      const { data: pacienteData, error: pacienteError } = await supabase
+        .from('pacientes')
+        .select('*')
+        .eq('id', pacienteId)
+        .single();
+      
+      if (pacienteError) throw pacienteError;
+      setPaciente(pacienteData);
+
+      // Buscar medições cranianas
+      const { data: medicoesData, error: medicoesError } = await supabase
+        .from('medicoes')
+        .select('*')
+        .eq('paciente_id', pacienteId)
+        .order('data', { ascending: false });
+      
+      if (medicoesError) throw medicoesError;
+      setMedicoes(medicoesData || []);
+    } catch (error) {
+      console.error('Erro ao buscar dados:', error);
+      toast.error('Erro ao carregar avaliações cranianas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatarData = (dataString: string) => {
-    if (!dataString) return "N/A";
     const data = new Date(dataString);
-    if (isNaN(data.getTime())) return "Data inválida";
     return data.toLocaleDateString('pt-BR');
   };
-  
-  const handleVerRelatorio = (medicaoId: string) => {
-    navigate(`/pacientes/${pacienteId}/relatorios/${medicaoId}`);
+
+  const getStatusBadge = (status: string) => {
+    const severityInfo = getSeverityInfo(status as any);
+    return (
+      <Badge 
+        variant={severityInfo.variant as any}
+        className={severityInfo.className}
+      >
+        {severityInfo.label}
+      </Badge>
+    );
   };
-  
-  const handleNovaAvaliacao = () => {
-    navigate(`/pacientes/${pacienteId}/nova-medicao`);
+
+  const getEvolutionTrend = () => {
+    if (medicoes.length < 2) return null;
+    
+    const latest = medicoes[0];
+    const previous = medicoes[1];
+    
+    const isImproving = latest.cvai < previous.cvai;
+    
+    return (
+      <div className={`flex items-center gap-1 text-sm ${isImproving ? 'text-green-600' : 'text-orange-600'}`}>
+        <TrendingUp className={`h-4 w-4 ${isImproving ? '' : 'rotate-180'}`} />
+        {isImproving ? 'Melhorando' : 'Necessita atenção'}
+      </div>
+    );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Avaliações Cranianas</h3>
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-medium flex items-center gap-2">
+            <Brain className="h-5 w-5 text-turquesa" />
+            Avaliações Cranianas
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Histórico de medições e análises craniométricas
+          </p>
+        </div>
         <Button 
-          onClick={handleNovaAvaliacao}
-          className="flex items-center gap-1 bg-turquesa hover:bg-turquesa/90"
+          onClick={() => navigate(`/pacientes/${pacienteId}/nova-medicao`)}
+          className="bg-turquesa hover:bg-turquesa/90"
         >
-          <FileBarChart2 className="h-4 w-4" /> Nova Avaliação
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Medição
         </Button>
       </div>
-      
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-          <p className="mt-2 text-muted-foreground">Carregando avaliações...</p>
-        </div>
-      ) : medicoes.length > 0 ? (
-        <div className="space-y-4">
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-border">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Data</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Idade</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Índice Craniano</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">CVAI</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {medicoes.map((medicao) => {
-                      const { asymmetryType, severityLevel } = getCranialStatus(
-                        medicao.indice_craniano || 0, 
-                        medicao.cvai || 0
-                      );
-                      return (
-                        <tr key={medicao.id} className="hover:bg-muted/50">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">{formatarData(medicao.data)}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            {paciente?.data_nascimento ? formatAge(paciente.data_nascimento, medicao.data) : "N/A"}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            {medicao.indice_craniano ? `${medicao.indice_craniano.toFixed(1)}%` : '-'}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            {medicao.cvai ? `${medicao.cvai.toFixed(1)}%` : '-'}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            <StatusBadge status={severityLevel} asymmetryType={asymmetryType} />
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => handleVerRelatorio(medicao.id)}
-                              className="flex items-center gap-1 text-turquesa hover:text-turquesa/90"
-                            >
-                              <Eye className="h-4 w-4" /> Ver Relatório
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
+
+      {medicoes.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center">
-            <FileBarChart2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">Nenhuma avaliação craniana registrada para este paciente.</p>
+          <CardContent className="p-8 text-center">
+            <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">Nenhuma avaliação craniana encontrada</h3>
+            <p className="text-muted-foreground mb-6">
+              Realize a primeira medição craniana para iniciar o acompanhamento.
+            </p>
             <Button 
-              className="mt-4 bg-turquesa hover:bg-turquesa/90"
-              onClick={handleNovaAvaliacao}
+              onClick={() => navigate(`/pacientes/${pacienteId}/nova-medicao`)}
+              className="bg-turquesa hover:bg-turquesa/90"
             >
-              <FileBarChart2 className="h-4 w-4 mr-2" /> Realizar Avaliação
+              <Plus className="h-4 w-4 mr-2" />
+              Primeira Medição
             </Button>
           </CardContent>
         </Card>
+      ) : (
+        <>
+          {/* Resumo Geral */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Resumo das Avaliações
+                {getEvolutionTrend()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-turquesa">{medicoes.length}</div>
+                  <div className="text-sm text-muted-foreground">Total de Medições</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">
+                    {medicoes[0] ? medicoes[0].cvai.toFixed(1) + '%' : '--'}
+                  </div>
+                  <div className="text-sm text-muted-foreground">CVAI Atual</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">
+                    {medicoes[0] ? medicoes[0].indice_craniano.toFixed(1) + '%' : '--'}
+                  </div>
+                  <div className="text-sm text-muted-foreground">IC Atual</div>
+                </div>
+                <div className="text-center">
+                  {medicoes[0] && getStatusBadge(medicoes[0].status)}
+                  <div className="text-sm text-muted-foreground mt-1">Status Atual</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lista de Medições */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Medições</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {medicoes.map((medicao, index) => (
+                  <div key={medicao.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{formatarData(medicao.data)}</span>
+                          {paciente && (
+                            <span className="text-sm text-muted-foreground">
+                              (Idade: {formatAge(paciente.data_nascimento, medicao.data)})
+                            </span>
+                          )}
+                        </div>
+                        {getStatusBadge(medicao.status)}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-muted-foreground">Medição #{medicoes.length - index}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <div className="text-muted-foreground">CVAI</div>
+                        <div className="font-medium">{medicao.cvai.toFixed(1)}%</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Índice Craniano</div>
+                        <div className="font-medium">{medicao.indice_craniano.toFixed(1)}%</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Comprimento</div>
+                        <div className="font-medium">{medicao.comprimento.toFixed(1)} mm</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Largura</div>
+                        <div className="font-medium">{medicao.largura.toFixed(1)} mm</div>
+                      </div>
+                    </div>
+
+                    {medicao.observacoes && (
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="text-sm">
+                          <div className="text-muted-foreground mb-1">Observações:</div>
+                          <div>{medicao.observacoes}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {medicao.recomendacoes && medicao.recomendacoes.length > 0 && (
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="text-sm">
+                          <div className="text-muted-foreground mb-1">Recomendações:</div>
+                          <ul className="list-disc list-inside space-y-1">
+                            {medicao.recomendacoes.map((rec, i) => (
+                              <li key={i}>{rec}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );

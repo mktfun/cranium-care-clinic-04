@@ -1,316 +1,294 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, BellOff, AlertTriangle, FileText, UserPlus, CalendarCheck2, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Bell, BellOff, Check, Trash2, Filter, AlertCircle, Info, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { RealNotificacao } from "@/components/Header"; // Importar a interface do Header
-import { getCranialStatus, SeverityLevel } from "@/lib/cranial-utils";
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
+import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const NOTIFICACOES_LIDAS_STORAGE_KEY = "craniumCareNotificacoesLidas";
-const ULTIMA_VERIFICACAO_STORAGE_KEY = "craniumCareUltimaVerificacaoNotificacoes";
+interface Notificacao {
+  id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  link: string | null;
+  created_at: string;
+  user_id: string;
+}
 
-// Função para buscar notificações reais (similar à do Header.tsx, mas pode ser movida para um hook/serviço)
-const fetchNotificacoesReais = async (): Promise<RealNotificacao[]> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) return [];
-
-  let todasAsNotificacoes: RealNotificacao[] = [];
-  const agora = new Date();
-  const ultimaVerificacaoString = localStorage.getItem(ULTIMA_VERIFICACAO_STORAGE_KEY);
-  // Para a página de todas as notificações, talvez buscar um período maior ou todas não lidas + recentes lidas
-  const ultimaVerificacao = ultimaVerificacaoString ? new Date(ultimaVerificacaoString) : new Date(agora.getTime() - 24 * 60 * 60 * 1000 * 30); // Padrão: últimos 30 dias para a página completa
-
-  // 1. Novos Pacientes
-  try {
-    const { data: novosPacientes, error: errPacientes } = await supabase
-      .from("pacientes")
-      .select("id, nome, created_at")
-      .gt("created_at", ultimaVerificacao.toISOString())
-      .order("created_at", { ascending: false });
-
-    if (errPacientes) console.error("Erro ao buscar novos pacientes (NotificacoesPage):", errPacientes);
-    else if (novosPacientes) {
-      novosPacientes.forEach(p => {
-        todasAsNotificacoes.push({
-          id: `paciente-${p.id}`,
-          title: "Novo Paciente Registrado",
-          message: `O paciente ${p.nome} foi registrado no sistema.`,
-          timestamp: new Date(p.created_at),
-          read: false,
-          type: "novo_paciente",
-          link: `/pacientes/${p.id}`,
-          urgencia: "media",
-          referenciaId: p.id,
-        });
-      });
-    }
-  } catch (e) { console.error("Catch novos pacientes (NotificacoesPage):", e); }
-
-  // 2. Novas Medições
-  try {
-    const { data: novasMedicoes, error: errMedicoes } = await supabase
-      .from("medicoes")
-      .select("id, paciente_id, data, pacientes (nome)")
-      .gt("data", ultimaVerificacao.toISOString())
-      .order("data", { ascending: false });
-    
-    if (errMedicoes) console.error("Erro ao buscar novas medições (NotificacoesPage):", errMedicoes);
-    else if (novasMedicoes) {
-      novasMedicoes.forEach((m: any) => {
-        const nomePaciente = m.pacientes?.nome || "Paciente";
-        todasAsNotificacoes.push({
-          id: `medicao-${m.id}`,
-          title: "Nova Medição Registrada",
-          message: `Nova medição para ${nomePaciente} em ${new Date(m.data).toLocaleDateString("pt-BR")}.`,
-          timestamp: new Date(m.data),
-          read: false,
-          type: "nova_medicao",
-          link: `/pacientes/${m.paciente_id}/medicoes/${m.id}`,
-          urgencia: "media",
-          referenciaId: m.id,
-        });
-      });
-    }
-  } catch (e) { console.error("Catch novas medições (NotificacoesPage):", e); }
-
-  // 3. Tarefas (derivadas de medições para reavaliação)
-  try {
-      const { data: pacientesComMedicoes, error: errPacMed } = await supabase
-          .from('pacientes')
-          .select(`id, nome, medicoes (id, data, indice_craniano, cvai)`)
-          .order('data', { foreignTable: 'medicoes', ascending: false });
-
-      if (errPacMed) console.error("Erro ao buscar pacientes para tarefas (NotificacoesPage):", errPacMed);
-      else if (pacientesComMedicoes) {
-          const hoje = new Date();
-          const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-          const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59);
-
-          pacientesComMedicoes.forEach((pac: any) => {
-              if (pac.medicoes && pac.medicoes.length > 0) {
-                  const ultimaMedicao = pac.medicoes[0];
-                  const { severityLevel } = getCranialStatus(ultimaMedicao.indice_craniano || 0, ultimaMedicao.cvai || 0);
-                  const dataUltimaMedicao = new Date(ultimaMedicao.data);
-                  let proximaAvaliacao = new Date(dataUltimaMedicao);
-
-                  switch(severityLevel) {
-                      case 'normal': proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 3); break;
-                      case 'leve': proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2); break;
-                      case 'moderada': case 'severa': proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 1); break;
-                      default: proximaAvaliacao.setMonth(dataUltimaMedicao.getMonth() + 2);
-                  }
-
-                  if (proximaAvaliacao >= inicioHoje && proximaAvaliacao <= fimHoje) {
-                      todasAsNotificacoes.push({
-                          id: `tarefa-hoje-${pac.id}-${ultimaMedicao.id}`,
-                          title: "Tarefa para Hoje",
-                          message: `Reavaliação de ${pac.nome} agendada para hoje.`,
-                          timestamp: proximaAvaliacao,
-                          read: false,
-                          type: "tarefa_hoje",
-                          link: `/pacientes/${pac.id}`,
-                          urgencia: "alta",
-                          referenciaId: pac.id,
-                      });
-                  } else if (proximaAvaliacao < inicioHoje) {
-                      const diasAtraso = (inicioHoje.getTime() - proximaAvaliacao.getTime()) / (1000 * 3600 * 24);
-                      if (diasAtraso <= 30) { // Aumentar o range para a página de todas as notificações
-                          todasAsNotificacoes.push({
-                              id: `tarefa-atrasada-${pac.id}-${ultimaMedicao.id}`,
-                              title: "Tarefa Atrasada",
-                              message: `Reavaliação de ${pac.nome} está atrasada.`,
-                              timestamp: proximaAvaliacao,
-                              read: false,
-                              type: "tarefa_atrasada",
-                              link: `/pacientes/${pac.id}`,
-                              urgencia: "alta",
-                              referenciaId: pac.id,
-                          });
-                      }
-                  }
-              }
-          });
-      }
-  } catch (e) { console.error("Catch tarefas (NotificacoesPage):", e); }
-  
-  // Remover duplicatas pelo ID, caso alguma lógica gere IDs iguais
-  const uniqueNotificacoes = Array.from(new Map(todasAsNotificacoes.map(item => [item.id, item])).values());
-
-  uniqueNotificacoes.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  return uniqueNotificacoes;
-};
-
-const getNotificacoesLidas = (): string[] => {
-  const lidas = localStorage.getItem(NOTIFICACOES_LIDAS_STORAGE_KEY);
-  return lidas ? JSON.parse(lidas) : [];
-};
-
-const marcarNotificacaoComoLidaStorage = (id: string) => {
-  const lidas = getNotificacoesLidas();
-  if (!lidas.includes(id)) {
-    localStorage.setItem(NOTIFICACOES_LIDAS_STORAGE_KEY, JSON.stringify([...lidas, id]));
-  }
-};
-
-const marcarTodasComoLidasStorage = (notifs: RealNotificacao[]) => {
-  const todasIds = notifs.map(n => n.id);
-  const lidasAtuais = getNotificacoesLidas();
-  const novasLidas = Array.from(new Set([...lidasAtuais, ...todasIds]));
-  localStorage.setItem(NOTIFICACOES_LIDAS_STORAGE_KEY, JSON.stringify(novasLidas));
-};
-
-const limparNotificacoesLidasStorage = (notifs: RealNotificacao[]) => {
-    const idsNaoLidas = notifs.filter(n => !n.read).map(n => n.id);
-    localStorage.setItem(NOTIFICACOES_LIDAS_STORAGE_KEY, JSON.stringify(idsNaoLidas));
-};
-
-export function NotificacoesPage() {
-  const [notificacoes, setNotificacoes] = useState<RealNotificacao[]>([]);
-  const [carregando, setCarregando] = useState(true);
-  const navigate = useNavigate();
-
-  const carregarNotificacoes = useCallback(async () => {
-    setCarregando(true);
-    const notificacoesReais = await fetchNotificacoesReais();
-    const lidasIds = getNotificacoesLidas();
-    const notificacoesComStatusLida = notificacoesReais.map(n => ({
-      ...n,
-      read: lidasIds.includes(n.id)
-    }));
-    setNotificacoes(notificacoesComStatusLida);
-    localStorage.setItem(ULTIMA_VERIFICACAO_STORAGE_KEY, new Date().toISOString()); // Atualiza a última verificação
-    setCarregando(false);
-  }, []);
+export default function NotificacoesPage() {
+  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
 
   useEffect(() => {
-    carregarNotificacoes();
-  }, [carregarNotificacoes]);
+    fetchNotificacoes();
+    
+    // Configurar real-time subscription
+    const channel = supabase
+      .channel('notificacoes_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notificacoes'
+        },
+        () => {
+          fetchNotificacoes();
+        }
+      )
+      .subscribe();
 
-  const marcarComoLida = (id: string) => {
-    marcarNotificacaoComoLidaStorage(id);
-    setNotificacoes(prevNotificacoes =>
-      prevNotificacoes.map(n => (n.id === id ? { ...n, read: true } : n))
-    );
-  };
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
-  const marcarTodasComoLidas = () => {
-    marcarTodasComoLidasStorage(notificacoes);
-    setNotificacoes(prevNotificacoes =>
-      prevNotificacoes.map(n => ({ ...n, read: true }))
-    );
-  };
+  const fetchNotificacoes = async () => {
+    try {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
 
-  const limparNotificacoesLidas = () => {
-    limparNotificacoesLidasStorage(notificacoes);
-    setNotificacoes(prevNotificacoes => prevNotificacoes.filter(n => !n.read));
-  };
+      const { data, error } = await supabase
+        .from('notificacoes')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
 
-  const todasLidas = notificacoes.every(n => n.read);
-  const naoLidasCount = notificacoes.filter(n => !n.read).length;
-
-  const getIconForType = (type: RealNotificacao['type']) => {
-    switch (type) {
-      case 'novo_paciente': return <UserPlus className="h-5 w-5 mr-3 text-blue-500" />;
-      case 'nova_medicao': return <FileText className="h-5 w-5 mr-3 text-green-500" />;
-      case 'tarefa_hoje': return <CalendarCheck2 className="h-5 w-5 mr-3 text-orange-500" />;
-      case 'tarefa_atrasada': return <AlertTriangle className="h-5 w-5 mr-3 text-red-500" />;
-      default: return <BellOff className="h-5 w-5 mr-3 text-gray-400" />;
+      if (error) throw error;
+      setNotificacoes(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar notificações:', error);
+      toast.error('Erro ao carregar notificações');
+    } finally {
+      setLoading(false);
     }
   };
-  
-  const formatarTempoNotificacao = (timestamp: Date): string => {
-    return formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: ptBR });
+
+  const markAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notificacoes')
+        .update({ read: true })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setNotificacoes(prev => 
+        prev.map(notif => 
+          notif.id === id ? { ...notif, read: true } : notif
+        )
+      );
+    } catch (error) {
+      console.error('Erro ao marcar como lida:', error);
+      toast.error('Erro ao marcar notificação como lida');
+    }
   };
 
+  const markAllAsRead = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) return;
+
+      const { error } = await supabase
+        .from('notificacoes')
+        .update({ read: true })
+        .eq('user_id', session.user.id)
+        .eq('read', false);
+
+      if (error) throw error;
+      
+      setNotificacoes(prev => 
+        prev.map(notif => ({ ...notif, read: true }))
+      );
+      
+      toast.success('Todas as notificações foram marcadas como lidas');
+    } catch (error) {
+      console.error('Erro ao marcar todas como lidas:', error);
+      toast.error('Erro ao marcar todas as notificações como lidas');
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notificacoes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setNotificacoes(prev => prev.filter(notif => notif.id !== id));
+      toast.success('Notificação removida');
+    } catch (error) {
+      console.error('Erro ao remover notificação:', error);
+      toast.error('Erro ao remover notificação');
+    }
+  };
+
+  const getNotificationIcon = (title: string) => {
+    if (title.toLowerCase().includes('erro') || title.toLowerCase().includes('falha')) {
+      return <AlertCircle className="h-5 w-5 text-red-500" />;
+    }
+    if (title.toLowerCase().includes('sucesso') || title.toLowerCase().includes('concluído')) {
+      return <CheckCircle className="h-5 w-5 text-green-500" />;
+    }
+    return <Info className="h-5 w-5 text-blue-500" />;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+      return diffInMinutes <= 1 ? 'Agora mesmo' : `${diffInMinutes} min atrás`;
+    }
+    
+    if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h atrás`;
+    }
+    
+    return date.toLocaleDateString('pt-BR');
+  };
+
+  const filteredNotificacoes = notificacoes.filter(notif => {
+    switch (filter) {
+      case "unread": return !notif.read;
+      case "read": return notif.read;
+      default: return true;
+    }
+  });
+
+  const unreadCount = notificacoes.filter(n => !n.read).length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto py-8 px-4 md:px-6 animate-fade-in">
-      <Card className="bg-card shadow-xl rounded-lg border">
-        <CardHeader className="border-b">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-2xl font-semibold text-card-foreground">Todas as Notificações</CardTitle>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={marcarTodasComoLidas}
-                disabled={naoLidasCount === 0}
-              >
-                <Check className="mr-2 h-4 w-4" /> Marcar todas como lidas
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={limparNotificacoesLidas}
-                disabled={notificacoes.filter(n => n.read).length === 0}
-              >
-                <BellOff className="mr-2 h-4 w-4" /> Limpar lidas
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {carregando ? (
-            <div className="p-10 text-center text-muted-foreground">
-                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary mb-4" />
-                <p className="text-lg">Carregando notificações...</p>
-            </div>
-          ) : notificacoes.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">
-              <BellOff className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-lg">Você não tem nenhuma notificação no momento.</p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {notificacoes.map(notificacao => (
-                <li 
-                  key={notificacao.id} 
-                  className={cn(
-                    "p-4 transition-colors duration-150 flex items-start",
-                    notificacao.read ? "bg-card hover:bg-muted/30" : "bg-primary/10 hover:bg-primary/20 font-medium",
-                    notificacao.link && "cursor-pointer"
-                  )}
-                  onClick={() => {
-                    if (!notificacao.read) marcarComoLida(notificacao.id);
-                    if (notificacao.link) navigate(notificacao.link);
-                  }}
-                >
-                  {getIconForType(notificacao.type)}
-                  <div className="flex-grow">
-                    <div className="flex justify-between items-start">
-                        <h3 className={cn(
-                            "text-md",
-                            !notificacao.read ? "text-primary" : "text-card-foreground"
-                        )}>
-                            {notificacao.title}
-                        </h3>
-                        {!notificacao.read && (
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={(e) => { 
-                                    e.stopPropagation(); // Evita que o clique na li seja acionado também
-                                    marcarComoLida(notificacao.id); 
-                                }}
-                                className="text-xs text-primary hover:text-primary/80 px-2 py-1 h-auto"
-                            >
-                                <Check className="mr-1 h-3 w-3" /> Marcar como lida
-                            </Button>
-                        )}
-                    </div> 
-                    <p className="text-sm text-muted-foreground mt-1">{notificacao.message}</p>
-                    <p className="text-xs text-muted-foreground mt-2">{formatarTempoNotificacao(notificacao.timestamp)}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+    <div className="space-y-6 animate-fade-in p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-bold flex items-center gap-2">
+            <Bell className="h-8 w-8 text-turquesa" />
+            Notificações
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {unreadCount}
+              </Badge>
+            )}
+          </h2>
+          <p className="text-muted-foreground">
+            Gerencie suas notificações e alertas do sistema
+          </p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Select value={filter} onValueChange={(value: any) => setFilter(value)}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="unread">Não lidas</SelectItem>
+              <SelectItem value="read">Lidas</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {unreadCount > 0 && (
+            <Button 
+              onClick={markAllAsRead}
+              variant="outline"
+              className="whitespace-nowrap"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Marcar todas como lidas
+            </Button>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {filteredNotificacoes.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <BellOff className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                {filter === "all" ? "Nenhuma notificação" : 
+                 filter === "unread" ? "Nenhuma notificação não lida" : 
+                 "Nenhuma notificação lida"}
+              </h3>
+              <p className="text-muted-foreground">
+                {filter === "all" ? "Você não possui notificações no momento." :
+                 filter === "unread" ? "Todas as suas notificações foram lidas." :
+                 "Você não possui notificações lidas."}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredNotificacoes.map((notificacao) => (
+            <Card key={notificacao.id} className={`transition-all ${!notificacao.read ? 'border-turquesa/50 bg-turquesa/5' : ''}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex gap-3 flex-1">
+                    {getNotificationIcon(notificacao.title)}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className={`font-medium ${!notificacao.read ? 'font-semibold' : ''}`}>
+                          {notificacao.title}
+                        </h4>
+                        {!notificacao.read && (
+                          <div className="w-2 h-2 bg-turquesa rounded-full"></div>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {notificacao.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(notificacao.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-1">
+                    {!notificacao.read && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => markAsRead(notificacao.id)}
+                      >
+                        <Check className="h-3 w-3" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteNotification(notificacao.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }
-

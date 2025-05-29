@@ -219,7 +219,7 @@ export default function ProntuarioMedico() {
                   <div className="flex gap-2">
                     <Button 
                       variant="outline" 
-                      onClick={() => navigate(`/pacientes/${id}/prontuario/imprimir`)} 
+                      onClick={() => navigate(`/pacientes/${id}/prontuario/${currentProntuario.id}/imprimir`)} 
                       className="flex items-center gap-1"
                     >
                       Imprimir

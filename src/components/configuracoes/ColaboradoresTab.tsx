@@ -1,391 +1,359 @@
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Plus, UserPlus, Mail, X, Check, Info } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Loader2, Plus, Edit, Trash2, Mail, User } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription
-} from "@/components/ui/dialog";
 
 interface Colaborador {
   id: string;
   nome: string;
   email: string;
-  permissao: "admin" | "editor" | "visualizador";
-  status: "ativo" | "pendente" | "inativo";
+  permissao: string;
+  status: string;
+  empresa_id: string;
+  empresa_nome: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export function ColaboradoresTab() {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
-  const [carregando, setCarregando] = useState(true);
-  const [novoColaborador, setNovoColaborador] = useState({ nome: "", email: "", permissao: "visualizador" });
-  const [exibirFormulario, setExibirFormulario] = useState(false);
-  const [visualizandoColaborador, setVisualizandoColaborador] = useState<Colaborador | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const isMobile = useIsMobile();
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingColaborador, setEditingColaborador] = useState<Colaborador | null>(null);
+  const [formData, setFormData] = useState({
+    nome: "",
+    email: "",
+    permissao: "visualizar",
+    status: "ativo"
+  });
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Usar dados mockados sempre
   useEffect(() => {
-    const fetchColaboradores = async () => {
-      setCarregando(true);
-      try {
-        // Usar dados mockados
-        setColaboradores([
-          { 
-            id: "1", 
-            nome: "Admin Principal", 
-            email: "admin@exemplo.com", 
-            permissao: "admin", 
-            status: "ativo" 
-          },
-          { 
-            id: "2", 
-            nome: "Maria Silva", 
-            email: "maria@exemplo.com", 
-            permissao: "editor", 
-            status: "ativo" 
-          },
-          { 
-            id: "3", 
-            nome: "João Pereira", 
-            email: "joao@exemplo.com", 
-            permissao: "visualizador", 
-            status: "pendente" 
-          }
-        ]);
-      } catch (error) {
-        console.error("Erro:", error);
-        // Use dados mockados em caso de erro
-        setColaboradores([
-          { 
-            id: "1", 
-            nome: "Admin Principal", 
-            email: "admin@exemplo.com", 
-            permissao: "admin", 
-            status: "ativo" 
-          },
-          { 
-            id: "2", 
-            nome: "Maria Silva", 
-            email: "maria@exemplo.com", 
-            permissao: "editor", 
-            status: "ativo" 
-          },
-          { 
-            id: "3", 
-            nome: "João Pereira", 
-            email: "joao@exemplo.com", 
-            permissao: "visualizador", 
-            status: "pendente" 
-          }
-        ]);
-      } finally {
-        setCarregando(false);
-      }
-    };
-
+    fetchCurrentUser();
     fetchColaboradores();
   }, []);
 
-  const handleConvidarColaborador = async () => {
-    if (!novoColaborador.nome || !novoColaborador.email) {
-      toast.error("Preencha nome e email do colaborador");
+  const fetchCurrentUser = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: userData } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        setCurrentUser(userData);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar usuário atual:', error);
+    }
+  };
+
+  const fetchColaboradores = async () => {
+    try {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
+
+      // Buscar colaboradores da empresa do usuário atual
+      const { data: userData } = await supabase
+        .from('usuarios')
+        .select('clinica_nome')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userData?.clinica_nome) {
+        const { data: colaboradoresData, error } = await supabase
+          .from('colaboradores')
+          .select('*')
+          .eq('empresa_nome', userData.clinica_nome)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setColaboradores(colaboradoresData || []);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar colaboradores:', error);
+      toast.error('Erro ao carregar colaboradores');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!currentUser?.clinica_nome) {
+      toast.error('Nome da clínica não encontrado');
       return;
     }
 
     try {
-      // Simular envio de convite
-      const novoId = Math.random().toString(36).substring(2, 11);
-      
-      const novoColab: Colaborador = {
-        id: novoId,
-        nome: novoColaborador.nome,
-        email: novoColaborador.email,
-        permissao: novoColaborador.permissao as "admin" | "editor" | "visualizador",
-        status: "pendente"
+      const colaboradorData = {
+        ...formData,
+        empresa_nome: currentUser.clinica_nome,
+        empresa_id: currentUser.id
       };
-      
-      setColaboradores([...colaboradores, novoColab]);
-      setNovoColaborador({ nome: "", email: "", permissao: "visualizador" });
-      setExibirFormulario(false);
-      
-      toast.success("Convite enviado com sucesso!");
-    } catch (error) {
-      console.error("Erro ao enviar convite:", error);
-      toast.error("Erro ao enviar convite. Tente novamente.");
+
+      if (editingColaborador) {
+        const { error } = await supabase
+          .from('colaboradores')
+          .update(colaboradorData)
+          .eq('id', editingColaborador.id);
+
+        if (error) throw error;
+        toast.success('Colaborador atualizado com sucesso!');
+      } else {
+        const { error } = await supabase
+          .from('colaboradores')
+          .insert(colaboradorData);
+
+        if (error) throw error;
+        toast.success('Colaborador adicionado com sucesso!');
+      }
+
+      setIsDialogOpen(false);
+      setEditingColaborador(null);
+      setFormData({ nome: "", email: "", permissao: "visualizar", status: "ativo" });
+      fetchColaboradores();
+    } catch (error: any) {
+      console.error('Erro ao salvar colaborador:', error);
+      toast.error(`Erro ao salvar: ${error.message}`);
     }
   };
 
-  const handleReenviarConvite = (id: string) => {
-    toast.success("Convite reenviado com sucesso!");
+  const handleEdit = (colaborador: Colaborador) => {
+    setEditingColaborador(colaborador);
+    setFormData({
+      nome: colaborador.nome,
+      email: colaborador.email,
+      permissao: colaborador.permissao,
+      status: colaborador.status
+    });
+    setIsDialogOpen(true);
   };
 
-  const handleCancelarConvite = (id: string) => {
-    setColaboradores(colaboradores.filter(col => col.id !== id));
-    toast.success("Convite cancelado com sucesso!");
-  };
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja remover este colaborador?')) return;
 
-  const handleViewColaboradorDetails = (colaborador: Colaborador) => {
-    setVisualizandoColaborador(colaborador);
-    setDialogOpen(true);
-  };
+    try {
+      const { error } = await supabase
+        .from('colaboradores')
+        .delete()
+        .eq('id', id);
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
-  const getPermissaoLabel = (permissao: string) => {
-    switch(permissao) {
-      case "admin": return "Administrador";
-      case "editor": return "Editor";
-      case "visualizador": return "Visualizador";
-      default: return permissao;
+      if (error) throw error;
+      toast.success('Colaborador removido com sucesso!');
+      fetchColaboradores();
+    } catch (error: any) {
+      console.error('Erro ao remover colaborador:', error);
+      toast.error(`Erro ao remover: ${error.message}`);
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch(status) {
-      case "ativo": return "Ativo";
-      case "pendente": return "Pendente";
-      case "inativo": return "Inativo";
-      default: return status;
-    }
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      ativo: "default",
+      pendente: "secondary",
+      inativo: "destructive"
+    } as const;
+
+    return (
+      <Badge variant={variants[status as keyof typeof variants] || "default"}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
   };
+
+  const getPermissaoBadge = (permissao: string) => {
+    const colors = {
+      admin: "bg-red-100 text-red-800",
+      editar: "bg-blue-100 text-blue-800",
+      visualizar: "bg-green-100 text-green-800"
+    } as const;
+
+    return (
+      <Badge className={colors[permissao as keyof typeof colors] || "bg-gray-100 text-gray-800"}>
+        {permissao.charAt(0).toUpperCase() + permissao.slice(1)}
+      </Badge>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <>
-      <Card className="w-full">
-        <CardHeader>
-          <div className="flex justify-between items-center flex-wrap gap-2">
-            <div>
-              <CardTitle>Colaboradores</CardTitle>
-              <CardDescription>Gerencie o acesso de colaboradores à sua clínica</CardDescription>
-            </div>
-            <Button 
-              onClick={() => setExibirFormulario(!exibirFormulario)}
-              className="bg-turquesa hover:bg-turquesa/90"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              {isMobile ? "Convidar" : "Convidar Colaborador"}
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-medium">Gerenciar Colaboradores</h3>
+          <p className="text-sm text-muted-foreground">
+            Adicione e gerencie os membros da sua equipe
+          </p>
+        </div>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-turquesa hover:bg-turquesa/90">
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Colaborador
             </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {exibirFormulario && (
-            <div className="bg-muted/20 p-4 rounded-lg mb-6 border">
-              <h3 className="text-base font-medium mb-3">Novo Colaborador</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Nome</label>
-                  <Input 
-                    placeholder="Nome do colaborador" 
-                    value={novoColaborador.nome}
-                    onChange={(e) => setNovoColaborador({...novoColaborador, nome: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">E-mail</label>
-                  <Input 
-                    placeholder="email@exemplo.com" 
-                    type="email"
-                    value={novoColaborador.email}
-                    onChange={(e) => setNovoColaborador({...novoColaborador, email: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Permissão</label>
-                  <Select 
-                    value={novoColaborador.permissao}
-                    onValueChange={(value) => setNovoColaborador({...novoColaborador, permissao: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a permissão" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="editor">Editor</SelectItem>
-                      <SelectItem value="visualizador">Visualizador</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end gap-2">
-                  <Button 
-                    onClick={handleConvidarColaborador}
-                    className="bg-turquesa hover:bg-turquesa/90"
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Enviar Convite
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setExibirFormulario(false)}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingColaborador ? 'Editar Colaborador' : 'Novo Colaborador'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="nome">Nome</Label>
+                <Input
+                  id="nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                  required
+                />
               </div>
-            </div>
-          )}
+              <div>
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="permissao">Permissão</Label>
+                <Select 
+                  value={formData.permissao} 
+                  onValueChange={(value) => setFormData({...formData, permissao: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="visualizar">Visualizar</SelectItem>
+                    <SelectItem value="editar">Editar</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={formData.status} 
+                  onValueChange={(value) => setFormData({...formData, status: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ativo">Ativo</SelectItem>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="inativo">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    setEditingColaborador(null);
+                    setFormData({ nome: "", email: "", permissao: "visualizar", status: "ativo" });
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-turquesa hover:bg-turquesa/90">
+                  {editingColaborador ? 'Atualizar' : 'Adicionar'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-          {carregando ? (
-            <div className="flex justify-center py-6">
-              <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
-            </div>
-          ) : colaboradores.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground mb-4">Nenhum colaborador encontrado</p>
+      <div className="grid gap-4">
+        {colaboradores.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">Nenhum colaborador encontrado</h3>
+              <p className="text-muted-foreground mb-4">
+                Adicione membros à sua equipe para começar a colaborar.
+              </p>
               <Button 
-                onClick={() => setExibirFormulario(true)}
+                onClick={() => setIsDialogOpen(true)}
                 className="bg-turquesa hover:bg-turquesa/90"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Adicionar Colaborador
+                Adicionar Primeiro Colaborador
               </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {colaboradores.map((colaborador) => (
-                <div 
-                  key={colaborador.id}
-                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border rounded-lg gap-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback>{getInitials(colaborador.nome)}</AvatarFallback>
-                    </Avatar>
+            </CardContent>
+          </Card>
+        ) : (
+          colaboradores.map((colaborador) => (
+            <Card key={colaborador.id}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-turquesa/10 rounded-full flex items-center justify-center">
+                      <User className="h-5 w-5 text-turquesa" />
+                    </div>
                     <div>
-                      <p className="font-medium">{colaborador.nome}</p>
-                      <p className="text-sm text-muted-foreground">{colaborador.email}</p>
+                      <h4 className="font-medium">{colaborador.nome}</h4>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Mail className="h-3 w-3" />
+                        {colaborador.email}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 ml-auto items-center">
-                    <Badge variant={colaborador.status === "ativo" ? "secondary" : colaborador.status === "pendente" ? "outline" : "destructive"}>
-                      {colaborador.status === "ativo" ? "Ativo" : colaborador.status === "pendente" ? "Pendente" : "Inativo"}
-                    </Badge>
-                    
-                    <Badge variant="secondary" className="capitalize">
-                      {colaborador.permissao === "admin" ? "Administrador" : 
-                       colaborador.permissao === "editor" ? "Editor" : "Visualizador"}
-                    </Badge>
-                    
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleViewColaboradorDetails(colaborador)}
-                      >
-                        <Info className="h-3.5 w-3.5 mr-1" />
-                        <span className="hidden sm:inline">Detalhes</span>
-                      </Button>
-                      
-                      {colaborador.status === "pendente" && (
-                        <>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleReenviarConvite(colaborador.id)}
-                          >
-                            <Mail className="h-3.5 w-3.5 mr-1" />
-                            <span className="hidden sm:inline">Reenviar</span>
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => handleCancelarConvite(colaborador.id)}
-                          >
-                            <X className="h-3.5 w-3.5 mr-1" />
-                            <span className="hidden sm:inline">Cancelar</span>
-                          </Button>
-                        </>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2">
+                    {getPermissaoBadge(colaborador.permissao)}
+                    {getStatusBadge(colaborador.status)}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(colaborador)}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(colaborador.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Dialog for collaborator details */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Detalhes do Colaborador</DialogTitle>
-            <DialogDescription>
-              Informações sobre o colaborador e suas permissões
-            </DialogDescription>
-          </DialogHeader>
-          
-          {visualizandoColaborador && (
-            <div className="space-y-4">
-              <div className="flex flex-col items-center gap-3 pb-3 border-b">
-                <Avatar className="h-16 w-16">
-                  <AvatarFallback className="text-lg">{getInitials(visualizandoColaborador.nome)}</AvatarFallback>
-                </Avatar>
-                <div className="text-center">
-                  <h3 className="font-medium text-lg">{visualizandoColaborador.nome}</h3>
-                  <p className="text-sm text-muted-foreground">{visualizandoColaborador.email}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Status</h4>
-                  <Badge variant={visualizandoColaborador.status === "ativo" ? "secondary" : visualizandoColaborador.status === "pendente" ? "outline" : "destructive"}>
-                    {getStatusLabel(visualizandoColaborador.status)}
-                  </Badge>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Permissão</h4>
-                  <Badge variant="secondary">
-                    {getPermissaoLabel(visualizandoColaborador.permissao)}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="pt-3 mt-3 border-t">
-                <h4 className="text-sm font-medium mb-2">Descrição das Permissões</h4>
-                <div className="text-sm text-muted-foreground space-y-2">
-                  {visualizandoColaborador.permissao === "admin" && (
-                    <p>Acesso total ao sistema, incluindo gerenciamento de colaboradores, pacientes e configurações da clínica.</p>
-                  )}
-                  {visualizandoColaborador.permissao === "editor" && (
-                    <p>Pode criar e editar registros de pacientes e medições, mas não tem acesso às configurações administrativas.</p>
-                  )}
-                  {visualizandoColaborador.permissao === "visualizador" && (
-                    <p>Acesso somente para visualização de pacientes e medições, sem permissão para criar ou editar registros.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setDialogOpen(false)}
-            >
-              Fechar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
