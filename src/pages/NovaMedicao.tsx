@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MedicaoForm } from "@/components/medicoes/MedicaoForm";
+import MedicaoForm from "@/components/medicoes/MedicaoForm";
 import { ChevronLeft, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
