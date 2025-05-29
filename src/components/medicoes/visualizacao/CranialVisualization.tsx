@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,7 +34,7 @@ interface CranialVisualizationProps {
   sexoPaciente?: 'M' | 'F';
   diagnosis?: CranialDiagnosis;
   individualClassifications?: IndividualClassification;
-  dataNascimento?: string; // Adicionado para calcular idade correta
+  dataNascimento?: string;
 }
 
 export default function CranialVisualization({
@@ -46,12 +47,27 @@ export default function CranialVisualization({
   individualClassifications,
   dataNascimento
 }: CranialVisualizationProps) {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("resumo");
 
   // Calcular índices da medição atual
   const indiceCraniano = (currentMeasurement.largura / currentMeasurement.comprimento) * 100;
   const diferencaDiagonais = Math.abs(currentMeasurement.diagonalD - currentMeasurement.diagonalE);
   const cvai = (diferencaDiagonais / Math.max(currentMeasurement.diagonalD, currentMeasurement.diagonalE)) * 100;
+
+  // Função para determinar a classe de cor com base no valor do índice craniano
+  const getIndiceClasse = (valor: number) => {
+    if (valor >= 76 && valor <= 81) return "text-green-600"; // Normal
+    if (valor > 81) return "text-amber-500"; // Braquicefalia
+    return "text-amber-500"; // Dolicocefalia
+  };
+
+  // Função para determinar a classe de cor com base no valor do CVAI
+  const getCvaiClasse = (valor: number) => {
+    if (valor < 3.5) return "text-green-600"; // Normal
+    if (valor < 6.25) return "text-yellow-500"; // Leve
+    if (valor < 8.75) return "text-amber-500"; // Moderada
+    return "text-red-500"; // Severa
+  };
 
   return (
     <div className="space-y-6">
@@ -104,44 +120,105 @@ export default function CranialVisualization({
         </Card>
       </div>
 
-      {/* Detailed Analysis Tabs */}
+      {/* Detailed Analysis Tabs - Removed "Métricas" tab to eliminate redundancy */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Resumo</TabsTrigger>
-          <TabsTrigger value="evolution">Evolução</TabsTrigger>
-          <TabsTrigger value="shape">Formato</TabsTrigger>
-          <TabsTrigger value="metrics">Métricas</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="resumo">Parâmetros Cranianos</TabsTrigger>
+          <TabsTrigger value="evolucao">Evolução</TabsTrigger>
+          <TabsTrigger value="formato">Formato</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value="resumo" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Resumo da Avaliação</CardTitle>
+              <CardTitle>Parâmetros Cranianos Completos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Consolidated section with all cranial parameters */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                {/* Medições Básicas */}
                 <div>
-                  <h4 className="font-medium text-sm text-muted-foreground">Comprimento</h4>
-                  <p className="text-lg font-semibold">{currentMeasurement.comprimento} mm</p>
+                  <p className="text-sm text-muted-foreground">Comprimento</p>
+                  <p className="text-lg font-medium">{currentMeasurement.comprimento} mm</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm text-muted-foreground">Largura</h4>
-                  <p className="text-lg font-semibold">{currentMeasurement.largura} mm</p>
+                  <p className="text-sm text-muted-foreground">Largura</p>
+                  <p className="text-lg font-medium">{currentMeasurement.largura} mm</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm text-muted-foreground">Diagonal D</h4>
-                  <p className="text-lg font-semibold">{currentMeasurement.diagonalD} mm</p>
+                  <p className="text-sm text-muted-foreground">Índice Craniano</p>
+                  <p className={`text-lg font-medium ${getIndiceClasse(indiceCraniano)}`}>
+                    {indiceCraniano.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">Normal: 76-81%</p>
+                </div>
+                
+                {/* Diagonais */}
+                <div>
+                  <p className="text-sm text-muted-foreground">Diagonal D</p>
+                  <p className="text-lg font-medium">{currentMeasurement.diagonalD} mm</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm text-muted-foreground">Diagonal E</h4>
-                  <p className="text-lg font-semibold">{currentMeasurement.diagonalE} mm</p>
+                  <p className="text-sm text-muted-foreground">Diagonal E</p>
+                  <p className="text-lg font-medium">{currentMeasurement.diagonalE} mm</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Diferença Diagonais</p>
+                  <p className="text-lg font-medium">{diferencaDiagonais.toFixed(1)} mm</p>
+                  <p className="text-xs text-muted-foreground">
+                    |Diagonal D - Diagonal E|
+                  </p>
+                </div>
+                
+                {/* CVAI e Status */}
+                <div>
+                  <p className="text-sm text-muted-foreground">CVAI</p>
+                  <p className={`text-lg font-medium ${getCvaiClasse(cvai)}`}>
+                    {cvai.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">Normal: &lt; 3.5%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status Geral</p>
+                  <div className="mt-1">
+                    <StatusBadge 
+                      status={severity} 
+                      asymmetryType={asymmetryType}
+                      diagnosis={diagnosis}
+                      showAsymmetryType={true}
+                    />
+                  </div>
+                </div>
+                
+                {/* Perímetro Cefálico */}
+                {currentMeasurement.perimetroCefalico && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Perímetro Cefálico</p>
+                    <p className="text-lg font-medium">{currentMeasurement.perimetroCefalico} mm</p>
+                    <p className="text-xs text-muted-foreground">
+                      Circunferência da cabeça
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Fórmulas de Referência */}
+              <div className="mt-6 pt-4 border-t">
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Fórmulas de Cálculo</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground">
+                  <div>
+                    <span className="font-medium">Índice Craniano:</span> (Largura ÷ Comprimento) × 100
+                  </div>
+                  <div>
+                    <span className="font-medium">CVAI:</span> (|Diagonal D - Diagonal E| ÷ Diagonal Maior) × 100
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="evolution" className="space-y-4">
+        <TabsContent value="evolucao" className="space-y-4">
           <div className="grid gap-6">
             <Card>
               <CardHeader>
@@ -192,7 +269,7 @@ export default function CranialVisualization({
           </div>
         </TabsContent>
 
-        <TabsContent value="shape" className="space-y-4">
+        <TabsContent value="formato" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Visualização do Formato Craniano</CardTitle>
@@ -212,51 +289,8 @@ export default function CranialVisualization({
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="metrics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Métricas Detalhadas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium text-sm text-muted-foreground">Índice Craniano</h4>
-                    <p className="text-xl font-bold">{indiceCraniano.toFixed(2)}%</p>
-                    <p className="text-xs text-muted-foreground">
-                      (Largura ÷ Comprimento) × 100
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-sm text-muted-foreground">CVAI</h4>
-                    <p className="text-xl font-bold">{cvai.toFixed(2)}%</p>
-                    <p className="text-xs text-muted-foreground">
-                      Índice de Assimetria da Abóbada Craniana
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-sm text-muted-foreground">Diferença de Diagonais</h4>
-                    <p className="text-xl font-bold">{diferencaDiagonais.toFixed(1)} mm</p>
-                    <p className="text-xs text-muted-foreground">
-                      |Diagonal D - Diagonal E|
-                    </p>
-                  </div>
-                  {currentMeasurement.perimetroCefalico && (
-                    <div>
-                      <h4 className="font-medium text-sm text-muted-foreground">Perímetro Cefálico</h4>
-                      <p className="text-xl font-bold">{currentMeasurement.perimetroCefalico} mm</p>
-                      <p className="text-xs text-muted-foreground">
-                        Circunferência da cabeça
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
