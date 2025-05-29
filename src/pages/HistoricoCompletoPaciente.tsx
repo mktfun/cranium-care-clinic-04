@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -252,6 +251,7 @@ export default function HistoricoCompletoPaciente() {
               <MedicoesHistoricoTable 
                 medicoes={medicoes}
                 dataNascimento={paciente.data_nascimento}
+                showReportButtons={true}
                 className="w-full"
               />
             </CardContent>
