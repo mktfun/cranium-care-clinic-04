@@ -29,7 +29,7 @@ interface MeasurementHistoryProps {
   metricType: 'indiceCraniano' | 'cvai' | 'perimetroCefalico';
   colorTheme?: string;
   sexoPaciente?: 'M' | 'F';
-  dataNascimento?: string; // Adicionado para calcular idade correta
+  dataNascimento?: string;
 }
 
 // Função para calcular idade em meses com precisão decimal
@@ -37,29 +37,14 @@ function calcularIdadeEmMeses(dataNascimento: string, dataMedicao: string): numb
   const nascimento = new Date(dataNascimento);
   const medicao = new Date(dataMedicao);
   
-  // Calcular diferença em anos e meses
-  let anos = medicao.getFullYear() - nascimento.getFullYear();
-  let meses = medicao.getMonth() - nascimento.getMonth();
-  let dias = medicao.getDate() - nascimento.getDate();
+  // Calcular diferença em milissegundos
+  const diffTime = medicao.getTime() - nascimento.getTime();
   
-  // Ajustar se os dias são negativos
-  if (dias < 0) {
-    meses--;
-    // Adicionar os dias do mês anterior
-    const ultimoDiaMesAnterior = new Date(medicao.getFullYear(), medicao.getMonth(), 0).getDate();
-    dias += ultimoDiaMesAnterior;
-  }
+  // Converter para meses (aproximadamente 30.44 dias por mês)
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  const diffMonths = diffDays / 30.44;
   
-  // Ajustar se os meses são negativos
-  if (meses < 0) {
-    anos--;
-    meses += 12;
-  }
-  
-  // Converter para meses decimais (aproximando dias como fração do mês)
-  const totalMeses = anos * 12 + meses + (dias / 30);
-  
-  return Math.round(totalMeses * 100) / 100; // Arredondar para 2 casas decimais
+  return Math.max(0, diffMonths); // Garantir que não seja negativo
 }
 
 export default function MeasurementEvolutionChart({
@@ -131,6 +116,16 @@ export default function MeasurementEvolutionChart({
     }
   }
   
+  // Calcular domínio do eixo X para zoom automático
+  const idades = chartData.map(d => d.idadeEmMeses);
+  const minIdade = Math.min(...idades);
+  const maxIdade = Math.max(...idades);
+  
+  // Adicionar margem para melhor visualização
+  const margemMeses = Math.max(1, (maxIdade - minIdade) * 0.1); // 10% de margem ou mínimo 1 mês
+  const xDomainMin = Math.max(0, minIdade - margemMeses);
+  const xDomainMax = maxIdade + margemMeses;
+  
   // Configurar limites e referências baseados no tipo de métrica
   let yDomain, normalMin, normalMax, referenceLines, gradientColors;
   
@@ -199,10 +194,6 @@ export default function MeasurementEvolutionChart({
     };
   };
   
-  // Determinar o domínio do eixo X baseado na idade máxima
-  const maxIdade = Math.max(...chartData.map(d => d.idadeEmMeses), 12); // Mínimo de 12 meses para visualização
-  const xDomain = [0, Math.ceil(maxIdade * 1.1)]; // Adicionar 10% de margem
-  
   return (
     <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">
@@ -216,7 +207,7 @@ export default function MeasurementEvolutionChart({
             stroke="#64748b"
             tick={{ fontSize: getFontSize() }}
             tickMargin={10}
-            domain={xDomain}
+            domain={[xDomainMin, xDomainMax]}
             type="number"
             tickFormatter={(value) => `${Math.round(value)}m`}
             label={{ 
