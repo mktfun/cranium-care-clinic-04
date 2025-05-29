@@ -15,11 +15,20 @@ interface DadosPessoaisTabProps {
 }
 
 export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoaisTabProps) {
-  const [localPeso, setLocalPeso] = useState(prontuario?.peso || "");
-  const [localAltura, setLocalAltura] = useState(prontuario?.altura || "");
-  const [localTipoSanguineo, setLocalTipoSanguineo] = useState(prontuario?.tipo_sanguineo || "");
-  const [localAlergias, setLocalAlergias] = useState(prontuario?.alergias || "");
-  const [localObservacoesGerais, setLocalObservacoesGerais] = useState(prontuario?.observacoes_gerais || "");
+  const [localPeso, setLocalPeso] = useState("");
+  const [localAltura, setLocalAltura] = useState("");
+  const [localTipoSanguineo, setLocalTipoSanguineo] = useState("");
+  const [localAlergias, setLocalAlergias] = useState("");
+  const [localObservacoesGerais, setLocalObservacoesGerais] = useState("");
+
+  // Sincronizar com dados do prontuário quando ele mudar
+  useEffect(() => {
+    setLocalPeso(prontuario?.peso?.toString() || "");
+    setLocalAltura(prontuario?.altura?.toString() || "");
+    setLocalTipoSanguineo(prontuario?.tipo_sanguineo || "");
+    setLocalAlergias(prontuario?.alergias || "");
+    setLocalObservacoesGerais(prontuario?.observacoes_gerais || "");
+  }, [prontuario]);
 
   // Debounce values before saving
   const debouncedPeso = useDebounce(localPeso, 1000);
@@ -30,14 +39,14 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
 
   // Auto-save when debounced values change
   useEffect(() => {
-    if (debouncedPeso !== (prontuario?.peso || "")) {
-      onUpdate?.("peso", debouncedPeso);
+    if (debouncedPeso !== (prontuario?.peso?.toString() || "")) {
+      onUpdate?.("peso", debouncedPeso ? parseFloat(debouncedPeso) : null);
     }
   }, [debouncedPeso, prontuario?.peso, onUpdate]);
 
   useEffect(() => {
-    if (debouncedAltura !== (prontuario?.altura || "")) {
-      onUpdate?.("altura", debouncedAltura);
+    if (debouncedAltura !== (prontuario?.altura?.toString() || "")) {
+      onUpdate?.("altura", debouncedAltura ? parseFloat(debouncedAltura) : null);
     }
   }, [debouncedAltura, prontuario?.altura, onUpdate]);
 

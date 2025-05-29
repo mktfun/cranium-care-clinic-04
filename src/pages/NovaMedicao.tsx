@@ -21,9 +21,13 @@ export default function NovaMedicao() {
   
   // Check if coming from photo page with measurements or from manual button
   const fromManualButton = location.state?.fromManualButton === true;
+  const fromProntuario = location.state?.fromProntuario === true;
+  const prontuarioId = location.state?.prontuarioId;
   const photoData = location.state?.photoProcessed ? location.state : null;
   
   console.log("fromManualButton:", fromManualButton);
+  console.log("fromProntuario:", fromProntuario);
+  console.log("prontuarioId:", prontuarioId);
   console.log("photoData:", photoData);
   
   const [paciente, setPaciente] = useState<any>(null);
@@ -78,14 +82,15 @@ export default function NovaMedicao() {
           
           setMedicaoData(new Date().toISOString().split("T")[0]);
           
-          // Fixed the redirection logic to respect fromManualButton
+          // Fixed the redirection logic to respect fromManualButton and fromProntuario
           console.log("Checking navigation conditions");
           console.log("photoData:", !!photoData);
           console.log("fromManualButton:", fromManualButton);
+          console.log("fromProntuario:", fromProntuario);
           
-          // Only redirect if there's no photo data AND we didn't explicitly come from manual button
-          if (!photoData && !fromManualButton) {
-            console.log("Redirecting to photo page - no data and not from manual button");
+          // Only redirect if there's no photo data AND we didn't explicitly come from manual button or prontuario
+          if (!photoData && !fromManualButton && !fromProntuario) {
+            console.log("Redirecting to photo page - no data and not from manual button or prontuario");
             navigate(`/pacientes/${id}/medicao-por-foto`, { replace: true });
             return;
           } else {
@@ -106,7 +111,7 @@ export default function NovaMedicao() {
     }
     
     loadPacienteData();
-  }, [id, navigate, photoData, fromManualButton]);
+  }, [id, navigate, photoData, fromManualButton, fromProntuario]);
   
   // Processar dados da foto, se disponíveis
   useEffect(() => {
@@ -186,7 +191,8 @@ export default function NovaMedicao() {
           perimetro_cefalico: Number(perimetroCefalico),
           status: severityLevel,
           observacoes: observacoes || null,
-          recomendacoes: generateRecomendacoes(severityLevel)
+          recomendacoes: generateRecomendacoes(severityLevel),
+          prontuario_id: prontuarioId || null // Vincular ao prontuário se fornecido
         };
         
         const { data, error } = await supabase
@@ -207,6 +213,9 @@ export default function NovaMedicao() {
         // Navegar para a visualização do relatório com a nova medição
         if (data && data[0]) {
           navigate(`/pacientes/${paciente.id}/relatorios/${data[0].id}`);
+        } else if (fromProntuario && prontuarioId) {
+          // Se veio do prontuário, voltar para o prontuário
+          navigate(`/pacientes/${paciente.id}/prontuario/${prontuarioId}`);
         } else {
           navigate(`/pacientes/${paciente.id}`);
         }
@@ -240,10 +249,13 @@ export default function NovaMedicao() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold">
-            {photoData ? "Revisão da Medição por Foto" : "Medição Manual"}
+            {photoData ? "Revisão da Medição por Foto" : fromProntuario ? "Nova Medição para Consulta" : "Medição Manual"}
           </h2>
           <p className="text-muted-foreground">
             Paciente: {paciente.nome} • {formatAgeHeader(paciente.data_nascimento)}
+            {fromProntuario && prontuarioId && (
+              <span className="ml-2 text-turquesa">• Para consulta específica</span>
+            )}
           </p>
         </div>
         {!photoData && (

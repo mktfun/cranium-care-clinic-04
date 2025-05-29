@@ -14,8 +14,14 @@ interface CondutaTabProps {
 }
 
 export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps) {
-  const [localConduta, setLocalConduta] = useState(prontuario?.conduta || "");
-  const [localAtestado, setLocalAtestado] = useState(prontuario?.atestado || "");
+  const [localConduta, setLocalConduta] = useState("");
+  const [localAtestado, setLocalAtestado] = useState("");
+
+  // Sincronizar com dados do prontuário quando ele mudar
+  useEffect(() => {
+    setLocalConduta(prontuario?.conduta || "");
+    setLocalAtestado(prontuario?.atestado || "");
+  }, [prontuario]);
 
   // Debounce values before saving
   const debouncedConduta = useDebounce(localConduta, 1000);

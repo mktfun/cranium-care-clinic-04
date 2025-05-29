@@ -14,7 +14,12 @@ interface PrescricaoTabProps {
 }
 
 export function PrescricaoTab({ prontuario, pacienteId, onUpdate }: PrescricaoTabProps) {
-  const [localPrescricao, setLocalPrescricao] = useState(prontuario?.prescricao || "");
+  const [localPrescricao, setLocalPrescricao] = useState("");
+
+  // Sincronizar com dados do prontuário quando ele mudar
+  useEffect(() => {
+    setLocalPrescricao(prontuario?.prescricao || "");
+  }, [prontuario]);
 
   // Debounce value before saving
   const debouncedPrescricao = useDebounce(localPrescricao, 1000);

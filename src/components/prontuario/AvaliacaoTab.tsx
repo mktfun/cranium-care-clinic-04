@@ -15,11 +15,20 @@ interface AvaliacaoTabProps {
 }
 
 export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabProps) {
-  const [localQueixaPrincipal, setLocalQueixaPrincipal] = useState(prontuario?.queixa_principal || "");
-  const [localIdadeGestacional, setLocalIdadeGestacional] = useState(prontuario?.idade_gestacional || "");
-  const [localIdadeCorrigida, setLocalIdadeCorrigida] = useState(prontuario?.idade_corrigida || "");
-  const [localObservacoesAnamnese, setLocalObservacoesAnamnese] = useState(prontuario?.observacoes_anamnese || "");
-  const [localAvaliacao, setLocalAvaliacao] = useState(prontuario?.avaliacao || "");
+  const [localQueixaPrincipal, setLocalQueixaPrincipal] = useState("");
+  const [localIdadeGestacional, setLocalIdadeGestacional] = useState("");
+  const [localIdadeCorrigida, setLocalIdadeCorrigida] = useState("");
+  const [localObservacoesAnamnese, setLocalObservacoesAnamnese] = useState("");
+  const [localAvaliacao, setLocalAvaliacao] = useState("");
+
+  // Sincronizar com dados do prontuário quando ele mudar
+  useEffect(() => {
+    setLocalQueixaPrincipal(prontuario?.queixa_principal || "");
+    setLocalIdadeGestacional(prontuario?.idade_gestacional || "");
+    setLocalIdadeCorrigida(prontuario?.idade_corrigida || "");
+    setLocalObservacoesAnamnese(prontuario?.observacoes_anamnese || "");
+    setLocalAvaliacao(prontuario?.avaliacao || "");
+  }, [prontuario]);
 
   // Debounce values before saving
   const debouncedQueixaPrincipal = useDebounce(localQueixaPrincipal, 1000);

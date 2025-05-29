@@ -225,6 +225,7 @@ export type Database = {
           pd: number | null
           pe: number | null
           perimetro_cefalico: number | null
+          prontuario_id: string | null
           recomendacoes: string[] | null
           status: Database["public"]["Enums"]["status_medicao"]
           tragus_d: number | null
@@ -250,6 +251,7 @@ export type Database = {
           pd?: number | null
           pe?: number | null
           perimetro_cefalico?: number | null
+          prontuario_id?: string | null
           recomendacoes?: string[] | null
           status: Database["public"]["Enums"]["status_medicao"]
           tragus_d?: number | null
@@ -275,6 +277,7 @@ export type Database = {
           pd?: number | null
           pe?: number | null
           perimetro_cefalico?: number | null
+          prontuario_id?: string | null
           recomendacoes?: string[] | null
           status?: Database["public"]["Enums"]["status_medicao"]
           tragus_d?: number | null
@@ -288,6 +291,13 @@ export type Database = {
             columns: ["paciente_id"]
             isOneToOne: false
             referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicoes_prontuario_id_fkey"
+            columns: ["prontuario_id"]
+            isOneToOne: false
+            referencedRelation: "prontuarios"
             referencedColumns: ["id"]
           },
         ]

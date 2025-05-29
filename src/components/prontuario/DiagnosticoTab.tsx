@@ -15,8 +15,14 @@ interface DiagnosticoTabProps {
 }
 
 export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: DiagnosticoTabProps) {
-  const [localDiagnostico, setLocalDiagnostico] = useState(prontuario?.diagnostico || "");
-  const [localCid, setLocalCid] = useState(prontuario?.cid || "");
+  const [localDiagnostico, setLocalDiagnostico] = useState("");
+  const [localCid, setLocalCid] = useState("");
+
+  // Sincronizar com dados do prontuário quando ele mudar
+  useEffect(() => {
+    setLocalDiagnostico(prontuario?.diagnostico || "");
+    setLocalCid(prontuario?.cid || "");
+  }, [prontuario]);
 
   // Debounce values before saving
   const debouncedDiagnostico = useDebounce(localDiagnostico, 1000);

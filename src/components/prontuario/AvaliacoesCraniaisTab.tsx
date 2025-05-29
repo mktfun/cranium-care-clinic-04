@@ -24,13 +24,15 @@ interface Medicao {
   status: string;
   observacoes?: string;
   recomendacoes?: string[];
+  prontuario_id?: string;
 }
 
 interface AvaliacoesCraniaisTabProps {
   pacienteId: string;
+  prontuarioId?: string; // Novo parâmetro para filtrar por prontuário
 }
 
-export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps) {
+export function AvaliacoesCraniaisTab({ pacienteId, prontuarioId }: AvaliacoesCraniaisTabProps) {
   const [medicoes, setMedicoes] = useState<Medicao[]>([]);
   const [paciente, setPaciente] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
 
   useEffect(() => {
     fetchData();
-  }, [pacienteId]);
+  }, [pacienteId, prontuarioId]);
 
   const fetchData = async () => {
     try {
@@ -54,12 +56,19 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
       if (pacienteError) throw pacienteError;
       setPaciente(pacienteData);
 
-      // Buscar medições cranianas
-      const { data: medicoesData, error: medicoesError } = await supabase
+      // Buscar medições cranianas - filtrando por prontuário se especificado
+      let query = supabase
         .from('medicoes')
         .select('*')
         .eq('paciente_id', pacienteId)
         .order('data', { ascending: false });
+      
+      // Se há um prontuarioId específico, filtrar apenas as medições deste prontuário
+      if (prontuarioId) {
+        query = query.eq('prontuario_id', prontuarioId);
+      }
+      
+      const { data: medicoesData, error: medicoesError } = await query;
       
       if (medicoesError) throw medicoesError;
       setMedicoes(medicoesData || []);
@@ -104,6 +113,18 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
     );
   };
 
+  const handleNovaMedicao = () => {
+    if (prontuarioId) {
+      // Se estamos em um prontuário específico, criar medição para este prontuário
+      navigate(`/pacientes/${pacienteId}/nova-medicao`, { 
+        state: { prontuarioId, fromProntuario: true } 
+      });
+    } else {
+      // Comportamento padrão - redirecionar para seleção
+      navigate(`/pacientes/${pacienteId}/nova-medicao`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -119,17 +140,21 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
           <h3 className="text-lg font-medium flex items-center gap-2">
             <Brain className="h-5 w-5 text-turquesa" />
             Avaliações Cranianas
+            {prontuarioId && <span className="text-sm text-muted-foreground">(desta consulta)</span>}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Histórico de medições e análises craniométricas
+            {prontuarioId 
+              ? "Medições associadas a esta consulta específica"
+              : "Histórico de medições e análises craniométricas"
+            }
           </p>
         </div>
         <Button 
-          onClick={() => navigate(`/pacientes/${pacienteId}/nova-medicao`)}
+          onClick={handleNovaMedicao}
           className="bg-turquesa hover:bg-turquesa/90"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Nova Medição
+          {prontuarioId ? "Nova Medição para Esta Consulta" : "Nova Medição"}
         </Button>
       </div>
 
@@ -137,16 +162,24 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
         <Card>
           <CardContent className="p-8 text-center">
             <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Nenhuma avaliação craniana encontrada</h3>
+            <h3 className="text-lg font-medium mb-2">
+              {prontuarioId 
+                ? "Nenhuma medição para esta consulta"
+                : "Nenhuma avaliação craniana encontrada"
+              }
+            </h3>
             <p className="text-muted-foreground mb-6">
-              Realize a primeira medição craniana para iniciar o acompanhamento.
+              {prontuarioId
+                ? "Realize uma medição craniana para esta consulta específica."
+                : "Realize a primeira medição craniana para iniciar o acompanhamento."
+              }
             </p>
             <Button 
-              onClick={() => navigate(`/pacientes/${pacienteId}/nova-medicao`)}
+              onClick={handleNovaMedicao}
               className="bg-turquesa hover:bg-turquesa/90"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Primeira Medição
+              {prontuarioId ? "Primeira Medição desta Consulta" : "Primeira Medição"}
             </Button>
           </CardContent>
         </Card>
@@ -164,7 +197,9 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-turquesa">{medicoes.length}</div>
-                  <div className="text-sm text-muted-foreground">Total de Medições</div>
+                  <div className="text-sm text-muted-foreground">
+                    {prontuarioId ? "Medições desta Consulta" : "Total de Medições"}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold">
@@ -189,7 +224,9 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
           {/* Lista de Medições */}
           <Card>
             <CardHeader>
-              <CardTitle>Histórico de Medições</CardTitle>
+              <CardTitle>
+                {prontuarioId ? "Medições desta Consulta" : "Histórico de Medições"}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -209,7 +246,9 @@ export function AvaliacoesCraniaisTab({ pacienteId }: AvaliacoesCraniaisTabProps
                         {getStatusBadge(medicao.status)}
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-muted-foreground">Medição #{medicoes.length - index}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Medição #{medicoes.length - index}
+                        </div>
                       </div>
                     </div>
 

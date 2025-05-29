@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ChevronLeft, FilePlus, FileText, Calendar, User, Clipboard, Stethoscope, Activity, Baby, Brain, FileCheck, History } from "lucide-react";
+import { Loader2, ChevronLeft, FilePlus, FileText, Calendar, User, Clipboard, Stethoscope, Activity, Baby, Brain, FileCheck, History, CheckCircle } from "lucide-react";
 import { formatAgeHeader } from "@/lib/age-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ export default function ProntuarioMedico() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dados-do-bebe");
   const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const isMobile = useIsMobile();
   
   useEffect(() => {
@@ -132,11 +134,13 @@ export default function ProntuarioMedico() {
       }
       
       // Atualizar estado local
-      setCurrentProntuario(prev => prev ? { ...prev, [field]: value } : null);
+      const updatedProntuario = { ...currentProntuario, [field]: value };
+      setCurrentProntuario(updatedProntuario);
       setProntuarios(prev => prev.map(p => 
-        p.id === currentProntuario.id ? { ...p, [field]: value } : p
+        p.id === currentProntuario.id ? updatedProntuario : p
       ));
       
+      setLastSaved(new Date());
       console.log(`Campo ${field} salvo com sucesso`);
       toast.success('Alterações salvas automaticamente');
     } catch (err) {
@@ -211,9 +215,20 @@ export default function ProntuarioMedico() {
                       <FileText className="h-5 w-5 text-turquesa" /> 
                       Prontuário da Consulta
                       {isSaving && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                      {!isSaving && lastSaved && (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-xs">Salvo</span>
+                        </div>
+                      )}
                     </CardTitle>
                     <CardDescription>
                       {formatarData(currentProntuario.data_criacao)}
+                      {lastSaved && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          • Última alteração: {lastSaved.toLocaleTimeString('pt-BR')}
+                        </span>
+                      )}
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -282,7 +297,10 @@ export default function ProntuarioMedico() {
                   </TabsContent>
                   
                   <TabsContent value="avaliacao-cranio" className="p-6">
-                    <AvaliacoesCraniaisTab pacienteId={id || ''} />
+                    <AvaliacoesCraniaisTab 
+                      pacienteId={id || ''} 
+                      prontuarioId={currentProntuario.id}
+                    />
                   </TabsContent>
                   
                   <TabsContent value="conduta" className="p-6">
