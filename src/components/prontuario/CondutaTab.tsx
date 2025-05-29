@@ -1,84 +1,79 @@
 
 import { useState, useEffect } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Stethoscope, FileText } from "lucide-react";
 import { Prontuario } from "@/types";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface CondutaTabProps {
-  prontuario: Prontuario | null;
+  prontuario: Prontuario;
   pacienteId: string;
+  onUpdate?: (field: string, value: any) => void;
 }
 
-export function CondutaTab({ prontuario, pacienteId }: CondutaTabProps) {
-  const [conduta, setConduta] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps) {
+  const [localConduta, setLocalConduta] = useState(prontuario?.conduta || "");
+  const [localAtestado, setLocalAtestado] = useState(prontuario?.atestado || "");
 
-  // Carrega os dados existentes
+  // Debounce values before saving
+  const debouncedConduta = useDebounce(localConduta, 1000);
+  const debouncedAtestado = useDebounce(localAtestado, 1000);
+
+  // Auto-save when debounced values change
   useEffect(() => {
-    if (prontuario?.conduta) {
-      setConduta(prontuario.conduta);
+    if (debouncedConduta !== (prontuario?.conduta || "")) {
+      onUpdate?.("conduta", debouncedConduta);
     }
-  }, [prontuario]);
+  }, [debouncedConduta, prontuario?.conduta, onUpdate]);
 
-  // Salva a conduta no banco de dados
-  const handleSalvarConduta = async () => {
-    if (!prontuario) return;
-    
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from('prontuarios')
-        .update({ conduta })
-        .eq('id', prontuario.id);
-
-      if (error) throw error;
-      toast.success("Conduta salva com sucesso!");
-    } catch (error) {
-      console.error("Erro ao salvar conduta:", error);
-      toast.error("Erro ao salvar conduta. Tente novamente.");
-    } finally {
-      setIsSaving(false);
+  useEffect(() => {
+    if (debouncedAtestado !== (prontuario?.atestado || "")) {
+      onUpdate?.("atestado", debouncedAtestado);
     }
-  };
-
-  if (isLoading) {
-    return <div className="flex justify-center p-6">
-      <Loader2 className="h-6 w-6 animate-spin text-turquesa" />
-    </div>;
-  }
+  }, [debouncedAtestado, prontuario?.atestado, onUpdate]);
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-medium">Conduta</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Stethoscope className="h-5 w-5 text-turquesa" />
+            Conduta Médica
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="conduta">Conduta e Orientações</Label>
+            <Textarea
+              id="conduta"
+              placeholder="Descreva a conduta médica, orientações e tratamentos indicados..."
+              value={localConduta}
+              onChange={(e) => setLocalConduta(e.target.value)}
+              className="min-h-[150px]"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-turquesa" />
+            Atestado Médico
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <Textarea 
-              className="min-h-[200px] resize-y"
-              placeholder="Descreva a conduta para o paciente..."
-              value={conduta}
-              onChange={(e) => setConduta(e.target.value)}
+          <div>
+            <Label htmlFor="atestado">Atestado</Label>
+            <Textarea
+              id="atestado"
+              placeholder="Informações para atestado médico, se necessário..."
+              value={localAtestado}
+              onChange={(e) => setLocalAtestado(e.target.value)}
+              className="min-h-[100px]"
             />
-            <Button 
-              onClick={handleSalvarConduta} 
-              disabled={isSaving}
-              className="bg-turquesa hover:bg-turquesa/90">
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando
-                </>
-              ) : (
-                "Salvar Conduta"
-              )}
-            </Button>
           </div>
         </CardContent>
       </Card>

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ChevronLeft, FileText, Edit, History, Plus, Camera, RotateCcw } from "lucide-react";
+import { Loader2, ChevronLeft, FileText, Edit, History, Plus, Camera, RotateCcw, Calendar, Activity } from "lucide-react";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
@@ -22,6 +22,7 @@ export default function DetalhePaciente() {
   const navigate = useNavigate();
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [prontuario, setProntuario] = useState<any | null>(null);
+  const [prontuarios, setProntuarios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [medicoes, setMedicoes] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("resumo");
@@ -55,17 +56,32 @@ export default function DetalhePaciente() {
             
             setPaciente(pacienteFormatted);
             
-            // Fetch patient's medical record
+            // Fetch patient's medical record (último prontuário para resumo)
             const { data: prontuarioData, error: prontuarioError } = await supabase
               .from('prontuarios')
               .select('*')
               .eq('paciente_id', id)
+              .order('data_criacao', { ascending: false })
+              .limit(1)
               .maybeSingle();
               
             if (prontuarioError) {
               console.error("Erro ao carregar prontuário:", prontuarioError);
             } else {
               setProntuario(prontuarioData);
+            }
+
+            // Fetch ALL patient's medical records for history
+            const { data: prontuariosData, error: prontuariosError } = await supabase
+              .from('prontuarios')
+              .select('*')
+              .eq('paciente_id', id)
+              .order('data_criacao', { ascending: false });
+              
+            if (prontuariosError) {
+              console.error("Erro ao carregar prontuários:", prontuariosError);
+            } else {
+              setProntuarios(prontuariosData || []);
             }
             
             // Fetch patient's measurements
@@ -186,6 +202,7 @@ export default function DetalhePaciente() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
+          <TabsTrigger value="prontuarios">Prontuários</TabsTrigger>
           <TabsTrigger value="medicoes">Medições</TabsTrigger>
           <TabsTrigger value="editar">Editar Paciente</TabsTrigger>
         </TabsList>
@@ -351,6 +368,82 @@ export default function DetalhePaciente() {
                     onClick={() => navigate(`/pacientes/${id}/nova-medicao`)}
                   >
                     Realizar Avaliação
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="prontuarios">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Histórico de Prontuários</CardTitle>
+                <Button 
+                  onClick={() => navigate(`/pacientes/${id}/prontuario`)}
+                  className="bg-turquesa hover:bg-turquesa/90"
+                >
+                  <FilePlus className="h-4 w-4 mr-2" />
+                  Nova Consulta
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {prontuarios.length > 0 ? (
+                <div className="space-y-3">
+                  {prontuarios.map((pront, index) => (
+                    <div
+                      key={pront.id}
+                      className="p-4 rounded-lg border hover:border-turquesa/50 hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/pacientes/${id}/prontuario/${pront.id}`)}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            Consulta em {formatarData(pront.data_criacao)}
+                          </span>
+                        </div>
+                        {index === 0 && (
+                          <span className="text-xs bg-turquesa/10 text-turquesa px-2 py-1 rounded">
+                            Mais recente
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-1">
+                        {pront.diagnostico && (
+                          <div className="flex items-start gap-2">
+                            <Activity className="h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {pront.diagnostico.split('\n')[0].substring(0, 100)}
+                              {pront.diagnostico.length > 100 ? "..." : ""}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {pront.cid && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs bg-muted px-2 py-1 rounded">
+                              CID: {pront.cid}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground mb-4">Nenhum prontuário registrado</p>
+                  <Button 
+                    onClick={() => navigate(`/pacientes/${id}/prontuario`)}
+                    className="bg-turquesa hover:bg-turquesa/90"
+                  >
+                    <FilePlus className="h-4 w-4 mr-2" />
+                    Criar Primeiro Prontuário
                   </Button>
                 </div>
               )}

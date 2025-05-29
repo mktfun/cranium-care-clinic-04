@@ -59,6 +59,7 @@ function App() {
             <Route path="/pacientes/:id/relatorio" element={<RelatorioMedicao />} />
             <Route path="/pacientes/:id/relatorios/:medicaoId" element={<RelatorioVisualizar />} />
             <Route path="/pacientes/:id/prontuario" element={<ProntuarioMedico />} />
+            <Route path="/pacientes/:id/prontuario/:prontuarioId" element={<ProntuarioMedico />} />
             <Route path="/pacientes/:id/historico" element={<HistoricoCompletoPaciente />} />
             <Route path="/historico" element={<Historico />} />
             <Route path="/relatorios" element={<Relatorios />} />

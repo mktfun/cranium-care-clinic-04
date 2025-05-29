@@ -1,84 +1,136 @@
 
 import { useState, useEffect } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Activity, Clock, Heart, Brain } from "lucide-react";
 import { Prontuario } from "@/types";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface AvaliacaoTabProps {
-  prontuario: Prontuario | null;
+  prontuario: Prontuario;
   pacienteId: string;
+  onUpdate?: (field: string, value: any) => void;
 }
 
-export function AvaliacaoTab({ prontuario, pacienteId }: AvaliacaoTabProps) {
-  const [avaliacao, setAvaliacao] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabProps) {
+  const [localQueixaPrincipal, setLocalQueixaPrincipal] = useState(prontuario?.queixa_principal || "");
+  const [localIdadeGestacional, setLocalIdadeGestacional] = useState(prontuario?.idade_gestacional || "");
+  const [localIdadeCorrigida, setLocalIdadeCorrigida] = useState(prontuario?.idade_corrigida || "");
+  const [localObservacoesAnamnese, setLocalObservacoesAnamnese] = useState(prontuario?.observacoes_anamnese || "");
+  const [localAvaliacao, setLocalAvaliacao] = useState(prontuario?.avaliacao || "");
 
-  // Carrega os dados existentes
+  // Debounce values before saving
+  const debouncedQueixaPrincipal = useDebounce(localQueixaPrincipal, 1000);
+  const debouncedIdadeGestacional = useDebounce(localIdadeGestacional, 1000);
+  const debouncedIdadeCorrigida = useDebounce(localIdadeCorrigida, 1000);
+  const debouncedObservacoesAnamnese = useDebounce(localObservacoesAnamnese, 1000);
+  const debouncedAvaliacao = useDebounce(localAvaliacao, 1000);
+
+  // Auto-save when debounced values change
   useEffect(() => {
-    if (prontuario?.avaliacao) {
-      setAvaliacao(prontuario.avaliacao);
+    if (debouncedQueixaPrincipal !== (prontuario?.queixa_principal || "")) {
+      onUpdate?.("queixa_principal", debouncedQueixaPrincipal);
     }
-  }, [prontuario]);
+  }, [debouncedQueixaPrincipal, prontuario?.queixa_principal, onUpdate]);
 
-  // Salva a avaliação no banco de dados
-  const handleSalvarAvaliacao = async () => {
-    if (!prontuario) return;
-    
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from('prontuarios')
-        .update({ avaliacao })
-        .eq('id', prontuario.id);
-
-      if (error) throw error;
-      toast.success("Avaliação salva com sucesso!");
-    } catch (error) {
-      console.error("Erro ao salvar avaliação:", error);
-      toast.error("Erro ao salvar avaliação. Tente novamente.");
-    } finally {
-      setIsSaving(false);
+  useEffect(() => {
+    if (debouncedIdadeGestacional !== (prontuario?.idade_gestacional || "")) {
+      onUpdate?.("idade_gestacional", debouncedIdadeGestacional);
     }
-  };
+  }, [debouncedIdadeGestacional, prontuario?.idade_gestacional, onUpdate]);
 
-  if (isLoading) {
-    return <div className="flex justify-center p-6">
-      <Loader2 className="h-6 w-6 animate-spin text-turquesa" />
-    </div>;
-  }
+  useEffect(() => {
+    if (debouncedIdadeCorrigida !== (prontuario?.idade_corrigida || "")) {
+      onUpdate?.("idade_corrigida", debouncedIdadeCorrigida);
+    }
+  }, [debouncedIdadeCorrigida, prontuario?.idade_corrigida, onUpdate]);
+
+  useEffect(() => {
+    if (debouncedObservacoesAnamnese !== (prontuario?.observacoes_anamnese || "")) {
+      onUpdate?.("observacoes_anamnese", debouncedObservacoesAnamnese);
+    }
+  }, [debouncedObservacoesAnamnese, prontuario?.observacoes_anamnese, onUpdate]);
+
+  useEffect(() => {
+    if (debouncedAvaliacao !== (prontuario?.avaliacao || "")) {
+      onUpdate?.("avaliacao", debouncedAvaliacao);
+    }
+  }, [debouncedAvaliacao, prontuario?.avaliacao, onUpdate]);
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-medium">Avaliação</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-turquesa" />
+            Anamnese
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="queixa_principal">Queixa Principal</Label>
+            <Textarea
+              id="queixa_principal"
+              placeholder="Descreva a queixa principal que motivou a consulta..."
+              value={localQueixaPrincipal}
+              onChange={(e) => setLocalQueixaPrincipal(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="idade_gestacional">Idade Gestacional</Label>
+              <Input
+                id="idade_gestacional"
+                placeholder="Ex: 38 semanas"
+                value={localIdadeGestacional}
+                onChange={(e) => setLocalIdadeGestacional(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="idade_corrigida">Idade Corrigida</Label>
+              <Input
+                id="idade_corrigida"
+                placeholder="Ex: 2 meses corrigidos"
+                value={localIdadeCorrigida}
+                onChange={(e) => setLocalIdadeCorrigida(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="observacoes_anamnese">Observações da Anamnese</Label>
+            <Textarea
+              id="observacoes_anamnese"
+              placeholder="Observações complementares sobre a história clínica..."
+              value={localObservacoesAnamnese}
+              onChange={(e) => setLocalObservacoesAnamnese(e.target.value)}
+              className="min-h-[120px]"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-turquesa" />
+            Avaliação Clínica
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <Textarea 
-              className="min-h-[200px] resize-y"
-              placeholder="Descreva a avaliação do paciente..."
-              value={avaliacao}
-              onChange={(e) => setAvaliacao(e.target.value)}
+          <div>
+            <Label htmlFor="avaliacao">Avaliação</Label>
+            <Textarea
+              id="avaliacao"
+              placeholder="Descreva os achados da avaliação clínica..."
+              value={localAvaliacao}
+              onChange={(e) => setLocalAvaliacao(e.target.value)}
+              className="min-h-[150px]"
             />
-            <Button 
-              onClick={handleSalvarAvaliacao} 
-              disabled={isSaving}
-              className="bg-turquesa hover:bg-turquesa/90">
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando
-                </>
-              ) : (
-                "Salvar Avaliação"
-              )}
-            </Button>
           </div>
         </CardContent>
       </Card>

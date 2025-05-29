@@ -20,10 +20,11 @@ import { NovoProntuarioDialog } from "@/components/prontuario/NovoProntuarioDial
 import { ProntuarioHistorico } from "@/components/prontuario/ProntuarioHistorico";
 import { AnimatedProntuarioSelect } from "@/components/prontuario/AnimatedProntuarioSelect";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Prontuario } from "@/types";
 
 export default function ProntuarioMedico() {
-  const { id } = useParams();
+  const { id, prontuarioId } = useParams();
   const navigate = useNavigate();
   const [paciente, setPaciente] = useState<any>(null);
   const [prontuarios, setProntuarios] = useState<Prontuario[]>([]);
@@ -31,6 +32,7 @@ export default function ProntuarioMedico() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dados-nascimento");
+  const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
   
   useEffect(() => {
@@ -72,9 +74,21 @@ export default function ProntuarioMedico() {
             toast.error('Erro ao carregar prontuários.');
           } else {
             setProntuarios(prontuariosData as Prontuario[]);
-            // Selecionar o mais recente por padrão
-            if (prontuariosData && prontuariosData.length > 0) {
+            
+            // Se há um prontuarioId específico na URL, buscar esse prontuário
+            if (prontuarioId && prontuariosData) {
+              const selectedProntuario = prontuariosData.find(p => p.id === prontuarioId);
+              if (selectedProntuario) {
+                setCurrentProntuario(selectedProntuario as Prontuario);
+              } else {
+                toast.error('Prontuário não encontrado.');
+                navigate(`/pacientes/${id}/prontuario`);
+              }
+            } else if (prontuariosData && prontuariosData.length > 0) {
+              // Selecionar o mais recente por padrão
               setCurrentProntuario(prontuariosData[0] as Prontuario);
+              // Atualizar URL para refletir o prontuário selecionado
+              navigate(`/pacientes/${id}/prontuario/${prontuariosData[0].id}`, { replace: true });
             } else {
               setCurrentProntuario(null);
             }
@@ -88,16 +102,49 @@ export default function ProntuarioMedico() {
       }
     }
     fetchData();
-  }, [id, navigate]);
+  }, [id, prontuarioId, navigate]);
 
   const handleNovoProntuario = (novoProntuario: Prontuario) => {
     setProntuarios(prev => [novoProntuario, ...prev]);
     setCurrentProntuario(novoProntuario);
-    toast.success("Novo prontuário criado com sucesso!");
+    navigate(`/pacientes/${id}/prontuario/${novoProntuario.id}`);
+    toast.success("Nova consulta criada com sucesso!");
   };
 
   const handleSelecionarProntuario = (prontuario: Prontuario) => {
     setCurrentProntuario(prontuario);
+    navigate(`/pacientes/${id}/prontuario/${prontuario.id}`);
+  };
+
+  const handleUpdateProntuario = async (field: string, value: any) => {
+    if (!currentProntuario) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('prontuarios')
+        .update({ [field]: value, updated_at: new Date().toISOString() })
+        .eq('id', currentProntuario.id);
+      
+      if (error) {
+        console.error('Erro ao salvar:', error);
+        toast.error('Erro ao salvar alterações.');
+        return;
+      }
+      
+      // Atualizar estado local
+      setCurrentProntuario(prev => prev ? { ...prev, [field]: value } : null);
+      setProntuarios(prev => prev.map(p => 
+        p.id === currentProntuario.id ? { ...p, [field]: value } : p
+      ));
+      
+      toast.success('Alterações salvas automaticamente');
+    } catch (err) {
+      console.error('Erro ao salvar:', err);
+      toast.error('Erro ao salvar alterações.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (loading) {
@@ -163,6 +210,7 @@ export default function ProntuarioMedico() {
                     <CardTitle className="flex items-center gap-2 font-normal text-base">
                       <FileText className="h-5 w-5 text-turquesa" /> 
                       Prontuário da Consulta
+                      {isSaving && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                     </CardTitle>
                     <CardDescription>
                       {formatarData(currentProntuario.data_criacao)}
@@ -222,15 +270,27 @@ export default function ProntuarioMedico() {
                   <Separator className="my-0" />
                   
                   <TabsContent value="dados-nascimento" className="p-6">
-                    <DadosPessoaisTab paciente={paciente} prontuario={currentProntuario} />
+                    <DadosPessoaisTab 
+                      paciente={paciente} 
+                      prontuario={currentProntuario} 
+                      onUpdate={handleUpdateProntuario}
+                    />
                   </TabsContent>
                   
                   <TabsContent value="dados-atuais" className="p-6">
-                    <DadosPessoaisTab paciente={paciente} prontuario={currentProntuario} />
+                    <DadosPessoaisTab 
+                      paciente={paciente} 
+                      prontuario={currentProntuario} 
+                      onUpdate={handleUpdateProntuario}
+                    />
                   </TabsContent>
                   
                   <TabsContent value="anamnese-avaliacao" className="p-6">
-                    <AvaliacaoTab prontuario={currentProntuario} pacienteId={id || ''} />
+                    <AvaliacaoTab 
+                      prontuario={currentProntuario} 
+                      pacienteId={id || ''} 
+                      onUpdate={handleUpdateProntuario}
+                    />
                   </TabsContent>
                   
                   <TabsContent value="avaliacao-cranio" className="p-6">
@@ -238,11 +298,19 @@ export default function ProntuarioMedico() {
                   </TabsContent>
                   
                   <TabsContent value="conduta" className="p-6">
-                    <CondutaTab prontuario={currentProntuario} pacienteId={id || ''} />
+                    <CondutaTab 
+                      prontuario={currentProntuario} 
+                      pacienteId={id || ''} 
+                      onUpdate={handleUpdateProntuario}
+                    />
                   </TabsContent>
                   
                   <TabsContent value="diagnostico" className="p-6">
-                    <DiagnosticoTab prontuario={currentProntuario} pacienteId={id || ''} />
+                    <DiagnosticoTab 
+                      prontuario={currentProntuario} 
+                      pacienteId={id || ''} 
+                      onUpdate={handleUpdateProntuario}
+                    />
                   </TabsContent>
                   
                   <TabsContent value="prescricao" className="p-6">
@@ -273,7 +341,7 @@ export default function ProntuarioMedico() {
                 </p>
                 <Button onClick={() => setIsDialogOpen(true)} className="bg-turquesa hover:bg-turquesa/90">
                   <FilePlus className="h-4 w-4 mr-2" />
-                  Criar Primeiro Prontuário
+                  Criar Primeira Consulta
                 </Button>
               </CardContent>
             </Card>
