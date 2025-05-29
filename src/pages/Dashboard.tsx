@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SelectPatientDialog } from "@/components/SelectPatientDialog";
+import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
 
 interface TrendData {
   value: number;
@@ -194,7 +196,8 @@ export default function Dashboard() {
         setStatusDistribuicaoGeral(distribuicaoGeral);
 
         // Processar pacientes e suas últimas medições para cards de destaque
-        const pacientesProcessados: Paciente[] = pacientesData.map(paciente => {
+        const pacientesProcessados: PacienteWithMedicao[] = pacientesData.map(pacienteRaw => {
+          const paciente = convertSupabasePacienteToPaciente(pacienteRaw);
           const medicoesDoPaciente = medicoesProcessadas.filter(m => m.paciente_id === paciente.id).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
           const ultimaMedicao = medicoesDoPaciente[0];
           let ultimaMedicaoProcessada;
@@ -209,15 +212,9 @@ export default function Dashboard() {
               asymmetryType
             };
           }
-          const hoje = new Date();
-          const dataNascimento = new Date(paciente.data_nascimento);
-          const idadeEmMeses = (hoje.getFullYear() - dataNascimento.getFullYear()) * 12 + (hoje.getMonth() - dataNascimento.getMonth());
+          
           return {
             ...paciente,
-            dataNascimento: paciente.data_nascimento,
-            // Garantindo que este campo esteja presente
-            idadeEmMeses: idadeEmMeses,
-            // Explicitly assign as a number
             ultimaMedicao: ultimaMedicaoProcessada
           };
         });
@@ -348,7 +345,13 @@ export default function Dashboard() {
           <h3 className="text-lg font-medium mb-4 transition-colors hover:text-primary/90">Pacientes em Destaque</h3>
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {pacientes.length > 0 ? pacientes.slice(0, 2).map(paciente => <div key={paciente.id} onClick={() => navigate(`/pacientes/${paciente.id}`)} className="cursor-pointer">
-                  <PacienteCard paciente={paciente} />
+                  <PacienteCard paciente={{
+                    id: paciente.id,
+                    nome: paciente.nome,
+                    dataNascimento: paciente.dataNascimento || paciente.data_nascimento,
+                    idadeEmMeses: paciente.idadeEmMeses || 0,
+                    ultimaMedicao: paciente.ultimaMedicao
+                  }} />
                 </div>) : <div className="col-span-full py-8 text-center text-muted-foreground">
                 Nenhum paciente cadastrado. <Link to="/pacientes/registro" className="text-turquesa hover:underline">Adicione um paciente</Link>.
               </div>}

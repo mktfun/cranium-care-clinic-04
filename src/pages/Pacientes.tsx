@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { 
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowDown, ArrowUp, Trash2, UserPlus, Loader2 } from "lucide-react";
-import { AsymmetryType, SeverityLevel, Paciente as PacienteType } from "@/types";
+import { AsymmetryType, SeverityLevel } from "@/types";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -22,7 +23,7 @@ import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
 type Status = SeverityLevel;
 
 type SortConfig = {
-  key: keyof PacienteType | "ultimaAvaliacao" | "status" | "idadeEmMeses";
+  key: "nome" | "data_nascimento" | "ultimaAvaliacao" | "status" | "idadeEmMeses";
   direction: "asc" | "desc";
 };
 
@@ -42,7 +43,18 @@ interface Medicao {
   recomendacoes?: string[];
 }
 
-interface PacienteWithMedicao extends PacienteType {
+interface PacienteWithMedicao {
+  id: string;
+  nome: string;
+  data_nascimento: string;
+  sexo: 'M' | 'F';
+  responsaveis: any[];
+  local_nascimento?: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  dataNascimento?: string;
+  idadeEmMeses?: number;
   ultimaMedicaoData?: string;
   statusCalculado: SeverityLevel;
   asymmetryTypeCalculado: AsymmetryType;
@@ -207,7 +219,6 @@ export default function Pacientes() {
       }
       
       // Tratamento para chaves que são diretamente campos de Paciente
-      // Assegura que a chave é válida para o objeto 'a' (que é Paciente & { ...campos calculados })
       const key = sortConfig.key as keyof typeof a;
       const valueA = a[key] || "";
       const valueB = b[key] || "";
@@ -285,7 +296,12 @@ export default function Pacientes() {
 
         // Converter dados do Supabase para o tipo Paciente
         const pacientesConvertidos = data?.map(convertSupabasePacienteToPaciente) || [];
-        setPacientes(pacientesConvertidos);
+        const pacientesExtended: PacienteWithMedicao[] = pacientesConvertidos.map(p => ({
+          ...p,
+          statusCalculado: "normal" as SeverityLevel,
+          asymmetryTypeCalculado: "Normal" as AsymmetryType
+        }));
+        setPacientes(pacientesExtended);
       }
     } catch (error) {
       console.error('Erro ao buscar pacientes:', error);

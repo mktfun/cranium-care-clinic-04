@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +26,7 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { useDebounce } from "@/hooks/use-debounce";
+import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
 
 export default function Relatorios() {
   const navigate = useNavigate();
@@ -62,19 +62,8 @@ export default function Relatorios() {
           return;
         }
         
-        // Transform the data to match Paciente interface
-        const pacientesProcessados = (data || []).map(paciente => {
-          const hoje = new Date();
-          const dataNascimento = new Date(paciente.data_nascimento);
-          const idadeEmMeses = ((hoje.getFullYear() - dataNascimento.getFullYear()) * 12) +
-                             (hoje.getMonth() - dataNascimento.getMonth());
-          
-          return {
-            ...paciente,
-            dataNascimento: paciente.data_nascimento,
-            idadeEmMeses: idadeEmMeses
-          };
-        });
+        // Transform the data to match Paciente interface using conversion function
+        const pacientesProcessados = (data || []).map(convertSupabasePacienteToPaciente);
 
         setPacientes(pacientesProcessados);
       } catch (error) {

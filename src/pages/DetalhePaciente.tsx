@@ -15,6 +15,7 @@ import { MedicoesHistoricoTable } from "@/components/relatorio/MedicoesHistorico
 import { formatAge } from "@/lib/age-utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getCranialStatus } from "@/lib/cranial-utils";
+import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
 
 export default function DetalhePaciente() {
   const { id } = useParams();
@@ -44,12 +45,7 @@ export default function DetalhePaciente() {
           }
 
           if (pacienteData) {
-            const pacienteFormatted: Paciente = {
-              ...pacienteData,
-              responsaveis: Array.isArray(pacienteData.responsaveis) ? pacienteData.responsaveis : [],
-              sexo: pacienteData.sexo || 'M'
-            };
-            
+            const pacienteFormatted = convertSupabasePacienteToPaciente(pacienteData);
             setPaciente(pacienteFormatted);
             
             // Fetch patient's medical record (último prontuário para resumo)
