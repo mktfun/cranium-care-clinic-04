@@ -48,8 +48,18 @@ export default function CranialVisualization({
   const indiceCraniano = (currentMeasurement.largura / currentMeasurement.comprimento) * 100;
   const cvai = (Math.abs(currentMeasurement.diagonalD - currentMeasurement.diagonalE) / Math.max(currentMeasurement.diagonalD, currentMeasurement.diagonalE)) * 100;
 
+  // Debug logs para entender os dados
+  console.log('CranialVisualization - measurementHistory:', measurementHistory);
+  console.log('CranialVisualization - currentMeasurement:', currentMeasurement);
+  
   // Verificar se existem dados de perímetro cefálico no histórico
-  const hasPerimeterData = measurementHistory.some(m => m.perimetroCefalico && m.perimetroCefalico > 0);
+  const hasPerimeterData = measurementHistory.some(m => {
+    const hasPerimeter = m.perimetroCefalico && m.perimetroCefalico > 0;
+    console.log('Measurement:', m, 'hasPerimeter:', hasPerimeter);
+    return hasPerimeter;
+  });
+  
+  console.log('CranialVisualization - hasPerimeterData:', hasPerimeterData);
 
   return (
     <div className="space-y-6">
@@ -85,12 +95,13 @@ export default function CranialVisualization({
           </CardContent>
         </Card>
 
-        {hasPerimeterData && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
-            </CardHeader>
-            <CardContent>
+        {/* Sempre mostrar o card de perímetro cefálico para debug */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {hasPerimeterData ? (
               <MeasurementEvolutionChart
                 measurementHistory={measurementHistory}
                 metricType="perimetroCefalico"
@@ -98,9 +109,20 @@ export default function CranialVisualization({
                 sexoPaciente={sexoPaciente}
                 dataNascimento={dataNascimento}
               />
-            </CardContent>
-          </Card>
-        )}
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Nenhum dado de perímetro cefálico encontrado no histórico.</p>
+                <p className="text-sm mt-2">Debug info:</p>
+                <pre className="text-xs mt-2 p-2 bg-muted rounded">
+                  {JSON.stringify(measurementHistory.map(m => ({
+                    data: m.data,
+                    perimetroCefalico: m.perimetroCefalico
+                  })), null, 2)}
+                </pre>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
