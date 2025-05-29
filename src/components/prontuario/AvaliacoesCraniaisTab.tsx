@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Brain, Plus, TrendingUp, Calendar } from "lucide-react";
+import { Loader2, Brain, Plus, TrendingUp, Calendar, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -29,7 +29,7 @@ interface Medicao {
 
 interface AvaliacoesCraniaisTabProps {
   pacienteId: string;
-  prontuarioId?: string; // Novo parâmetro para filtrar por prontuário
+  prontuarioId?: string;
 }
 
 export function AvaliacoesCraniaisTab({ pacienteId, prontuarioId }: AvaliacoesCraniaisTabProps) {
@@ -123,6 +123,10 @@ export function AvaliacoesCraniaisTab({ pacienteId, prontuarioId }: AvaliacoesCr
       // Comportamento padrão - redirecionar para seleção
       navigate(`/pacientes/${pacienteId}/nova-medicao`);
     }
+  };
+
+  const handleVerRelatorio = (medicaoId: string) => {
+    navigate(`/pacientes/${pacienteId}/relatorios/${medicaoId}`);
   };
 
   if (loading) {
@@ -245,10 +249,19 @@ export function AvaliacoesCraniaisTab({ pacienteId, prontuarioId }: AvaliacoesCr
                         </div>
                         {getStatusBadge(medicao.status)}
                       </div>
-                      <div className="text-right">
+                      <div className="flex flex-col items-end gap-2">
                         <div className="text-sm text-muted-foreground">
                           Medição #{medicoes.length - index}
                         </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleVerRelatorio(medicao.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Ver Relatório
+                        </Button>
                       </div>
                     </div>
 

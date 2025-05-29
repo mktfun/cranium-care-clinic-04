@@ -12,6 +12,7 @@ import RegistroPaciente from "@/pages/RegistroPaciente";
 import DetalhePaciente from "@/pages/DetalhePaciente";
 import NovaMedicao from "@/pages/NovaMedicao";
 import Historico from "@/pages/Historico";
+import HistoricoCompletoPaciente from "@/pages/HistoricoCompletoPaciente";
 import ProntuarioMedico from "@/pages/ProntuarioMedico";
 import ImprimirProntuario from "@/pages/ImprimirProntuario";
 import NotFound from "@/pages/NotFound";
@@ -55,10 +56,13 @@ function App() {
               <Route path="pacientes/novo" element={<RegistroPaciente />} />
               <Route path="pacientes/:id" element={<DetalhePaciente />} />
               <Route path="pacientes/:id/nova-medicao" element={<NovaMedicao />} />
+              <Route path="pacientes/:id/historico" element={<HistoricoCompletoPaciente />} />
               <Route path="pacientes/:id/prontuario" element={<ProntuarioMedico />} />
               <Route path="pacientes/:id/prontuario/:prontuarioId" element={<ProntuarioMedico />} />
               <Route path="pacientes/:id/prontuario/imprimir" element={<ImprimirProntuario />} />
               <Route path="pacientes/:id/prontuario/:prontuarioId/imprimir" element={<ImprimirProntuario />} />
+              <Route path="pacientes/:id/relatorios" element={<RelatorioMedicao />} />
+              <Route path="pacientes/:id/relatorios/:medicaoId" element={<RelatorioVisualizar />} />
               <Route path="historico" element={<Historico />} />
               <Route path="relatorios" element={<Relatorios />} />
               <Route path="tarefas" element={<Tarefas />} />
