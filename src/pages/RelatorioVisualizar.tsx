@@ -75,7 +75,7 @@ export default function RelatorioVisualizar() {
   
   if (carregando) {
     return (
-      <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+      <div className="space-y-6 animate-fade-in max-w-7xl mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between mb-6">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-10 w-40" />
@@ -166,7 +166,7 @@ export default function RelatorioVisualizar() {
     <div 
       ref={relatorioRef} 
       id="relatorio-para-exportar" 
-      className="space-y-6 animate-fade-in max-w-4xl mx-auto print:mx-0 bg-background p-4 print:p-0"
+      className="space-y-6 animate-fade-in max-w-7xl mx-auto print:mx-0 bg-background px-4 sm:px-6 lg:px-8 py-4 print:p-0"
     >
       <RelatorioHeader 
         pacienteNome={paciente.nome}
