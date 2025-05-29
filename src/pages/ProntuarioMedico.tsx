@@ -10,8 +10,6 @@ import { formatAgeHeader } from "@/lib/age-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DadosPessoaisTab } from "@/components/prontuario/DadosPessoaisTab";
-import { HistoricoMedicoTab } from "@/components/prontuario/HistoricoMedicoTab";
-import { ConsultasTab } from "@/components/prontuario/ConsultasTab";
 import { AvaliacoesCraniaisTab } from "@/components/prontuario/AvaliacoesCraniaisTab";
 import { AvaliacaoTab } from "@/components/prontuario/AvaliacaoTab";
 import { CondutaTab } from "@/components/prontuario/CondutaTab";
@@ -31,7 +29,7 @@ export default function ProntuarioMedico() {
   const [currentProntuario, setCurrentProntuario] = useState<Prontuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("dados-nascimento");
+  const [activeTab, setActiveTab] = useState("dados-do-bebe");
   const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
   
@@ -236,13 +234,9 @@ export default function ProntuarioMedico() {
                   ) : (
                     <div className="px-6">
                       <TabsList className="w-full justify-start">
-                        <TabsTrigger value="dados-nascimento" className="flex items-center gap-1">
+                        <TabsTrigger value="dados-do-bebe" className="flex items-center gap-1">
                           <Baby className="h-4 w-4" />
-                          Dados de Nascimento
-                        </TabsTrigger>
-                        <TabsTrigger value="dados-atuais" className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          Dados Atuais
+                          Dados do Bebê
                         </TabsTrigger>
                         <TabsTrigger value="anamnese-avaliacao" className="flex items-center gap-1">
                           <Clipboard className="h-4 w-4" />
@@ -269,15 +263,7 @@ export default function ProntuarioMedico() {
                   )}
                   <Separator className="my-0" />
                   
-                  <TabsContent value="dados-nascimento" className="p-6">
-                    <DadosPessoaisTab 
-                      paciente={paciente} 
-                      prontuario={currentProntuario} 
-                      onUpdate={handleUpdateProntuario}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="dados-atuais" className="p-6">
+                  <TabsContent value="dados-do-bebe" className="p-6">
                     <DadosPessoaisTab 
                       paciente={paciente} 
                       prontuario={currentProntuario} 
