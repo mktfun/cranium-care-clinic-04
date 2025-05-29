@@ -81,8 +81,8 @@ export default function CompleteMedicaoForm({
   // Validar perímetro cefálico
   useEffect(() => {
     if (perimetroCefalico && paciente) {
-      const error = validatePerimetroCefalico(parseFloat(perimetroCefalico), paciente.data_nascimento);
-      setPerimetroError(error);
+      const validation = validatePerimetroCefalico(parseFloat(perimetroCefalico), paciente.data_nascimento);
+      setPerimetroError(validation.isValid ? null : validation.message || null);
     } else {
       setPerimetroError(null);
     }
@@ -102,10 +102,18 @@ export default function CompleteMedicaoForm({
     }
 
     try {
+      // Obter o user_id da sessão atual
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+
       const medicaoData = {
         paciente_id: pacienteId,
         prontuario_id: selectedProntuarioId,
-        data: new Date().toISOString(),
+        user_id: user.id,
+        data: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
         comprimento: parseFloat(comprimento),
         largura: parseFloat(largura),
         diagonal_d: parseFloat(diagonalD),
@@ -115,6 +123,7 @@ export default function CompleteMedicaoForm({
         diferenca_diagonais: diferencaDiagonais || 0,
         cvai: cvai || 0,
         observacoes: observacoes || null,
+        status: 'normal' as const, // Valor padrão conforme o enum
       };
 
       const { data, error } = await supabase

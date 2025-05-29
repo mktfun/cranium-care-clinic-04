@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -203,15 +204,31 @@ export default function ProntuarioMedico() {
 
   return (
     <div className="space-y-6 animate-fade-in p-4 md:p-6">
-      {/* Cabeçalho centralizado */}
-      <div className="flex flex-col items-center mb-2">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/pacientes/${id}`)} className="mb-2">
+      {/* Cabeçalho com botão de voltar e informações do prontuário */}
+      <div className="flex flex-col md:flex-row md:items-center gap-4">
+        {/* Botão de voltar */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate(`/pacientes/${id}`)}
+          className="self-start"
+        >
           <ChevronLeft className="h-6 w-6" />
         </Button>
-        <div className="text-center">
+        
+        {/* Informações do prontuário */}
+        <div className="flex-1 text-center">
           <h2 className="font-bold text-2xl">{paciente.nome}</h2>
           <p className="text-muted-foreground">
-            {idadeAtual} • Nasc.: {formatarData(paciente.data_nascimento)}
+            {currentProntuario ? (
+              <>
+                Consulta de {formatarData(currentProntuario.data_criacao)} • {idadeAtual}
+              </>
+            ) : (
+              <>
+                {idadeAtual} • Nasc.: {formatarData(paciente.data_nascimento)}
+              </>
+            )}
           </p>
         </div>
       </div>
