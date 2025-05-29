@@ -18,14 +18,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SelectPatientDialog } from "@/components/SelectPatientDialog";
+
 interface TrendData {
   value: number;
   isPositive: boolean;
 }
+
+interface PacienteWithMedicao extends Paciente {
+  ultimaMedicao?: {
+    data: string;
+    status: SeverityLevel;
+    asymmetryType: AsymmetryType;
+  };
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [clinicaNome, setClinicaNome] = useState("CraniumCare");
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [pacientes, setPacientes] = useState<PacienteWithMedicao[]>([]);
   const [medicoes, setMedicoes] = useState<any[]>([]);
   const [statusDistribuicaoGeral, setStatusDistribuicaoGeral] = useState<{
     normal: number;
@@ -46,9 +56,8 @@ export default function Dashboard() {
   const [trendPacientesAlerta, setTrendPacientesAlerta] = useState<TrendData | undefined>(undefined);
   const [percentualPacientesAlerta, setPercentualPacientesAlerta] = useState(0);
   const isMobile = useIsMobile();
-
-  // New state for patient selection dialog
   const [patientDialogOpen, setPatientDialogOpen] = useState(false);
+
   useEffect(() => {
     async function carregarDados() {
       try {
@@ -255,7 +264,6 @@ export default function Dashboard() {
     if (pacienteId) {
       navigate(`/pacientes/${pacienteId}/medicao-por-foto`);
     } else {
-      // If no patient selected, open the patient selection dialog
       setPatientDialogOpen(true);
     }
   };
@@ -264,15 +272,18 @@ export default function Dashboard() {
   const handlePatientSelected = (pacienteId: string) => {
     navigate(`/pacientes/${pacienteId}/medicao-por-foto`);
   };
+
   if (carregando) {
     return <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-turquesa" />
       </div>;
   }
-  return <div className="space-y-6 animate-fade-in p-4 md:p-6">
+
+  return (
+    <div className="space-y-6 animate-fade-in p-4 md:p-6">
       {/* Patient selection dialog */}
       <SelectPatientDialog open={patientDialogOpen} onOpenChange={setPatientDialogOpen} onSelectPatient={handlePatientSelected} />
-      
+
       <div>
         <h2 className="text-3xl font-bold transition-all duration-300 hover:text-primary">Olá, {usuario?.nome.split(" ")[0] || "Doutor(a)"}</h2>
         <p className="text-muted-foreground">
@@ -349,5 +360,6 @@ export default function Dashboard() {
           <UrgentTasksCard />
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }

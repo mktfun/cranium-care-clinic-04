@@ -1,3 +1,4 @@
+
 import { Badge } from "@/components/ui/badge";
 import { AsymmetryType, SeverityLevel } from "@/types";
 import { type CranialDiagnosis } from "@/lib/cranial-classification-utils";
@@ -9,7 +10,7 @@ export interface StatusBadgeProps {
   className?: string;
   variant?: "default" | "enhanced" | "subtle";
   showIcon?: boolean;
-  diagnosis?: CranialDiagnosis; // New prop for showing official diagnosis
+  diagnosis?: CranialDiagnosis;
 }
 
 export function StatusBadge({ 
@@ -50,7 +51,6 @@ export function StatusBadge({
           return "bg-muted text-muted-foreground border-border/50";
       }
     } else {
-      // Default variant
       switch (status) {
         case "normal":
           return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40 border-green-200 dark:border-green-800/50";
@@ -67,18 +67,13 @@ export function StatusBadge({
   };
 
   const getStatusText = () => {
-    // Se temos um diagnóstico oficial, usar esse texto
     if (diagnosis) {
-      // Para casos normais, exibir apenas "Normal"
       if (diagnosis.type === "Normal" || diagnosis.severity === "normal") {
         return "Normal";
       }
-      
-      // Para outros casos, exibir o diagnóstico completo com severidade
       return diagnosis.diagnosis;
     }
     
-    // Fallback para lógica existente
     if (showAsymmetryType && asymmetryType !== "Normal") {
       return `${asymmetryType} ${status === "normal" ? "" : status}`;
     }
@@ -101,28 +96,11 @@ export function StatusBadge({
         return null;
     }
   };
-  
-  const getAsymmetryStyle = () => {
-    if (!showAsymmetryType || asymmetryType === "Normal") return "";
-    
-    switch (asymmetryType) {
-      case "Plagiocefalia":
-        return "after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-transparent after:via-current after:to-transparent after:opacity-30";
-      case "Braquicefalia":
-        return "after:content-[''] after:absolute after:left-0 after:top-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-transparent after:via-current after:to-transparent after:opacity-30";
-      case "Dolicocefalia":
-        return "after:content-[''] after:absolute after:left-0 after:top-0 after:right-0 after:bottom-0 after:border-l-2 after:border-r-2 after:border-current after:opacity-20 after:rounded-full";
-      case "Misto":
-        return "after:content-[''] after:absolute after:left-1 after:top-1 after:right-1 after:bottom-1 after:border after:border-dashed after:border-current after:opacity-20 after:rounded-full";
-      default:
-        return "";
-    }
-  };
 
   return (
     <Badge 
       variant="outline" 
-      className={`${getBadgeColor()} ${getAsymmetryStyle()} relative font-medium border shadow-sm ${className}`}
+      className={`${getBadgeColor()} relative font-medium border shadow-sm ${className}`}
     >
       {getStatusIcon()}
       {getStatusText()}

@@ -12,34 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowDown, ArrowUp, Trash2, UserPlus, Loader2 } from "lucide-react"; // Adicionado Loader2
-import { AsymmetryType, SeverityLevel, getCranialStatus } from "@/lib/cranial-utils";
+import { ArrowDown, ArrowUp, Trash2, UserPlus, Loader2 } from "lucide-react";
+import { AsymmetryType, SeverityLevel, Paciente as PacienteType } from "@/types";
+import { getCranialStatus } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { convertSupabasePacienteToPaciente, Paciente } from "@/lib/patient-utils";
+import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
 
-// Definição da interface Paciente (baseada nos campos usados e retornados pelo Supabase)
-interface Paciente {
-  id: string;
-  nome: string;
-  data_nascimento: string;
-  sexo: "M" | "F";
-  responsaveis?: { nome: string; telefone?: string; email?: string; parentesco?: string }[];
-  created_at: string;
-  updated_at?: string;
-  user_id?: string;
-  // Adicionar outros campos conforme necessário da tabela 'pacientes'
-}
-
-// Tipo Status agora usa SeverityLevel importado
 type Status = SeverityLevel;
 
 type SortConfig = {
-  key: keyof Paciente | "ultimaAvaliacao" | "status" | "idadeEmMeses"; // idadeEmMeses adicionado para consistência
+  key: keyof PacienteType | "ultimaAvaliacao" | "status" | "idadeEmMeses";
   direction: "asc" | "desc";
 };
 
-// Definir tipo para Medição se não estiver globalmente disponível
 interface Medicao {
   id: string;
   paciente_id: string;
@@ -56,12 +42,18 @@ interface Medicao {
   recomendacoes?: string[];
 }
 
+interface PacienteWithMedicao extends PacienteType {
+  ultimaMedicaoData?: string;
+  statusCalculado: SeverityLevel;
+  asymmetryTypeCalculado: AsymmetryType;
+}
+
 export default function Pacientes() {
   const [searchParams] = useSearchParams();
   const statusParams = searchParams.get("status");
   const navigate = useNavigate();
   
-  const [pacientes, setPacientes] = useState<Paciente[]>([]); // Tipado com Paciente
+  const [pacientes, setPacientes] = useState<PacienteWithMedicao[]>([]);
   const [todasMedicoes, setTodasMedicoes] = useState<Medicao[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroNome, setFiltroNome] = useState("");
@@ -88,7 +80,14 @@ export default function Pacientes() {
           toast.error("Erro ao carregar pacientes");
           setPacientes([]); 
         } else {
-          setPacientes(pacientesData as Paciente[] || []); // Cast para Paciente[]
+          const pacientesConvertidos = pacientesData?.map(convertSupabasePacienteToPaciente) || [];
+          // Transform to include extended properties
+          const pacientesExtended: PacienteWithMedicao[] = pacientesConvertidos.map(p => ({
+            ...p,
+            statusCalculado: "normal" as SeverityLevel,
+            asymmetryTypeCalculado: "Normal" as AsymmetryType
+          }));
+          setPacientes(pacientesExtended);
         }
 
         const { data: medicoesData, error: medicoesError } = await supabase

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Paciente } from "@/types";
+import { Paciente, Responsavel } from "@/types";
 
 const formSchema = z.object({
   nome: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }),
@@ -19,7 +19,7 @@ const formSchema = z.object({
     return !isNaN(parsedDate.getTime());
   }, { message: "Data de nascimento inválida" }),
   sexo: z.string().min(1, { message: "Selecione o sexo" }),
-  responsaveis: z.any().optional(), // Changed to any to accommodate both string and array
+  responsaveis: z.any().optional(),
 });
 
 export interface EditarPacienteFormProps {
@@ -48,28 +48,16 @@ export function EditarPacienteForm({ paciente, onSuccess }: EditarPacienteFormPr
       if (paciente.responsaveis) {
         if (Array.isArray(paciente.responsaveis)) {
           responsaveisValue = paciente.responsaveis
-            .map(r => {
-              if (typeof r === 'object' && r !== null) {
-                const nome = r.nome || '';
-                const telefone = r.telefone ? ` - Tel: ${r.telefone}` : '';
-                const email = r.email ? ` - Email: ${r.email}` : '';
-                const parentesco = r.parentesco ? ` (${r.parentesco})` : '';
-                return `${nome}${telefone}${email}${parentesco}`;
-              } else {
-                return String(r);
-              }
+            .map((r: Responsavel) => {
+              const nome = r.nome || '';
+              const telefone = r.telefone ? ` - Tel: ${r.telefone}` : '';
+              const email = r.email ? ` - Email: ${r.email}` : '';
+              const parentesco = r.parentesco ? ` (${r.parentesco})` : '';
+              return `${nome}${telefone}${email}${parentesco}`;
             })
             .join('\n');
         } else if (typeof paciente.responsaveis === 'string') {
           responsaveisValue = paciente.responsaveis;
-        } else if (typeof paciente.responsaveis === 'object' && paciente.responsaveis !== null) {
-          // Handle case where it's a single object
-          const r = paciente.responsaveis;
-          const nome = r.nome || '';
-          const telefone = r.telefone ? ` - Tel: ${r.telefone}` : '';
-          const email = r.email ? ` - Email: ${r.email}` : '';
-          const parentesco = r.parentesco ? ` (${r.parentesco})` : '';
-          responsaveisValue = `${nome}${telefone}${email}${parentesco}`;
         }
       }
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,6 @@ import { MedicoesHistoricoTable } from "@/components/relatorio/MedicoesHistorico
 import { formatAge } from "@/lib/age-utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getCranialStatus } from "@/lib/cranial-utils";
-import { getIndividualClassificationText } from "@/lib/cranial-classification-utils";
 
 export default function DetalhePaciente() {
   const { id } = useParams();
@@ -33,7 +31,6 @@ export default function DetalhePaciente() {
       if (id) {
         setLoading(true);
         try {
-          // Fetch patient data
           const { data: pacienteData, error: pacienteError } = await supabase
             .from('pacientes')
             .select('*')
@@ -47,12 +44,10 @@ export default function DetalhePaciente() {
           }
 
           if (pacienteData) {
-            // Convert database format to our Paciente type
             const pacienteFormatted: Paciente = {
               ...pacienteData,
-              dataNascimento: pacienteData.data_nascimento,
-              // Calculate age in months
-              idadeEmMeses: calculateAgeInMonths(pacienteData.data_nascimento)
+              responsaveis: Array.isArray(pacienteData.responsaveis) ? pacienteData.responsaveis : [],
+              sexo: pacienteData.sexo || 'M'
             };
             
             setPaciente(pacienteFormatted);
