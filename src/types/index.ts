@@ -1,3 +1,4 @@
+
 // Types of asymmetry - using export type for isolatedModules compatibility
 import type { AsymmetryType, SeverityLevel } from "@/lib/cranial-utils";
 
@@ -9,6 +10,7 @@ export interface Paciente {
   nome: string;
   data_nascimento: string;
   sexo: string;
+  local_nascimento?: string; // Added missing field
   responsaveis?: any; // Changed from strict object array type to accommodate Json type from DB
   created_at?: string;
   updated_at?: string;
@@ -94,6 +96,7 @@ export interface Prontuario {
   diagnostico?: string;
   cid?: string;
   conduta?: string;
-  avaliacao?: string; // Added new field
+  avaliacao?: string;
   atestado?: string;
+  prescricao?: string; // Added missing field
 }

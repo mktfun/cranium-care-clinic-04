@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import { AvaliacoesCraniaisTab } from "@/components/prontuario/AvaliacoesCraniai
 import { AvaliacaoTab } from "@/components/prontuario/AvaliacaoTab";
 import { CondutaTab } from "@/components/prontuario/CondutaTab";
 import { DiagnosticoTab } from "@/components/prontuario/DiagnosticoTab";
+import { PrescricaoTab } from "@/components/prontuario/PrescricaoTab";
 import { NovoProntuarioDialog } from "@/components/prontuario/NovoProntuarioDialog";
 import { ProntuarioHistorico } from "@/components/prontuario/ProntuarioHistorico";
 import { AnimatedProntuarioSelect } from "@/components/prontuario/AnimatedProntuarioSelect";
@@ -117,6 +117,7 @@ export default function ProntuarioMedico() {
   const handleUpdateProntuario = async (field: string, value: any) => {
     if (!currentProntuario) return;
     
+    console.log(`Salvando campo ${field} com valor:`, value);
     setIsSaving(true);
     try {
       const { error } = await supabase
@@ -136,6 +137,7 @@ export default function ProntuarioMedico() {
         p.id === currentProntuario.id ? { ...p, [field]: value } : p
       ));
       
+      console.log(`Campo ${field} salvo com sucesso`);
       toast.success('Alterações salvas automaticamente');
     } catch (err) {
       console.error('Erro ao salvar:', err);
@@ -300,19 +302,11 @@ export default function ProntuarioMedico() {
                   </TabsContent>
                   
                   <TabsContent value="prescricao" className="p-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Prescrição Médica</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-center py-8">
-                          <p className="text-muted-foreground">Seção de prescrição em desenvolvimento.</p>
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Esta seção permitirá a criação e gestão de prescrições médicas.
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <PrescricaoTab 
+                      prontuario={currentProntuario} 
+                      pacienteId={id || ''} 
+                      onUpdate={handleUpdateProntuario}
+                    />
                   </TabsContent>
                 </Tabs>
               </CardContent>

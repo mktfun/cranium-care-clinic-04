@@ -369,10 +369,12 @@ export type Database = {
           id: string
           idade_corrigida: string | null
           idade_gestacional: string | null
+          local_nascimento: string | null
           observacoes_anamnese: string | null
           observacoes_gerais: string | null
           paciente_id: string
           peso: number | null
+          prescricao: string | null
           queixa_principal: string | null
           tipo_sanguineo: string | null
           updated_at: string | null
@@ -390,10 +392,12 @@ export type Database = {
           id?: string
           idade_corrigida?: string | null
           idade_gestacional?: string | null
+          local_nascimento?: string | null
           observacoes_anamnese?: string | null
           observacoes_gerais?: string | null
           paciente_id: string
           peso?: number | null
+          prescricao?: string | null
           queixa_principal?: string | null
           tipo_sanguineo?: string | null
           updated_at?: string | null
@@ -411,10 +415,12 @@ export type Database = {
           id?: string
           idade_corrigida?: string | null
           idade_gestacional?: string | null
+          local_nascimento?: string | null
           observacoes_anamnese?: string | null
           observacoes_gerais?: string | null
           paciente_id?: string
           peso?: number | null
+          prescricao?: string | null
           queixa_principal?: string | null
           tipo_sanguineo?: string | null
           updated_at?: string | null
