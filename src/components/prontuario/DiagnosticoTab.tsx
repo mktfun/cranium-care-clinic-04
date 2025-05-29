@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,8 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Prontuario } from "@/types";
+import { CIDSearchInput } from "./CIDSearchInput";
+import { CIDCode } from "@/lib/cid-database";
 
 interface DiagnosticoTabProps {
   prontuario: Prontuario | null;
@@ -17,6 +18,7 @@ interface DiagnosticoTabProps {
 
 export function DiagnosticoTab({ prontuario, pacienteId }: DiagnosticoTabProps) {
   const [cid, setCid] = useState("");
+  const [cidDescricao, setCidDescricao] = useState("");
   const [diagnostico, setDiagnostico] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,6 +57,20 @@ export function DiagnosticoTab({ prontuario, pacienteId }: DiagnosticoTabProps) 
     }
   };
 
+  const handleCIDSelect = (cidCode: CIDCode) => {
+    setCid(cidCode.codigo);
+    setCidDescricao(cidCode.descricao);
+    // Adicionar a descrição do CID ao diagnóstico se ainda não estiver lá
+    if (!diagnostico.includes(cidCode.descricao)) {
+      setDiagnostico(prev => {
+        if (prev) {
+          return `${prev}\n\n${cidCode.codigo} - ${cidCode.descricao}`;
+        }
+        return `${cidCode.codigo} - ${cidCode.descricao}`;
+      });
+    }
+  };
+
   if (isLoading) {
     return <div className="flex justify-center p-6">
       <Loader2 className="h-6 w-6 animate-spin text-turquesa" />
@@ -69,16 +85,20 @@ export function DiagnosticoTab({ prontuario, pacienteId }: DiagnosticoTabProps) 
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="cid">CID</Label>
-              <Input
-                id="cid"
-                placeholder="Digite o código CID..."
-                value={cid}
-                onChange={(e) => setCid(e.target.value)}
-                className="w-full"
-              />
-            </div>
+            <CIDSearchInput
+              value={cid}
+              onChange={setCid}
+              onCIDSelect={handleCIDSelect}
+              placeholder="Digite o código CID ou busque por diagnóstico..."
+              label="CID (Classificação Internacional de Doenças)"
+            />
+
+            {cidDescricao && (
+              <div className="p-3 bg-muted rounded-md">
+                <Label className="text-sm font-medium">Descrição do CID selecionado:</Label>
+                <p className="text-sm text-muted-foreground mt-1">{cidDescricao}</p>
+              </div>
+            )}
             
             <div className="space-y-2">
               <Label htmlFor="diagnostico">Notas Diagnósticas</Label>
@@ -89,6 +109,9 @@ export function DiagnosticoTab({ prontuario, pacienteId }: DiagnosticoTabProps) 
                 value={diagnostico}
                 onChange={(e) => setDiagnostico(e.target.value)}
               />
+              <p className="text-sm text-muted-foreground">
+                Dica: Ao selecionar um CID na busca acima, a descrição será automaticamente adicionada ao diagnóstico.
+              </p>
             </div>
             
             <Button 
