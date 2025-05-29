@@ -49,7 +49,7 @@ export function NovoProntuarioDialog({
     setLoading(true);
     
     try {
-      // Use the proper Supabase interface with raw Insert
+      // Sempre criar um novo prontuário para cada consulta
       const { data, error } = await supabase
         .from('prontuarios')
         .insert({
@@ -70,6 +70,15 @@ export function NovoProntuarioDialog({
         return;
       }
       
+      // Limpar o formulário
+      setFormData({
+        altura: "",
+        peso: "",
+        tipo_sanguineo: "",
+        alergias: "",
+        observacoes_gerais: ""
+      });
+      
       onSuccess(data as any as Prontuario);
       onOpenChange(false);
     } catch (err) {
@@ -86,7 +95,7 @@ export function NovoProntuarioDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Criar Novo Prontuário
+            Nova Consulta
           </DialogTitle>
         </DialogHeader>
         
@@ -168,7 +177,7 @@ export function NovoProntuarioDialog({
               disabled={loading}
             >
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Criar Prontuário
+              Criar Nova Consulta
             </Button>
           </DialogFooter>
         </form>
