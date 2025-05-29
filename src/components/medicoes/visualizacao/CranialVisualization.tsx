@@ -48,6 +48,9 @@ export default function CranialVisualization({
   const indiceCraniano = (currentMeasurement.largura / currentMeasurement.comprimento) * 100;
   const cvai = (Math.abs(currentMeasurement.diagonalD - currentMeasurement.diagonalE) / Math.max(currentMeasurement.diagonalD, currentMeasurement.diagonalE)) * 100;
 
+  // Verificar se existem dados de perímetro cefálico no histórico
+  const hasPerimeterData = measurementHistory.some(m => m.perimetroCefalico && m.perimetroCefalico > 0);
+
   return (
     <div className="space-y-6">
       {/* Evolution Charts Only */}
@@ -82,7 +85,7 @@ export default function CranialVisualization({
           </CardContent>
         </Card>
 
-        {measurementHistory.some(m => m.perimetroCefalico) && (
+        {hasPerimeterData && (
           <Card>
             <CardHeader>
               <CardTitle>Evolução do Perímetro Cefálico</CardTitle>
