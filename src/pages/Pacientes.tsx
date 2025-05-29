@@ -16,6 +16,7 @@ import { ArrowDown, ArrowUp, Trash2, UserPlus, Loader2 } from "lucide-react"; //
 import { AsymmetryType, SeverityLevel, getCranialStatus } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { convertSupabasePacienteToPaciente, Paciente } from "@/lib/patient-utils";
 
 // Definição da interface Paciente (baseada nos campos usados e retornados pelo Supabase)
 interface Paciente {
@@ -262,6 +263,36 @@ export default function Pacientes() {
       } finally {
         setLoading(false);
       }
+    }
+  };
+
+  const fetchPacientes = async () => {
+    try {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const { data, error } = await supabase
+          .from('pacientes')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Erro ao buscar pacientes:', error);
+          toast.error('Erro ao carregar pacientes');
+          return;
+        }
+
+        // Converter dados do Supabase para o tipo Paciente
+        const pacientesConvertidos = data?.map(convertSupabasePacienteToPaciente) || [];
+        setPacientes(pacientesConvertidos);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar pacientes:', error);
+      toast.error('Erro ao carregar pacientes');
+    } finally {
+      setLoading(false);
     }
   };
 

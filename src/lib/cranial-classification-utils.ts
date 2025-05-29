@@ -1,4 +1,3 @@
-
 /**
  * Cranial Classification Utilities
  * Based on "Guia Completo de Classificação - Medições e Diagnósticos Cranianos (Maio de 2025)"
@@ -189,6 +188,44 @@ export function getIndividualClassificationText(type: "plagiocefalia" | "braquic
   if (severity === "normal") return "Normal";
   const severityText = severity.charAt(0).toUpperCase() + severity.slice(1);
   return `${severityText}`;
+}
+
+/**
+ * Obtém informações de severidade para exibição na UI
+ */
+export function getSeverityInfo(severity: CranialSeverity) {
+  switch (severity) {
+    case "normal":
+      return {
+        label: "Normal",
+        variant: "default",
+        className: "bg-green-100 text-green-800"
+      };
+    case "leve":
+      return {
+        label: "Leve",
+        variant: "secondary",
+        className: "bg-yellow-100 text-yellow-800"
+      };
+    case "moderada":
+      return {
+        label: "Moderada", 
+        variant: "destructive",
+        className: "bg-orange-100 text-orange-800"
+      };
+    case "severa":
+      return {
+        label: "Severa",
+        variant: "destructive", 
+        className: "bg-red-100 text-red-800"
+      };
+    default:
+      return {
+        label: "Desconhecido",
+        variant: "outline",
+        className: "bg-gray-100 text-gray-800"
+      };
+  }
 }
 
 /**

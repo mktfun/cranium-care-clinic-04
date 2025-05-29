@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/ui/theme-provider";
@@ -17,7 +18,7 @@ import NotFound from "@/pages/NotFound";
 import Layout from "@/pages/Layout";
 import Index from "@/pages/Index";
 import Tarefas from "@/pages/Tarefas";
-import { NotificacoesPage } from "@/pages/NotificacoesPage";
+import NotificacoesPage from "@/pages/NotificacoesPage";
 import MedicaoPorFotoPage from "@/pages/MedicaoPorFotoPage";
 import RelatorioMedicao from "@/pages/RelatorioMedicao";
 import RelatorioVisualizar from "@/pages/RelatorioVisualizar";
@@ -40,7 +41,6 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<Registro />} />
-            <Route path="/hero" element={<HeroLandingPage />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
