@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Activity, Clock, Heart, Brain } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Activity, Clock, Heart, Brain, Save } from "lucide-react";
 import { Prontuario } from "@/types";
-import { useDebounce } from "@/hooks/use-debounce";
+import { toast } from "sonner";
 
 interface AvaliacaoTabProps {
   prontuario: Prontuario;
@@ -20,6 +21,8 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
   const [localIdadeCorrigida, setLocalIdadeCorrigida] = useState("");
   const [localObservacoesAnamnese, setLocalObservacoesAnamnese] = useState("");
   const [localAvaliacao, setLocalAvaliacao] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
@@ -28,54 +31,77 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
     setLocalIdadeCorrigida(prontuario?.idade_corrigida || "");
     setLocalObservacoesAnamnese(prontuario?.observacoes_anamnese || "");
     setLocalAvaliacao(prontuario?.avaliacao || "");
+    setHasChanges(false);
   }, [prontuario]);
 
-  // Debounce values before saving
-  const debouncedQueixaPrincipal = useDebounce(localQueixaPrincipal, 1000);
-  const debouncedIdadeGestacional = useDebounce(localIdadeGestacional, 1000);
-  const debouncedIdadeCorrigida = useDebounce(localIdadeCorrigida, 1000);
-  const debouncedObservacoesAnamnese = useDebounce(localObservacoesAnamnese, 1000);
-  const debouncedAvaliacao = useDebounce(localAvaliacao, 1000);
-
-  // Auto-save when debounced values change
+  // Verificar mudanças
   useEffect(() => {
-    if (debouncedQueixaPrincipal !== (prontuario?.queixa_principal || "")) {
-      onUpdate?.("queixa_principal", debouncedQueixaPrincipal);
-    }
-  }, [debouncedQueixaPrincipal, prontuario?.queixa_principal, onUpdate]);
+    const changed = 
+      localQueixaPrincipal !== (prontuario?.queixa_principal || "") ||
+      localIdadeGestacional !== (prontuario?.idade_gestacional || "") ||
+      localIdadeCorrigida !== (prontuario?.idade_corrigida || "") ||
+      localObservacoesAnamnese !== (prontuario?.observacoes_anamnese || "") ||
+      localAvaliacao !== (prontuario?.avaliacao || "");
 
-  useEffect(() => {
-    if (debouncedIdadeGestacional !== (prontuario?.idade_gestacional || "")) {
-      onUpdate?.("idade_gestacional", debouncedIdadeGestacional);
-    }
-  }, [debouncedIdadeGestacional, prontuario?.idade_gestacional, onUpdate]);
+    setHasChanges(changed);
+  }, [localQueixaPrincipal, localIdadeGestacional, localIdadeCorrigida, localObservacoesAnamnese, localAvaliacao, prontuario]);
 
-  useEffect(() => {
-    if (debouncedIdadeCorrigida !== (prontuario?.idade_corrigida || "")) {
-      onUpdate?.("idade_corrigida", debouncedIdadeCorrigida);
+  const handleSave = async () => {
+    if (!hasChanges) {
+      toast.info("Nenhuma alteração para salvar.");
+      return;
     }
-  }, [debouncedIdadeCorrigida, prontuario?.idade_corrigida, onUpdate]);
 
-  useEffect(() => {
-    if (debouncedObservacoesAnamnese !== (prontuario?.observacoes_anamnese || "")) {
-      onUpdate?.("observacoes_anamnese", debouncedObservacoesAnamnese);
-    }
-  }, [debouncedObservacoesAnamnese, prontuario?.observacoes_anamnese, onUpdate]);
+    setIsSaving(true);
+    try {
+      const updates = [];
 
-  useEffect(() => {
-    if (debouncedAvaliacao !== (prontuario?.avaliacao || "")) {
-      onUpdate?.("avaliacao", debouncedAvaliacao);
+      if (localQueixaPrincipal !== (prontuario?.queixa_principal || "")) {
+        updates.push(onUpdate?.("queixa_principal", localQueixaPrincipal || null));
+      }
+      if (localIdadeGestacional !== (prontuario?.idade_gestacional || "")) {
+        updates.push(onUpdate?.("idade_gestacional", localIdadeGestacional || null));
+      }
+      if (localIdadeCorrigida !== (prontuario?.idade_corrigida || "")) {
+        updates.push(onUpdate?.("idade_corrigida", localIdadeCorrigida || null));
+      }
+      if (localObservacoesAnamnese !== (prontuario?.observacoes_anamnese || "")) {
+        updates.push(onUpdate?.("observacoes_anamnese", localObservacoesAnamnese || null));
+      }
+      if (localAvaliacao !== (prontuario?.avaliacao || "")) {
+        updates.push(onUpdate?.("avaliacao", localAvaliacao || null));
+      }
+
+      await Promise.all(updates.filter(Boolean));
+      
+      setHasChanges(false);
+      toast.success("Dados salvos com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao salvar dados.");
+      console.error("Erro ao salvar:", error);
+    } finally {
+      setIsSaving(false);
     }
-  }, [debouncedAvaliacao, prontuario?.avaliacao, onUpdate]);
+  };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-turquesa" />
-            Anamnese
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-turquesa" />
+              Anamnese
+            </CardTitle>
+            <Button 
+              onClick={handleSave} 
+              disabled={!hasChanges || isSaving}
+              className="bg-turquesa hover:bg-turquesa/90"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -120,6 +146,12 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
               className="min-h-[120px]"
             />
           </div>
+
+          {hasChanges && (
+            <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
+              Há alterações não salvas nesta aba.
+            </div>
+          )}
         </CardContent>
       </Card>
 

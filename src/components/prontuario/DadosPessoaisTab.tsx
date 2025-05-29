@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Baby, User, Heart, Scale, Ruler, Droplet } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Baby, User, Heart, Scale, Ruler, Droplet, Save } from "lucide-react";
 import { Prontuario } from "@/types";
-import { useDebounce } from "@/hooks/use-debounce";
+import { toast } from "sonner";
 
 interface DadosPessoaisTabProps {
   paciente: any;
@@ -20,53 +21,81 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
   const [localTipoSanguineo, setLocalTipoSanguineo] = useState("");
   const [localAlergias, setLocalAlergias] = useState("");
   const [localObservacoesGerais, setLocalObservacoesGerais] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
-    setLocalPeso(prontuario?.peso?.toString() || "");
-    setLocalAltura(prontuario?.altura?.toString() || "");
-    setLocalTipoSanguineo(prontuario?.tipo_sanguineo || "");
-    setLocalAlergias(prontuario?.alergias || "");
-    setLocalObservacoesGerais(prontuario?.observacoes_gerais || "");
+    const peso = prontuario?.peso?.toString() || "";
+    const altura = prontuario?.altura?.toString() || "";
+    const tipoSanguineo = prontuario?.tipo_sanguineo || "";
+    const alergias = prontuario?.alergias || "";
+    const observacoesGerais = prontuario?.observacoes_gerais || "";
+
+    setLocalPeso(peso);
+    setLocalAltura(altura);
+    setLocalTipoSanguineo(tipoSanguineo);
+    setLocalAlergias(alergias);
+    setLocalObservacoesGerais(observacoesGerais);
+    setHasChanges(false);
   }, [prontuario]);
 
-  // Debounce values before saving
-  const debouncedPeso = useDebounce(localPeso, 1000);
-  const debouncedAltura = useDebounce(localAltura, 1000);
-  const debouncedTipoSanguineo = useDebounce(localTipoSanguineo, 1000);
-  const debouncedAlergias = useDebounce(localAlergias, 1000);
-  const debouncedObservacoesGerais = useDebounce(localObservacoesGerais, 1000);
-
-  // Auto-save when debounced values change
+  // Verificar mudanças
   useEffect(() => {
-    if (debouncedPeso !== (prontuario?.peso?.toString() || "")) {
-      onUpdate?.("peso", debouncedPeso ? parseFloat(debouncedPeso) : null);
-    }
-  }, [debouncedPeso, prontuario?.peso, onUpdate]);
+    const currentPeso = prontuario?.peso?.toString() || "";
+    const currentAltura = prontuario?.altura?.toString() || "";
+    const currentTipoSanguineo = prontuario?.tipo_sanguineo || "";
+    const currentAlergias = prontuario?.alergias || "";
+    const currentObservacoesGerais = prontuario?.observacoes_gerais || "";
 
-  useEffect(() => {
-    if (debouncedAltura !== (prontuario?.altura?.toString() || "")) {
-      onUpdate?.("altura", debouncedAltura ? parseFloat(debouncedAltura) : null);
-    }
-  }, [debouncedAltura, prontuario?.altura, onUpdate]);
+    const changed = 
+      localPeso !== currentPeso ||
+      localAltura !== currentAltura ||
+      localTipoSanguineo !== currentTipoSanguineo ||
+      localAlergias !== currentAlergias ||
+      localObservacoesGerais !== currentObservacoesGerais;
 
-  useEffect(() => {
-    if (debouncedTipoSanguineo !== (prontuario?.tipo_sanguineo || "")) {
-      onUpdate?.("tipo_sanguineo", debouncedTipoSanguineo);
-    }
-  }, [debouncedTipoSanguineo, prontuario?.tipo_sanguineo, onUpdate]);
+    setHasChanges(changed);
+  }, [localPeso, localAltura, localTipoSanguineo, localAlergias, localObservacoesGerais, prontuario]);
 
-  useEffect(() => {
-    if (debouncedAlergias !== (prontuario?.alergias || "")) {
-      onUpdate?.("alergias", debouncedAlergias);
+  const handleSave = async () => {
+    if (!hasChanges) {
+      toast.info("Nenhuma alteração para salvar.");
+      return;
     }
-  }, [debouncedAlergias, prontuario?.alergias, onUpdate]);
 
-  useEffect(() => {
-    if (debouncedObservacoesGerais !== (prontuario?.observacoes_gerais || "")) {
-      onUpdate?.("observacoes_gerais", debouncedObservacoesGerais);
+    setIsSaving(true);
+    try {
+      // Salvar cada campo modificado
+      const updates = [];
+
+      if (localPeso !== (prontuario?.peso?.toString() || "")) {
+        updates.push(onUpdate?.("peso", localPeso ? parseFloat(localPeso) : null));
+      }
+      if (localAltura !== (prontuario?.altura?.toString() || "")) {
+        updates.push(onUpdate?.("altura", localAltura ? parseFloat(localAltura) : null));
+      }
+      if (localTipoSanguineo !== (prontuario?.tipo_sanguineo || "")) {
+        updates.push(onUpdate?.("tipo_sanguineo", localTipoSanguineo || null));
+      }
+      if (localAlergias !== (prontuario?.alergias || "")) {
+        updates.push(onUpdate?.("alergias", localAlergias || null));
+      }
+      if (localObservacoesGerais !== (prontuario?.observacoes_gerais || "")) {
+        updates.push(onUpdate?.("observacoes_gerais", localObservacoesGerais || null));
+      }
+
+      await Promise.all(updates.filter(Boolean));
+      
+      setHasChanges(false);
+      toast.success("Dados salvos com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao salvar dados.");
+      console.error("Erro ao salvar:", error);
+    } finally {
+      setIsSaving(false);
     }
-  }, [debouncedObservacoesGerais, prontuario?.observacoes_gerais, onUpdate]);
+  };
 
   const formatarData = (dataString: string) => {
     if (!dataString) return "N/A";
@@ -110,10 +139,20 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
       {/* Dados Atuais */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5 text-turquesa" />
-            Dados Atuais da Consulta
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-turquesa" />
+              Dados Atuais da Consulta
+            </CardTitle>
+            <Button 
+              onClick={handleSave} 
+              disabled={!hasChanges || isSaving}
+              className="bg-turquesa hover:bg-turquesa/90"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -183,6 +222,12 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
               className="min-h-[100px]"
             />
           </div>
+
+          {hasChanges && (
+            <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
+              Há alterações não salvas nesta aba.
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

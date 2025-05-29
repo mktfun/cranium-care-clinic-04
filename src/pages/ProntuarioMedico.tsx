@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ChevronLeft, FilePlus, FileText, Calendar, User, Clipboard, Stethoscope, Activity, Baby, Brain, FileCheck, History, CheckCircle } from "lucide-react";
+import { Loader2, ChevronLeft, FilePlus, FileText, Calendar, User, Clipboard, Stethoscope, Activity, Baby, Brain, FileCheck, History } from "lucide-react";
 import { formatAgeHeader } from "@/lib/age-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,7 +19,6 @@ import { NovoProntuarioDialog } from "@/components/prontuario/NovoProntuarioDial
 import { ProntuarioHistorico } from "@/components/prontuario/ProntuarioHistorico";
 import { AnimatedProntuarioSelect } from "@/components/prontuario/AnimatedProntuarioSelect";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useDebounce } from "@/hooks/use-debounce";
 import { Prontuario } from "@/types";
 
 export default function ProntuarioMedico() {
@@ -31,8 +30,6 @@ export default function ProntuarioMedico() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dados-do-bebe");
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const isMobile = useIsMobile();
   
   useEffect(() => {
@@ -120,7 +117,6 @@ export default function ProntuarioMedico() {
     if (!currentProntuario) return;
     
     console.log(`Salvando campo ${field} com valor:`, value);
-    setIsSaving(true);
     try {
       const { error } = await supabase
         .from('prontuarios')
@@ -129,8 +125,7 @@ export default function ProntuarioMedico() {
       
       if (error) {
         console.error('Erro ao salvar:', error);
-        toast.error('Erro ao salvar alterações.');
-        return;
+        throw error;
       }
       
       // Atualizar estado local
@@ -140,14 +135,10 @@ export default function ProntuarioMedico() {
         p.id === currentProntuario.id ? updatedProntuario : p
       ));
       
-      setLastSaved(new Date());
       console.log(`Campo ${field} salvo com sucesso`);
-      toast.success('Alterações salvas automaticamente');
     } catch (err) {
       console.error('Erro ao salvar:', err);
-      toast.error('Erro ao salvar alterações.');
-    } finally {
-      setIsSaving(false);
+      throw err;
     }
   };
 
@@ -214,21 +205,9 @@ export default function ProntuarioMedico() {
                     <CardTitle className="flex items-center gap-2 font-normal text-base">
                       <FileText className="h-5 w-5 text-turquesa" /> 
                       Prontuário da Consulta
-                      {isSaving && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                      {!isSaving && lastSaved && (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="h-4 w-4" />
-                          <span className="text-xs">Salvo</span>
-                        </div>
-                      )}
                     </CardTitle>
                     <CardDescription>
                       {formatarData(currentProntuario.data_criacao)}
-                      {lastSaved && (
-                        <span className="text-xs text-muted-foreground ml-2">
-                          • Última alteração: {lastSaved.toLocaleTimeString('pt-BR')}
-                        </span>
-                      )}
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">

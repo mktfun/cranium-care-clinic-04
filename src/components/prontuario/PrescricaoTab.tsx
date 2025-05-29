@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { FileCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileCheck, Save } from "lucide-react";
 import { Prontuario } from "@/types";
-import { useDebounce } from "@/hooks/use-debounce";
+import { toast } from "sonner";
 
 interface PrescricaoTabProps {
   prontuario: Prontuario;
@@ -15,30 +16,61 @@ interface PrescricaoTabProps {
 
 export function PrescricaoTab({ prontuario, pacienteId, onUpdate }: PrescricaoTabProps) {
   const [localPrescricao, setLocalPrescricao] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
     setLocalPrescricao(prontuario?.prescricao || "");
+    setHasChanges(false);
   }, [prontuario]);
 
-  // Debounce value before saving
-  const debouncedPrescricao = useDebounce(localPrescricao, 1000);
-
-  // Auto-save when debounced value changes
+  // Verificar mudanças
   useEffect(() => {
-    if (debouncedPrescricao !== (prontuario?.prescricao || "")) {
-      onUpdate?.("prescricao", debouncedPrescricao);
+    const changed = localPrescricao !== (prontuario?.prescricao || "");
+    setHasChanges(changed);
+  }, [localPrescricao, prontuario]);
+
+  const handleSave = async () => {
+    if (!hasChanges) {
+      toast.info("Nenhuma alteração para salvar.");
+      return;
     }
-  }, [debouncedPrescricao, prontuario?.prescricao, onUpdate]);
+
+    setIsSaving(true);
+    try {
+      if (localPrescricao !== (prontuario?.prescricao || "")) {
+        await onUpdate?.("prescricao", localPrescricao || null);
+      }
+      
+      setHasChanges(false);
+      toast.success("Dados salvos com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao salvar dados.");
+      console.error("Erro ao salvar:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileCheck className="h-5 w-5 text-turquesa" />
-            Prescrição Médica
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileCheck className="h-5 w-5 text-turquesa" />
+              Prescrição Médica
+            </CardTitle>
+            <Button 
+              onClick={handleSave} 
+              disabled={!hasChanges || isSaving}
+              className="bg-turquesa hover:bg-turquesa/90"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -51,6 +83,12 @@ export function PrescricaoTab({ prontuario, pacienteId, onUpdate }: PrescricaoTa
               className="min-h-[200px]"
             />
           </div>
+          
+          {hasChanges && (
+            <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
+              Há alterações não salvas nesta aba.
+            </div>
+          )}
           
           <div className="text-sm text-muted-foreground mt-4 p-3 bg-muted rounded-lg">
             <p><strong>Dicas para prescrição:</strong></p>

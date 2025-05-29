@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Activity } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Activity, Save } from "lucide-react";
 import { Prontuario } from "@/types";
 import { CIDSearchInput } from "@/components/prontuario/CIDSearchInput";
-import { useDebounce } from "@/hooks/use-debounce";
+import { toast } from "sonner";
 
 interface DiagnosticoTabProps {
   prontuario: Prontuario;
@@ -17,29 +18,24 @@ interface DiagnosticoTabProps {
 export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: DiagnosticoTabProps) {
   const [localDiagnostico, setLocalDiagnostico] = useState("");
   const [localCid, setLocalCid] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
     setLocalDiagnostico(prontuario?.diagnostico || "");
     setLocalCid(prontuario?.cid || "");
+    setHasChanges(false);
   }, [prontuario]);
 
-  // Debounce values before saving
-  const debouncedDiagnostico = useDebounce(localDiagnostico, 1000);
-  const debouncedCid = useDebounce(localCid, 1000);
-
-  // Auto-save when debounced values change
+  // Verificar mudanças
   useEffect(() => {
-    if (debouncedDiagnostico !== (prontuario?.diagnostico || "")) {
-      onUpdate?.("diagnostico", debouncedDiagnostico);
-    }
-  }, [debouncedDiagnostico, prontuario?.diagnostico, onUpdate]);
+    const changed = 
+      localDiagnostico !== (prontuario?.diagnostico || "") ||
+      localCid !== (prontuario?.cid || "");
 
-  useEffect(() => {
-    if (debouncedCid !== (prontuario?.cid || "")) {
-      onUpdate?.("cid", debouncedCid);
-    }
-  }, [debouncedCid, prontuario?.cid, onUpdate]);
+    setHasChanges(changed);
+  }, [localDiagnostico, localCid, prontuario]);
 
   const handleCIDSelect = (cid: any) => {
     setLocalCid(cid.codigo);
@@ -53,14 +49,53 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
     }
   };
 
+  const handleSave = async () => {
+    if (!hasChanges) {
+      toast.info("Nenhuma alteração para salvar.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const updates = [];
+
+      if (localDiagnostico !== (prontuario?.diagnostico || "")) {
+        updates.push(onUpdate?.("diagnostico", localDiagnostico || null));
+      }
+      if (localCid !== (prontuario?.cid || "")) {
+        updates.push(onUpdate?.("cid", localCid || null));
+      }
+
+      await Promise.all(updates.filter(Boolean));
+      
+      setHasChanges(false);
+      toast.success("Dados salvos com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao salvar dados.");
+      console.error("Erro ao salvar:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-turquesa" />
-            Diagnóstico
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-turquesa" />
+              Diagnóstico
+            </CardTitle>
+            <Button 
+              onClick={handleSave} 
+              disabled={!hasChanges || isSaving}
+              className="bg-turquesa hover:bg-turquesa/90"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -81,6 +116,12 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
             placeholder="Digite o código CID ou busque por diagnóstico..."
             label="Código CID"
           />
+
+          {hasChanges && (
+            <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
+              Há alterações não salvas nesta aba.
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

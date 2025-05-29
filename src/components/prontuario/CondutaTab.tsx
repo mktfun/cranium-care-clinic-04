@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Stethoscope, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Stethoscope, FileText, Save } from "lucide-react";
 import { Prontuario } from "@/types";
-import { useDebounce } from "@/hooks/use-debounce";
+import { toast } from "sonner";
 
 interface CondutaTabProps {
   prontuario: Prontuario;
@@ -16,38 +17,72 @@ interface CondutaTabProps {
 export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps) {
   const [localConduta, setLocalConduta] = useState("");
   const [localAtestado, setLocalAtestado] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
     setLocalConduta(prontuario?.conduta || "");
     setLocalAtestado(prontuario?.atestado || "");
+    setHasChanges(false);
   }, [prontuario]);
 
-  // Debounce values before saving
-  const debouncedConduta = useDebounce(localConduta, 1000);
-  const debouncedAtestado = useDebounce(localAtestado, 1000);
-
-  // Auto-save when debounced values change
+  // Verificar mudanças
   useEffect(() => {
-    if (debouncedConduta !== (prontuario?.conduta || "")) {
-      onUpdate?.("conduta", debouncedConduta);
-    }
-  }, [debouncedConduta, prontuario?.conduta, onUpdate]);
+    const changed = 
+      localConduta !== (prontuario?.conduta || "") ||
+      localAtestado !== (prontuario?.atestado || "");
 
-  useEffect(() => {
-    if (debouncedAtestado !== (prontuario?.atestado || "")) {
-      onUpdate?.("atestado", debouncedAtestado);
+    setHasChanges(changed);
+  }, [localConduta, localAtestado, prontuario]);
+
+  const handleSave = async () => {
+    if (!hasChanges) {
+      toast.info("Nenhuma alteração para salvar.");
+      return;
     }
-  }, [debouncedAtestado, prontuario?.atestado, onUpdate]);
+
+    setIsSaving(true);
+    try {
+      const updates = [];
+
+      if (localConduta !== (prontuario?.conduta || "")) {
+        updates.push(onUpdate?.("conduta", localConduta || null));
+      }
+      if (localAtestado !== (prontuario?.atestado || "")) {
+        updates.push(onUpdate?.("atestado", localAtestado || null));
+      }
+
+      await Promise.all(updates.filter(Boolean));
+      
+      setHasChanges(false);
+      toast.success("Dados salvos com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao salvar dados.");
+      console.error("Erro ao salvar:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Stethoscope className="h-5 w-5 text-turquesa" />
-            Conduta Médica
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Stethoscope className="h-5 w-5 text-turquesa" />
+              Conduta Médica
+            </CardTitle>
+            <Button 
+              onClick={handleSave} 
+              disabled={!hasChanges || isSaving}
+              className="bg-turquesa hover:bg-turquesa/90"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -60,6 +95,12 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
               className="min-h-[150px]"
             />
           </div>
+
+          {hasChanges && (
+            <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
+              Há alterações não salvas nesta aba.
+            </div>
+          )}
         </CardContent>
       </Card>
 
