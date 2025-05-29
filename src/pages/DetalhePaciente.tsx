@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ChevronLeft, FileText, Edit, History, Plus, Camera, RotateCcw, Calendar, Activity } from "lucide-react";
+import { Loader2, ChevronLeft, FileText, Edit, History, Plus, Camera, RotateCcw, Calendar, Activity, FilePlus } from "lucide-react";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
