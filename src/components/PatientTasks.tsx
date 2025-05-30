@@ -16,6 +16,22 @@ interface PatientTasksProps {
   patientId: string;
 }
 
+// Função para transformar dados do Supabase para o tipo Task
+const transformSupabaseTaskToTask = (supabaseTask: any): Task => {
+  return {
+    id: supabaseTask.id,
+    titulo: supabaseTask.titulo,
+    descricao: supabaseTask.descricao,
+    due_date: supabaseTask.due_date,
+    status: supabaseTask.status as 'pendente' | 'em_progresso' | 'concluida',
+    paciente_id: supabaseTask.paciente_id,
+    responsible: supabaseTask.responsible,
+    user_id: supabaseTask.user_id,
+    created_at: supabaseTask.created_at,
+    updated_at: supabaseTask.updated_at
+  };
+};
+
 export function PatientTasks({ patientId }: PatientTasksProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +62,9 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
         return;
       }
 
-      setTasks(data || []);
+      // Transformar dados para o tipo Task correto
+      const transformedTasks = (data || []).map(transformSupabaseTaskToTask);
+      setTasks(transformedTasks);
     } catch (error) {
       console.error('Erro inesperado:', error);
       toast.error('Erro inesperado ao carregar tarefas');
@@ -88,7 +106,8 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
         return;
       }
 
-      setTasks([...tasks, data]);
+      const newTask = transformSupabaseTaskToTask(data);
+      setTasks([...tasks, newTask]);
       resetTaskForm();
       setIsNewTaskDialogOpen(false);
       toast.success("Tarefa criada com sucesso!");
@@ -125,8 +144,9 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
         return;
       }
 
+      const updatedTask = transformSupabaseTaskToTask(data);
       const updatedTasks = tasks.map(task => 
-        task.id === currentTask.id ? data : task
+        task.id === currentTask.id ? updatedTask : task
       );
       
       setTasks(updatedTasks);
@@ -181,7 +201,8 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
         return;
       }
 
-      setTasks(tasks.map(t => t.id === task.id ? data : t));
+      const updatedTask = transformSupabaseTaskToTask(data);
+      setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
     } catch (error) {
       console.error('Erro inesperado:', error);
       toast.error('Erro inesperado ao atualizar status');
@@ -366,7 +387,7 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="edit-status" className="text-sm font-medium">Status</label>
-                    <Select value={taskStatus} onValueChange={setTaskStatus}>
+                    <Select value={taskStatus} onValueChange={(value: 'pendente' | 'em_progresso' | 'concluida') => setTaskStatus(value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
