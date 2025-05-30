@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface RecomendacoesCardProps {
-  recomendacoes?: string[];
+  recomendacoes?: string[] | null;
   severityLevel: SeverityLevel;
   isReadOnly?: boolean;
   medicaoId?: string;
@@ -18,14 +18,17 @@ interface RecomendacoesCardProps {
 }
 
 export function RecomendacoesCard({ 
-  recomendacoes = [], 
+  recomendacoes, 
   severityLevel,
   isReadOnly = false,
   medicaoId,
   onRecomendacoesUpdated
 }: RecomendacoesCardProps) {
+  // Ensure recomendacoes is always an array, never null
+  const safeRecomendacoes = Array.isArray(recomendacoes) ? recomendacoes : [];
+  
   const [isEditing, setIsEditing] = useState(false);
-  const [editedRecomendacoes, setEditedRecomendacoes] = useState<string[]>(recomendacoes);
+  const [editedRecomendacoes, setEditedRecomendacoes] = useState<string[]>(safeRecomendacoes);
   const [novaRecomendacao, setNovaRecomendacao] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -94,7 +97,7 @@ export function RecomendacoesCard({
   };
 
   const handleCancelEdit = () => {
-    setEditedRecomendacoes(recomendacoes);
+    setEditedRecomendacoes(safeRecomendacoes);
     setIsEditing(false);
     setNovaRecomendacao("");
   };
@@ -123,7 +126,7 @@ export function RecomendacoesCard({
     setEditedRecomendacoes([...editedRecomendacoes, ...uniqueRecs]);
   };
 
-  const displayRecomendacoes = isEditing ? editedRecomendacoes : recomendacoes;
+  const displayRecomendacoes = isEditing ? editedRecomendacoes : safeRecomendacoes;
   const temRecomendacoes = displayRecomendacoes && displayRecomendacoes.length > 0;
 
   return (
@@ -175,7 +178,7 @@ export function RecomendacoesCard({
                 {editedRecomendacoes.map((rec, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <Textarea
-                      value={rec}
+                      value={rec || ""}
                       onChange={(e) => handleRecomendacaoChange(idx, e.target.value)}
                       className="flex-1 min-h-[60px]"
                     />
@@ -222,7 +225,7 @@ export function RecomendacoesCard({
           temRecomendacoes ? (
             <ul className="list-disc pl-5 space-y-2">
               {displayRecomendacoes.map((rec, idx) => (
-                <li key={idx}>{rec}</li>
+                <li key={idx}>{rec || ""}</li>
               ))}
             </ul>
           ) : (
