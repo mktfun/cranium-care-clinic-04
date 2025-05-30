@@ -17,6 +17,7 @@ import { MobileChartView } from "@/components/MobileChartView";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
+import { PacientesStatusChart } from "@/components/PacientesStatusChart";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SelectPatientDialog } from "@/components/SelectPatientDialog";
 import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
