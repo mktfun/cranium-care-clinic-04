@@ -14,24 +14,7 @@ import {
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-
-// Função para obter os últimos 6 meses em formato MMM/YY
-const obterUltimosSeisMeses = () => {
-  const meses = [];
-  for (let i = 5; i >= 0; i--) {
-    const data = new Date();
-    data.setMonth(data.getMonth() - i);
-    const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
-    const ano = data.getFullYear().toString().slice(-2);
-    meses.push({
-      data: data,
-      formatado: `${mes}/${ano}`,
-      mes: data.getMonth(),
-      ano: data.getFullYear()
-    });
-  }
-  return meses;
-};
+import { DateRange } from "@/hooks/useChartFilters";
 
 interface DataPoint {
   mes: string;
@@ -41,9 +24,63 @@ interface DataPoint {
 
 interface PacientesMedicoesChartProps {
   altura?: number;
+  dateRange?: DateRange;
+  measurementType?: string;
 }
 
-export function PacientesMedicoesChart({ altura = 350 }: PacientesMedicoesChartProps) {
+// Função para gerar dados simulados como fallback
+const gerarDadosSimulados = (dateRange: DateRange): DataPoint[] => {
+  const startDate = new Date(dateRange.startDate);
+  const endDate = new Date(dateRange.endDate);
+  
+  // Calcular quantos meses de diferença
+  const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+  const meses = [];
+  
+  for (let i = monthsDiff - 1; i >= 0; i--) {
+    const data = new Date();
+    data.setMonth(data.getMonth() - i);
+    const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+    const ano = data.getFullYear().toString().slice(-2);
+    
+    meses.push({
+      mes: `${mes}/${ano}`,
+      pacientes: Math.floor(Math.random() * 10) + 2,
+      medicoes: Math.floor(Math.random() * 15) + 5
+    });
+  }
+  
+  return meses;
+};
+
+// Função para obter período dinâmico baseado no dateRange
+const obterPeriodoDinamico = (dateRange: DateRange) => {
+  const startDate = new Date(dateRange.startDate);
+  const endDate = new Date(dateRange.endDate);
+  
+  // Calcular quantos meses de diferença
+  const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+  const meses = [];
+  
+  for (let i = monthsDiff - 1; i >= 0; i--) {
+    const data = new Date();
+    data.setMonth(data.getMonth() - i);
+    meses.push({
+      data: data,
+      formatado: `${data.toLocaleDateString('pt-BR', { month: 'short' })}/${data.getFullYear().toString().slice(-2)}`,
+      mes: data.getMonth(),
+      ano: data.getFullYear()
+    });
+  }
+  
+  return meses;
+};
+
+export function PacientesMedicoesChart({ 
+  altura = 350, 
+  dateRange = { startDate: new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] },
+  measurementType = "all"
+}: PacientesMedicoesChartProps) {
   const [dados, setDados] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -51,29 +88,39 @@ export function PacientesMedicoesChart({ altura = 350 }: PacientesMedicoesChartP
     async function carregarDados() {
       try {
         setLoading(true);
-        const meses = obterUltimosSeisMeses();
+        const meses = obterPeriodoDinamico(dateRange);
         
-        // Buscar pacientes do Supabase
+        // Buscar pacientes do Supabase com filtro de data
         const { data: pacientes, error: pacientesError } = await supabase
           .from('pacientes')
-          .select('id, created_at');
+          .select('id, created_at')
+          .gte('created_at', `${dateRange.startDate}T00:00:00.000Z`)
+          .lte('created_at', `${dateRange.endDate}T23:59:59.999Z`);
         
         if (pacientesError) {
           console.error("Erro ao buscar pacientes:", pacientesError);
-          // Gerar dados simulados como fallback
-          setDados(gerarDadosSimulados());
+          setDados(gerarDadosSimulados(dateRange));
           return;
         }
         
-        // Buscar medições do Supabase
-        const { data: medicoes, error: medicoesError } = await supabase
+        // Buscar medições do Supabase com filtros
+        let medicoesQuery = supabase
           .from('medicoes')
-          .select('id, data');
+          .select('id, data, paciente_id')
+          .gte('data', dateRange.startDate)
+          .lte('data', dateRange.endDate);
+        
+        // Aplicar filtro de tipo de medição se não for "all"
+        if (measurementType !== "all") {
+          // Por enquanto, vamos usar todos os dados já que não temos campo de tipo na tabela
+          // Em futuras implementações, seria necessário adicionar um campo 'tipo' na tabela medicoes
+        }
+        
+        const { data: medicoes, error: medicoesError } = await medicoesQuery;
         
         if (medicoesError) {
           console.error("Erro ao buscar medições:", medicoesError);
-          // Gerar dados simulados como fallback
-          setDados(gerarDadosSimulados());
+          setDados(gerarDadosSimulados(dateRange));
           return;
         }
         
@@ -105,38 +152,21 @@ export function PacientesMedicoesChart({ altura = 350 }: PacientesMedicoesChartP
         setDados(dadosPorMes);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
-        setDados(gerarDadosSimulados());
+        setDados(gerarDadosSimulados(dateRange));
       } finally {
         setLoading(false);
       }
     }
     
     carregarDados();
-  }, []);
-  
-  // Função para gerar dados simulados como fallback
-  const gerarDadosSimulados = (): DataPoint[] => {
-    const meses = obterUltimosSeisMeses();
-    
-    return meses.map(mes => {
-      // Simular dados com números aleatórios de pacientes e medições
-      const pacientes = Math.floor(Math.random() * 10) + 2;
-      const medicoes = Math.floor(Math.random() * 15) + 5;
-      
-      return {
-        mes: mes.formatado,
-        pacientes: pacientes,
-        medicoes: medicoes
-      };
-    });
-  };
+  }, [dateRange, measurementType]);
   
   return (
     <Card>
       <CardHeader>
         <CardTitle>Evolução de Pacientes e Medições</CardTitle>
         <CardDescription>
-          Comparativo entre pacientes registrados e medições realizadas nos últimos 6 meses
+          Comparativo entre pacientes registrados e medições realizadas no período selecionado
         </CardDescription>
       </CardHeader>
       <CardContent>

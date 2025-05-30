@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +20,7 @@ import { PacientesStatusChart } from "@/components/PacientesStatusChart";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SelectPatientDialog } from "@/components/SelectPatientDialog";
 import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
+import { useChartFilters } from "@/hooks/use-chart-filters";
 
 interface TrendData {
   value: number;
@@ -60,6 +60,16 @@ export default function Dashboard() {
   const [percentualPacientesAlerta, setPercentualPacientesAlerta] = useState(0);
   const isMobile = useIsMobile();
   const [patientDialogOpen, setPatientDialogOpen] = useState(false);
+
+  // Adicionar hook de filtros para o dashboard
+  const {
+    filters,
+    dateRange,
+    updateTimePeriod,
+    updateMeasurementType,
+    updateCustomDateRange,
+    resetFilters
+  } = useChartFilters();
 
   useEffect(() => {
     async function carregarDados() {
@@ -327,18 +337,45 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Filtros para Desktop - Apenas quando não mobile */}
+      {!isMobile && (
+        <ChartFilters
+          timePeriod={filters.timePeriod}
+          onTimePeriodChange={updateTimePeriod}
+          measurementType={filters.measurementType}
+          onMeasurementTypeChange={updateMeasurementType}
+          showMeasurementFilter={true}
+          customDateRange={filters.customDateRange}
+          onCustomDateRangeChange={updateCustomDateRange}
+          showCustomDateRange={true}
+          onResetFilters={resetFilters}
+        />
+      )}
+
       {/* Charts Section - Enhanced Layout for Better Analytics */}
       {!isMobile && (
         <div className="grid gap-6 lg:grid-cols-12 mt-6">
           {/* Main chart takes more space */}
           <div className="lg:col-span-8">
-            <PacientesMedicoesChart altura={350} />
+            <PacientesMedicoesChart 
+              altura={350} 
+              dateRange={dateRange}
+              measurementType={filters.measurementType}
+            />
           </div>
           
           {/* Side charts in a column */}
           <div className="lg:col-span-4 space-y-6">
-            <MedicoesPorDiaChart altura={165} />
-            <PacientesStatusChart altura={165} />
+            <MedicoesPorDiaChart 
+              altura={165}
+              dateRange={dateRange}
+              measurementType={filters.measurementType}
+            />
+            <PacientesStatusChart 
+              altura={165}
+              dateRange={dateRange}
+              measurementType={filters.measurementType}
+            />
           </div>
         </div>
       )}
