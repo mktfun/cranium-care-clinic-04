@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -341,7 +342,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Filtros de Análise - Posicionados acima dos gráficos (onde estava a caixa vermelha) */}
+      {/* Filtros de Análise - Posicionados acima dos gráficos */}
       {!isMobile && (
         <div className="mb-6">
           <ChartFilters
@@ -358,10 +359,10 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Charts Section - Layout reorganizado */}
+      {/* Charts Section - Layout reorganizado conforme solicitado */}
       {!isMobile && (
         <div className="grid gap-6 lg:grid-cols-3 mt-6">
-          {/* Gráfico "Medições Realizadas" agora ocupa a posição principal (2/3 do espaço - onde estava a caixa azul) */}
+          {/* Gráfico "Medições Realizadas no Período" agora ocupa a posição principal (2/3 do espaço - caixa azul) */}
           <div className="lg:col-span-2">
             <MedicoesPorDiaChart 
               altura={350} 
@@ -372,7 +373,7 @@ export default function Dashboard() {
             />
           </div>
           
-          {/* Gráfico "Evolução de Pacientes e Medições" agora fica na lateral (1/3 do espaço) */}
+          {/* Gráfico "Evolução de Pacientes e Medições" agora fica na lateral (1/3 do espaço - caixa verde) */}
           <div className="lg:col-span-1">
             <PacientesMedicoesChart 
               altura={350}
