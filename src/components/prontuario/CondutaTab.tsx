@@ -1,12 +1,13 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, FileText, Save } from "lucide-react";
+import { Stethoscope, FileText, Save, AlertTriangle } from "lucide-react";
 import { Prontuario } from "@/types";
 import { toast } from "sonner";
+import { useProntuarioBackup } from "@/hooks/useProntuarioBackup";
 
 interface CondutaTabProps {
   prontuario: Prontuario;
@@ -19,21 +20,59 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
   const [localAtestado, setLocalAtestado] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasBackupData, setHasBackupData] = useState(false);
+
+  const { saveToBackup, loadFromBackup, clearBackup } = useProntuarioBackup(prontuario?.id);
+
+  // Auto-save timer
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Verificar se há dados de backup disponíveis
+  const checkBackupData = useCallback(() => {
+    const condutaBackup = loadFromBackup('conduta');
+    const atestadoBackup = loadFromBackup('atestado');
+    setHasBackupData(!!(condutaBackup || atestadoBackup));
+  }, [loadFromBackup]);
+
+  // Recuperar dados de backup se disponível
+  const recoverFromBackup = useCallback(() => {
+    const condutaBackup = loadFromBackup('conduta');
+    const atestadoBackup = loadFromBackup('atestado');
+    
+    if (condutaBackup) {
+      setLocalConduta(condutaBackup);
+      toast.info("Dados de conduta recuperados do backup local");
+    }
+    if (atestadoBackup) {
+      setLocalAtestado(atestadoBackup);
+      toast.info("Dados de atestado recuperados do backup local");
+    }
+    
+    setHasBackupData(false);
+  }, [loadFromBackup]);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
     console.log("Carregando dados de conduta:", prontuario);
+    
+    // Verificar backup primeiro
+    checkBackupData();
+    
     const conduta = prontuario?.conduta || "";
     const atestado = prontuario?.atestado || "";
 
-    setLocalConduta(conduta);
-    setLocalAtestado(atestado);
+    // Só sobrescrever se não houver backup ou se os dados do banco forem mais recentes
+    if (!hasBackupData) {
+      setLocalConduta(conduta);
+      setLocalAtestado(atestado);
+    }
+    
     setHasChanges(false);
 
     console.log("Estados locais de conduta definidos:", { conduta, atestado });
-  }, [prontuario]);
+  }, [prontuario, hasBackupData, checkBackupData]);
 
-  // Verificar mudanças
+  // Verificar mudanças e fazer backup automático
   useEffect(() => {
     if (!prontuario) return;
 
@@ -45,7 +84,31 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
       localAtestado !== currentAtestado;
 
     setHasChanges(changed);
-  }, [localConduta, localAtestado, prontuario]);
+
+    // Auto-backup com debounce
+    if (changed) {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+      
+      const timer = setTimeout(() => {
+        if (localConduta !== currentConduta) {
+          saveToBackup('conduta', localConduta);
+        }
+        if (localAtestado !== currentAtestado) {
+          saveToBackup('atestado', localAtestado);
+        }
+      }, 2000); // 2 segundos de debounce
+      
+      setAutoSaveTimer(timer);
+    }
+
+    return () => {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+    };
+  }, [localConduta, localAtestado, prontuario, saveToBackup, autoSaveTimer]);
 
   const handleSave = async () => {
     if (!hasChanges) {
@@ -76,9 +139,13 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
       // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
 
+      // Limpar backups após salvamento bem-sucedido
+      clearBackup('conduta');
+      clearBackup('atestado');
+      
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
-      toast.error("Erro ao salvar dados.");
+      toast.error("Erro ao salvar dados. Os dados foram mantidos localmente.");
       console.error("Erro ao salvar:", error);
     } finally {
       setIsSaving(false);
@@ -87,6 +154,36 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
 
   return (
     <div className="space-y-6">
+      {hasBackupData && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-orange-700">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">Dados recuperados encontrados</span>
+            </div>
+            <p className="text-sm text-orange-600 mt-1">
+              Foram encontrados dados não salvos anteriormente. Deseja recuperá-los?
+            </p>
+            <div className="flex gap-2 mt-3">
+              <Button 
+                size="sm" 
+                onClick={recoverFromBackup}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                Recuperar Dados
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setHasBackupData(false)}
+              >
+                Descartar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -118,7 +215,7 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
 
           {hasChanges && (
             <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-              Há alterações não salvas nesta aba.
+              Há alterações não salvas nesta aba. Os dados estão sendo salvos automaticamente localmente.
             </div>
           )}
         </CardContent>

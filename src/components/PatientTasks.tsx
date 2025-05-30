@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,7 +45,15 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
         return;
       }
 
-      setTasks(data || []);
+      // Garantir que o status está correto ao converter dos dados do banco
+      const tasksWithCorrectTypes: Task[] = (data || []).map(task => ({
+        ...task,
+        status: ['pendente', 'em_progresso', 'concluida'].includes(task.status) 
+          ? task.status as 'pendente' | 'em_progresso' | 'concluida'
+          : 'pendente'
+      }));
+
+      setTasks(tasksWithCorrectTypes);
     } catch (error) {
       console.error('Erro inesperado:', error);
       toast.error('Erro inesperado ao carregar tarefas');
@@ -88,7 +95,12 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
         return;
       }
 
-      setTasks([...tasks, data]);
+      const newTask: Task = {
+        ...data,
+        status: data.status as 'pendente' | 'em_progresso' | 'concluida'
+      };
+
+      setTasks([...tasks, newTask]);
       resetTaskForm();
       setIsNewTaskDialogOpen(false);
       toast.success("Tarefa criada com sucesso!");
@@ -125,8 +137,13 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
         return;
       }
 
+      const updatedTask: Task = {
+        ...data,
+        status: data.status as 'pendente' | 'em_progresso' | 'concluida'
+      };
+
       const updatedTasks = tasks.map(task => 
-        task.id === currentTask.id ? data : task
+        task.id === currentTask.id ? updatedTask : task
       );
       
       setTasks(updatedTasks);
@@ -181,7 +198,12 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
         return;
       }
 
-      setTasks(tasks.map(t => t.id === task.id ? data : t));
+      const updatedTask: Task = {
+        ...data,
+        status: data.status as 'pendente' | 'em_progresso' | 'concluida'
+      };
+
+      setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
     } catch (error) {
       console.error('Erro inesperado:', error);
       toast.error('Erro inesperado ao atualizar status');
@@ -366,7 +388,10 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="edit-status" className="text-sm font-medium">Status</label>
-                    <Select value={taskStatus} onValueChange={setTaskStatus}>
+                    <Select 
+                      value={taskStatus} 
+                      onValueChange={(value: 'pendente' | 'em_progresso' | 'concluida') => setTaskStatus(value)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

@@ -32,11 +32,13 @@ export default function ProntuarioMedico() {
   const [activeTab, setActiveTab] = useState("dados-do-bebe");
   const isMobile = useIsMobile();
 
-  // Função para recarregar dados do prontuário atual
+  // Função para recarregar dados do prontuário atual com melhor tratamento de erro
   const reloadCurrentProntuario = async () => {
     if (!currentProntuario?.id) return;
     
     try {
+      console.log('Recarregando prontuário ID:', currentProntuario.id);
+      
       const { data, error } = await supabase
         .from('prontuarios')
         .select('*')
@@ -45,19 +47,39 @@ export default function ProntuarioMedico() {
       
       if (error) {
         console.error('Erro ao recarregar prontuário:', error);
+        
+        // Se o erro for de dados não encontrados, manter dados atuais
+        if (error.code === 'PGRST116') {
+          console.warn('Prontuário não encontrado no banco, mantendo dados atuais');
+          return;
+        }
+        
+        toast.error('Erro ao recarregar dados do prontuário');
         return;
       }
       
       if (data) {
         console.log('Dados recarregados do banco:', data);
-        setCurrentProntuario(data as Prontuario);
-        // Também atualizar na lista de prontuários
-        setProntuarios(prev => prev.map(p => 
-          p.id === data.id ? data as Prontuario : p
-        ));
+        
+        // Verificar se os dados realmente mudaram antes de atualizar
+        const hasChanges = JSON.stringify(currentProntuario) !== JSON.stringify(data);
+        
+        if (hasChanges) {
+          setCurrentProntuario(data as Prontuario);
+          // Também atualizar na lista de prontuários
+          setProntuarios(prev => prev.map(p => 
+            p.id === data.id ? data as Prontuario : p
+          ));
+          console.log('Prontuário atualizado com novos dados do banco');
+        } else {
+          console.log('Dados do banco são iguais aos locais, não atualizando');
+        }
+      } else {
+        console.warn('Nenhum dado retornado do banco para o prontuário');
       }
     } catch (err) {
-      console.error('Erro ao recarregar prontuário:', err);
+      console.error('Erro inesperado ao recarregar prontuário:', err);
+      toast.error('Erro inesperado ao atualizar dados');
     }
   };
   
@@ -150,6 +172,7 @@ export default function ProntuarioMedico() {
     if (!currentProntuario) return;
     
     console.log(`Salvando campo ${field} no banco de dados com valor:`, value);
+    
     try {
       const { error } = await supabase
         .from('prontuarios')
@@ -166,8 +189,22 @@ export default function ProntuarioMedico() {
       
       console.log(`Campo ${field} salvo com sucesso no banco de dados`);
       
-      // Recarregar dados do banco após salvar
-      await reloadCurrentProntuario();
+      // Atualizar prontuário local imediatamente para evitar perda de dados
+      const updatedProntuario = {
+        ...currentProntuario,
+        [field]: value,
+        updated_at: new Date().toISOString()
+      };
+      
+      setCurrentProntuario(updatedProntuario);
+      setProntuarios(prev => prev.map(p => 
+        p.id === currentProntuario.id ? updatedProntuario : p
+      ));
+      
+      // Fazer reload apenas como backup, sem sobrescrever dados locais
+      setTimeout(() => {
+        reloadCurrentProntuario();
+      }, 1000);
       
     } catch (err) {
       console.error('Erro ao salvar:', err);

@@ -1,13 +1,14 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Activity, Save } from "lucide-react";
+import { Activity, Save, AlertTriangle } from "lucide-react";
 import { Prontuario } from "@/types";
 import { CIDSearchInput } from "@/components/prontuario/CIDSearchInput";
 import { toast } from "sonner";
+import { useProntuarioBackup } from "@/hooks/useProntuarioBackup";
 
 interface DiagnosticoTabProps {
   prontuario: Prontuario;
@@ -20,21 +21,59 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
   const [localCid, setLocalCid] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasBackupData, setHasBackupData] = useState(false);
+
+  const { saveToBackup, loadFromBackup, clearBackup } = useProntuarioBackup(prontuario?.id);
+
+  // Auto-save timer
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Verificar se há dados de backup disponíveis
+  const checkBackupData = useCallback(() => {
+    const diagnosticoBackup = loadFromBackup('diagnostico');
+    const cidBackup = loadFromBackup('cid');
+    setHasBackupData(!!(diagnosticoBackup || cidBackup));
+  }, [loadFromBackup]);
+
+  // Recuperar dados de backup se disponível
+  const recoverFromBackup = useCallback(() => {
+    const diagnosticoBackup = loadFromBackup('diagnostico');
+    const cidBackup = loadFromBackup('cid');
+    
+    if (diagnosticoBackup) {
+      setLocalDiagnostico(diagnosticoBackup);
+      toast.info("Dados de diagnóstico recuperados do backup local");
+    }
+    if (cidBackup) {
+      setLocalCid(cidBackup);
+      toast.info("Dados de CID recuperados do backup local");
+    }
+    
+    setHasBackupData(false);
+  }, [loadFromBackup]);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
     console.log("Carregando dados de diagnóstico:", prontuario);
+    
+    // Verificar backup primeiro
+    checkBackupData();
+    
     const diagnostico = prontuario?.diagnostico || "";
     const cid = prontuario?.cid || "";
 
-    setLocalDiagnostico(diagnostico);
-    setLocalCid(cid);
+    // Só sobrescrever se não houver backup ou se os dados do banco forem mais recentes
+    if (!hasBackupData) {
+      setLocalDiagnostico(diagnostico);
+      setLocalCid(cid);
+    }
+    
     setHasChanges(false);
 
     console.log("Estados locais de diagnóstico definidos:", { diagnostico, cid });
-  }, [prontuario]);
+  }, [prontuario, hasBackupData, checkBackupData]);
 
-  // Verificar mudanças
+  // Verificar mudanças e fazer backup automático
   useEffect(() => {
     if (!prontuario) return;
 
@@ -46,7 +85,31 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
       localCid !== currentCid;
 
     setHasChanges(changed);
-  }, [localDiagnostico, localCid, prontuario]);
+
+    // Auto-backup com debounce
+    if (changed) {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+      
+      const timer = setTimeout(() => {
+        if (localDiagnostico !== currentDiagnostico) {
+          saveToBackup('diagnostico', localDiagnostico);
+        }
+        if (localCid !== currentCid) {
+          saveToBackup('cid', localCid);
+        }
+      }, 2000); // 2 segundos de debounce
+      
+      setAutoSaveTimer(timer);
+    }
+
+    return () => {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+    };
+  }, [localDiagnostico, localCid, prontuario, saveToBackup, autoSaveTimer]);
 
   const handleCIDSelect = (cid: any) => {
     setLocalCid(cid.codigo);
@@ -88,10 +151,14 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
 
       // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
+
+      // Limpar backups após salvamento bem-sucedido
+      clearBackup('diagnostico');
+      clearBackup('cid');
       
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
-      toast.error("Erro ao salvar dados.");
+      toast.error("Erro ao salvar dados. Os dados foram mantidos localmente.");
       console.error("Erro ao salvar:", error);
     } finally {
       setIsSaving(false);
@@ -100,6 +167,36 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
 
   return (
     <div className="space-y-6">
+      {hasBackupData && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-orange-700">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">Dados recuperados encontrados</span>
+            </div>
+            <p className="text-sm text-orange-600 mt-1">
+              Foram encontrados dados não salvos anteriormente. Deseja recuperá-los?
+            </p>
+            <div className="flex gap-2 mt-3">
+              <Button 
+                size="sm" 
+                onClick={recoverFromBackup}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                Recuperar Dados
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setHasBackupData(false)}
+              >
+                Descartar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -139,7 +236,7 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: Diagnostico
 
           {hasChanges && (
             <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-              Há alterações não salvas nesta aba.
+              Há alterações não salvas nesta aba. Os dados estão sendo salvos automaticamente localmente.
             </div>
           )}
         </CardContent>
