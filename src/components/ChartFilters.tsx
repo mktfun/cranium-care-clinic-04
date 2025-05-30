@@ -68,7 +68,7 @@ export function ChartFilters({
                     </SelectItem>
                   ))}
                 </SelectContent>
-              </SelectContent>
+              </Select>
             </div>
           )}
         </div>
