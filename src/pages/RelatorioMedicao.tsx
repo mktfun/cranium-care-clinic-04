@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
@@ -17,6 +16,8 @@ import { toast } from "sonner";
 import { formatAge } from "@/lib/age-utils";
 import { getCranialStatus, SeverityLevel, AsymmetryType } from "@/lib/cranial-utils";
 import { RecomendacoesCard } from "@/components/relatorio/RecomendacoesCard";
+import { CranialMeasurementPDF } from "@/components/pdf/CranialMeasurementPDF";
+import { usePDFGeneration } from "@/hooks/usePDFGeneration";
 
 // Definindo interfaces para os dados, se não existirem globalmente
 interface Paciente {
@@ -58,6 +59,8 @@ export default function RelatorioMedicao() {
   const [carregando, setCarregando] = useState(true);
   const [clinicaNome, setClinicaNome] = useState<string>("Clínica Padrão");
   const [profissionalNome, setProfissionalNome] = useState<string>("Profissional Padrão");
+  
+  const { generateAndDownloadPDF, isGenerating } = usePDFGeneration();
   
   useEffect(() => {
     async function fetchData() {
@@ -198,15 +201,30 @@ export default function RelatorioMedicao() {
     if (!dataString) return "N/A";
     const data = new Date(dataString);
     if (isNaN(data.getTime())) return "Data inválida";
-    return data.toLocaleDateString("pt-BR", { timeZone: "UTC" }); // UTC para consistência
+    return data.toLocaleDateString("pt-BR", { timeZone: "UTC" });
   };
   
-  const handleExportarPDF = () => {
-    // A lógica de exportação de PDF real precisa ser implementada aqui.
-    // Pode usar bibliotecas como jsPDF e html2canvas, ou ReportLab no backend.
-    // Por enquanto, apenas um toast de sucesso.
-    toast.info("Funcionalidade de exportar PDF ainda em desenvolvimento.");
-    // window.print(); // Uma alternativa simples para impressão direta
+  const handleExportarPDF = async () => {
+    const cranialStatus = getCranialStatus(medicaoEspecifica.indice_craniano, medicaoEspecifica.cvai);
+    
+    const pdfComponent = (
+      <CranialMeasurementPDF
+        pacienteData={paciente}
+        medicaoData={medicaoEspecifica}
+        idadeNaAvaliacao={formatAge(paciente.data_nascimento, medicaoEspecifica.data)}
+        diagnosis={cranialStatus.diagnosis}
+        choaClassification={cranialStatus.choaClassification}
+        recomendacoes={medicaoEspecifica.recomendacoes || []}
+        clinicaInfo={{
+          nome: clinicaNome,
+          profissional: profissionalNome
+        }}
+      />
+    );
+    
+    const filename = `relatorio-craniano-${paciente.nome.toLowerCase().replace(/\s/g, '-')}-${formatarData(medicaoEspecifica.data).replace(/\//g, '-')}.pdf`;
+    
+    await generateAndDownloadPDF(pdfComponent, filename);
   };
   
   const handleVoltar = () => {
@@ -247,8 +265,14 @@ export default function RelatorioMedicao() {
         <Button 
           variant="outline" 
           onClick={handleExportarPDF}
+          disabled={isGenerating}
         >
-          <Download className="h-4 w-4 mr-2" /> Exportar PDF
+          {isGenerating ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4 mr-2" />
+          )}
+          {isGenerating ? "Gerando..." : "Exportar PDF"}
         </Button>
       </div>
 
