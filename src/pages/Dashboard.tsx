@@ -21,7 +21,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { SelectPatientDialog } from "@/components/SelectPatientDialog";
 import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
 import { ChartFilters } from "@/components/ChartFilters";
-import { useChartFilters } from "@/hooks/useChartFilters";
+import { useIndependentChartFilters } from "@/hooks/useIndependentChartFilters";
 import { useChartType } from "@/hooks/useChartType";
 
 interface TrendData {
@@ -63,15 +63,24 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
   const [patientDialogOpen, setPatientDialogOpen] = useState(false);
 
-  // Hooks de filtros e tipos de gráfico
+  // Hooks independentes para cada gráfico
   const {
-    filters,
-    dateRange,
-    updateTimePeriod,
-    updateMeasurementType,
-    updateCustomDateRange,
-    resetFilters
-  } = useChartFilters();
+    filters: pacientesMedicoesFilters,
+    dateRange: pacientesMedicoesDateRange,
+    updateTimePeriod: updatePacientesMedicoesTimePeriod,
+    updateMeasurementType: updatePacientesMedicoesMeasurementType,
+    updateCustomDateRange: updatePacientesMedicoesCustomDateRange,
+    resetFilters: resetPacientesMedicoesFilters
+  } = useIndependentChartFilters("6months");
+
+  const {
+    filters: medicoesPorDiaFilters,
+    dateRange: medicoesPorDiaDateRange,
+    updateTimePeriod: updateMedicoesPorDiaTimePeriod,
+    updateMeasurementType: updateMedicoesPorDiaMeasurementType,
+    updateCustomDateRange: updateMedicoesPorDiaCustomDateRange,
+    resetFilters: resetMedicoesPorDiaFilters
+  } = useIndependentChartFilters("7days");
 
   const { getChartType, updateChartType } = useChartType();
 
@@ -341,45 +350,50 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Filtros de Análise - Posicionados acima dos gráficos */}
-      {!isMobile && (
-        <div className="mb-6">
-          <ChartFilters
-            timePeriod={filters.timePeriod}
-            onTimePeriodChange={updateTimePeriod}
-            measurementType={filters.measurementType}
-            onMeasurementTypeChange={updateMeasurementType}
-            showMeasurementFilter={true}
-            customDateRange={filters.customDateRange}
-            onCustomDateRangeChange={updateCustomDateRange}
-            showCustomDateRange={true}
-            onResetFilters={resetFilters}
-          />
-        </div>
-      )}
-
-      {/* Charts Section - GRÁFICOS EMPILHADOS VERTICALMENTE */}
+      {/* Charts Section - GRÁFICOS COM FILTROS INDEPENDENTES */}
       {!isMobile && (
         <div className="space-y-6 mt-6">
-          {/* "Medições Realizadas no Período" - PRIMEIRO (EM CIMA) */}
+          {/* "Evolução de Pacientes e Medições" - PRIMEIRO (EM CIMA) */}
           <div>
-            <MedicoesPorDiaChart 
-              altura={350} 
-              dateRange={dateRange}
-              measurementType={filters.measurementType}
-              chartType={getChartType("medicoesPorDia")}
-              onChartTypeChange={(type) => updateChartType("medicoesPorDia", type)}
+            <ChartFilters
+              timePeriod={pacientesMedicoesFilters.timePeriod}
+              onTimePeriodChange={updatePacientesMedicoesTimePeriod}
+              measurementType={pacientesMedicoesFilters.measurementType}
+              onMeasurementTypeChange={updatePacientesMedicoesMeasurementType}
+              showMeasurementFilter={true}
+              customDateRange={pacientesMedicoesFilters.customDateRange}
+              onCustomDateRangeChange={updatePacientesMedicoesCustomDateRange}
+              showCustomDateRange={true}
+              onResetFilters={resetPacientesMedicoesFilters}
+            />
+            <PacientesMedicoesChart 
+              altura={350}
+              dateRange={pacientesMedicoesDateRange}
+              measurementType={pacientesMedicoesFilters.measurementType}
+              chartType={getChartType("pacientesMedicoes")}
+              onChartTypeChange={(type) => updateChartType("pacientesMedicoes", type)}
             />
           </div>
           
-          {/* "Evolução de Pacientes e Medições" - SEGUNDO (EMBAIXO) */}
+          {/* "Medições Realizadas no Período" - SEGUNDO (EMBAIXO) */}
           <div>
-            <PacientesMedicoesChart 
-              altura={350}
-              dateRange={dateRange}
-              measurementType={filters.measurementType}
-              chartType={getChartType("pacientesMedicoes")}
-              onChartTypeChange={(type) => updateChartType("pacientesMedicoes", type)}
+            <ChartFilters
+              timePeriod={medicoesPorDiaFilters.timePeriod}
+              onTimePeriodChange={updateMedicoesPorDiaTimePeriod}
+              measurementType={medicoesPorDiaFilters.measurementType}
+              onMeasurementTypeChange={updateMedicoesPorDiaMeasurementType}
+              showMeasurementFilter={true}
+              customDateRange={medicoesPorDiaFilters.customDateRange}
+              onCustomDateRangeChange={updateMedicoesPorDiaCustomDateRange}
+              showCustomDateRange={true}
+              onResetFilters={resetMedicoesPorDiaFilters}
+            />
+            <MedicoesPorDiaChart 
+              altura={350} 
+              dateRange={medicoesPorDiaDateRange}
+              measurementType={medicoesPorDiaFilters.measurementType}
+              chartType={getChartType("medicoesPorDia")}
+              onChartTypeChange={(type) => updateChartType("medicoesPorDia", type)}
             />
           </div>
         </div>
