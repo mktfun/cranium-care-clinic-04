@@ -357,21 +357,10 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Charts Section - Simplified Layout without Status Chart */}
+      {/* Charts Section - Layout reorganizado conforme solicitado */}
       {!isMobile && (
         <div className="grid gap-6 lg:grid-cols-3 mt-6">
-          {/* Main chart takes more space */}
-          <div className="lg:col-span-2">
-            <PacientesMedicoesChart 
-              altura={350} 
-              dateRange={dateRange}
-              measurementType={filters.measurementType}
-              chartType={getChartType("pacientesMedicoes")}
-              onChartTypeChange={(type) => updateChartType("pacientesMedicoes", type)}
-            />
-          </div>
-          
-          {/* Single side chart */}
+          {/* Medições por Dia - Posição da caixa azul */}
           <div className="lg:col-span-1">
             <MedicoesPorDiaChart 
               altura={350}
@@ -379,6 +368,17 @@ export default function Dashboard() {
               measurementType={filters.measurementType}
               chartType={getChartType("medicoesPorDia")}
               onChartTypeChange={(type) => updateChartType("medicoesPorDia", type)}
+            />
+          </div>
+          
+          {/* Evolução de Pacientes e Medições - Posição da caixa amarela, ocupando mais espaço */}
+          <div className="lg:col-span-2">
+            <PacientesMedicoesChart 
+              altura={350} 
+              dateRange={dateRange}
+              measurementType={filters.measurementType}
+              chartType={getChartType("pacientesMedicoes")}
+              onChartTypeChange={(type) => updateChartType("pacientesMedicoes", type)}
             />
           </div>
         </div>
