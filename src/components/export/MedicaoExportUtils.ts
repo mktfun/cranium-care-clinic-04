@@ -7,8 +7,8 @@ import { pdf } from "@react-pdf/renderer";
 
 interface MedicaoExportable {
   data: string;
-  indice_craniano: number;
-  cvai: number;
+  indice_craniano?: number;
+  cvai?: number;
   perimetro_cefalico?: number;
   comprimento_maximo?: number;
   largura_maxima?: number;
@@ -39,7 +39,7 @@ export class MedicaoExportUtils {
     ];
 
     const rows = medicoes.map(medicao => {
-      const { asymmetryType, severityLevel } = getCranialStatus(medicao.indice_craniano, medicao.cvai);
+      const { asymmetryType, severityLevel } = getCranialStatus(medicao.indice_craniano || 0, medicao.cvai || 0);
       const dataFormatada = new Date(medicao.data).toLocaleDateString('pt-BR');
       const idade = formatAge(paciente.data_nascimento, medicao.data);
       
@@ -52,8 +52,8 @@ export class MedicaoExportUtils {
         medicao.diagonal_direita || medicao.diagonal_d || '',
         medicao.diagonal_esquerda || medicao.diagonal_e || '',
         medicao.diferenca_diagonais || '',
-        medicao.indice_craniano.toFixed(1),
-        medicao.cvai.toFixed(1),
+        (medicao.indice_craniano || 0).toFixed(1),
+        (medicao.cvai || 0).toFixed(1),
         this.translateAsymmetryType(asymmetryType),
         this.translateSeverityLevel(severityLevel)
       ];
@@ -96,7 +96,7 @@ export class MedicaoExportUtils {
     clinicaInfo: { nome: string; profissional: string }
   ): Promise<void> {
     try {
-      const cranialStatus = getCranialStatus(medicao.indice_craniano, medicao.cvai);
+      const cranialStatus = getCranialStatus(medicao.indice_craniano || 0, medicao.cvai || 0);
       const idadeNaAvaliacao = formatAge(paciente.data_nascimento, medicao.data);
       
       // Converte medicao para o formato esperado pelo PDF
@@ -107,23 +107,24 @@ export class MedicaoExportUtils {
         diagonal_d: medicao.diagonal_d || medicao.diagonal_direita || 0,
         diagonal_e: medicao.diagonal_e || medicao.diagonal_esquerda || 0,
         perimetro_cefalico: medicao.perimetro_cefalico,
-        indice_craniano: medicao.indice_craniano,
+        indice_craniano: medicao.indice_craniano || 0,
         diferenca_diagonais: medicao.diferenca_diagonais || 0,
-        cvai: medicao.cvai
+        cvai: medicao.cvai || 0
       };
       
-      // Gerar o PDF diretamente
-      const blob = await pdf(
-        <CranialMeasurementPDF
-          pacienteData={paciente}
-          medicaoData={medicaoFormatada}
-          idadeNaAvaliacao={idadeNaAvaliacao}
-          diagnosis={cranialStatus.diagnosis}
-          choaClassification={cranialStatus.choaClassification}
-          recomendacoes={recomendacoes}
-          clinicaInfo={clinicaInfo}
-        />
-      ).toBlob();
+      // Criar o elemento PDF Component
+      const pdfElement = React.createElement(CranialMeasurementPDF, {
+        pacienteData: paciente,
+        medicaoData: medicaoFormatada,
+        idadeNaAvaliacao,
+        diagnosis: cranialStatus.diagnosis,
+        choaClassification: cranialStatus.choaClassification,
+        recomendacoes,
+        clinicaInfo
+      });
+      
+      // Gerar o PDF
+      const blob = await pdf(pdfElement).toBlob();
       
       // Download
       const url = URL.createObjectURL(blob);

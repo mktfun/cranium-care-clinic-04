@@ -26,8 +26,8 @@ interface Medicao {
   id: string;
   paciente_id: string;
   data: string;
-  indice_craniano: number;
-  cvai: number;
+  indice_craniano?: number;
+  cvai?: number;
   perimetro_cefalico?: number;
   diferenca_diagonais?: number;
   comprimento?: number;
@@ -85,7 +85,7 @@ export default function Historico() {
         const pacientesMap = (pacientesData || []).reduce((acc: Record<string, Paciente>, paciente) => {
           acc[paciente.id] = {
             ...paciente,
-            sexo: (paciente.sexo as 'M' | 'F') || 'M'
+            sexo: (paciente.sexo === 'M' || paciente.sexo === 'F') ? paciente.sexo : 'M'
           };
           return acc;
         }, {});
@@ -137,8 +137,15 @@ export default function Historico() {
         sexo: medicao.pacienteSexo
       };
 
+      // Garantir que os campos obrigatórios existam
+      const medicaoParaExport = {
+        ...medicao,
+        indice_craniano: medicao.indice_craniano || 0,
+        cvai: medicao.cvai || 0
+      };
+
       await MedicaoExportUtils.exportToPDF(
-        medicao, 
+        medicaoParaExport, 
         pacienteData, 
         [],
         { nome: "CraniumCare Clinic", profissional: "Médico Responsável" }
