@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { 
@@ -236,7 +235,7 @@ export default function Pacientes() {
     return sortConfig.direction === "asc" ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />;
   };
 
-  const handleAddPaciente = () => navigate("/pacientes/registro");
+  const handleAddPaciente = () => navigate("/pacientes/novo");
   
   const handleDeletePaciente = async (pacienteId: string) => {
     if (confirm("Tem certeza que deseja excluir este paciente e todas as suas medições? Esta ação não pode ser desfeita.")) {

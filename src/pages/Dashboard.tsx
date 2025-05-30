@@ -311,7 +311,7 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Button onClick={() => navigate('/pacientes/registro')} className="bg-turquesa hover:bg-turquesa/90 transition-all duration-300 hover:shadow-md transform hover:translate-y-[-2px]">
+            <Button onClick={() => navigate('/pacientes/novo')} className="bg-turquesa hover:bg-turquesa/90 transition-all duration-300 hover:shadow-md transform hover:translate-y-[-2px]">
               <Plus className="h-4 w-4 mr-2" />
               Novo Paciente
             </Button>
