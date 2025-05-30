@@ -6,23 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PenLine, Save, Plus, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface RecomendacoesCardProps {
   recomendacoes?: string[];
   severityLevel: SeverityLevel;
   isReadOnly?: boolean;
-  onSave?: (recomendacoes: string[]) => void;
+  medicaoId?: string;
+  onRecomendacoesUpdated?: (recomendacoes: string[]) => void;
 }
 
 export function RecomendacoesCard({ 
   recomendacoes = [], 
   severityLevel,
   isReadOnly = false,
-  onSave
+  medicaoId,
+  onRecomendacoesUpdated
 }: RecomendacoesCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedRecomendacoes, setEditedRecomendacoes] = useState<string[]>(recomendacoes);
   const [novaRecomendacao, setNovaRecomendacao] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Recomendações padrão baseadas no nível de severidade
   const getDefaultRecomendacoes = () => {
@@ -51,11 +56,41 @@ export function RecomendacoesCard({
     }
   };
 
-  const handleSaveClick = () => {
-    if (onSave) {
-      onSave(editedRecomendacoes);
+  const handleSaveClick = async () => {
+    if (!medicaoId) {
+      toast.error("ID da medição não encontrado");
+      return;
     }
-    setIsEditing(false);
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('medicoes')
+        .update({ 
+          recomendacoes: editedRecomendacoes,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', medicaoId);
+
+      if (error) {
+        console.error('Erro ao salvar recomendações:', error);
+        toast.error("Erro ao salvar recomendações");
+        return;
+      }
+
+      toast.success("Recomendações salvas com sucesso!");
+      setIsEditing(false);
+      
+      // Notificar componente pai sobre a atualização
+      if (onRecomendacoesUpdated) {
+        onRecomendacoesUpdated(editedRecomendacoes);
+      }
+    } catch (err) {
+      console.error('Erro ao salvar recomendações:', err);
+      toast.error("Erro ao salvar recomendações");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -83,7 +118,9 @@ export function RecomendacoesCard({
   };
 
   const handleAddDefaultRecomendacoes = () => {
-    setEditedRecomendacoes([...editedRecomendacoes, ...getDefaultRecomendacoes()]);
+    const defaultRecs = getDefaultRecomendacoes();
+    const uniqueRecs = defaultRecs.filter(rec => !editedRecomendacoes.includes(rec));
+    setEditedRecomendacoes([...editedRecomendacoes, ...uniqueRecs]);
   };
 
   const displayRecomendacoes = isEditing ? editedRecomendacoes : recomendacoes;
@@ -96,13 +133,14 @@ export function RecomendacoesCard({
           <CardTitle>Recomendações Clínicas</CardTitle>
           <CardDescription>Baseadas no protocolo de avaliação craniana</CardDescription>
         </div>
-        {!isReadOnly && (
+        {!isReadOnly && medicaoId && (
           isEditing ? (
             <div className="flex space-x-2">
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={handleCancelEdit}
+                disabled={isSaving}
               >
                 Cancelar
               </Button>
@@ -110,9 +148,11 @@ export function RecomendacoesCard({
                 variant="default" 
                 size="sm" 
                 onClick={handleSaveClick}
+                disabled={isSaving}
                 className="flex items-center gap-1"
               >
-                <Save className="h-4 w-4" /> Salvar
+                <Save className="h-4 w-4" /> 
+                {isSaving ? "Salvando..." : "Salvar"}
               </Button>
             </div>
           ) : (

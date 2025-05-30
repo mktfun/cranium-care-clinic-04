@@ -105,6 +105,13 @@ export default function RelatorioVisualizar() {
     );
   }
   
+  const handleRecomendacoesUpdated = (novasRecomendacoes: string[]) => {
+    // Atualizar a medição específica nas medicoes
+    setMedicoes(prev => prev.map(m => 
+      m.id === medicaoId ? { ...m, recomendacoes: novasRecomendacoes } : m
+    ));
+  };
+  
   const medicao = medicaoId && !modoConsolidado && medicoes.length > 0
     ? medicoes.find(m => m.id === medicaoId) 
     : (medicoes.length > 0 ? medicoes[0] : null);
@@ -230,6 +237,9 @@ export default function RelatorioVisualizar() {
         <RecomendacoesCard 
           recomendacoes={medicao.recomendacoes}
           severityLevel={severityLevel}
+          isReadOnly={false}
+          medicaoId={medicao.id}
+          onRecomendacoesUpdated={handleRecomendacoesUpdated}
         />
       )}
       

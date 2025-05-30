@@ -11,12 +11,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { MedicaoLineChart } from "@/components/MedicaoLineChart";
 import { StatusBadge } from "@/components/StatusBadge";
-import { ChevronLeft, Download, ArrowRight, Loader2 } from "lucide-react"; // Adicionado Loader2
-// import { obterPacientePorId } from "@/data/mock-data"; // Mock data import removido
+import { ChevronLeft, Download, ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatAge } from "@/lib/age-utils";
 import { getCranialStatus, SeverityLevel, AsymmetryType } from "@/lib/cranial-utils";
+import { RecomendacoesCard } from "@/components/relatorio/RecomendacoesCard";
 
 // Definindo interfaces para os dados, se não existirem globalmente
 interface Paciente {
@@ -212,7 +212,16 @@ export default function RelatorioMedicao() {
   const handleVoltar = () => {
     navigate(`/pacientes/${pacienteId}`);
   };
-    
+  
+  const handleRecomendacoesUpdated = (novasRecomendacoes: string[]) => {
+    if (medicaoEspecifica) {
+      setMedicaoEspecifica({
+        ...medicaoEspecifica,
+        recomendacoes: novasRecomendacoes
+      });
+    }
+  };
+  
   const { asymmetryType, severityLevel } = getCranialStatus(medicaoEspecifica.indice_craniano, medicaoEspecifica.cvai);
   const idadeNaMedicao = formatAge(paciente.data_nascimento, medicaoEspecifica.data);
   
@@ -302,49 +311,13 @@ export default function RelatorioMedicao() {
           </CardContent>
         </Card>
         
-        <Card className="print:shadow-none print:border-gray-300">
-          <CardHeader className="print:pb-2">
-            <CardTitle className="print:text-lg">Recomendações Clínicas</CardTitle>
-            <CardDescription className="print:text-sm">Baseadas no protocolo de Atlanta</CardDescription>
-          </CardHeader>
-          <CardContent className="print:text-sm">
-            <div className="space-y-4 print:space-y-2">
-              <div>
-                <p className="text-sm text-muted-foreground print:text-xs">Diagnóstico</p>
-                <p className="font-medium print:text-base">
-                  {asymmetryType === "Normal" ? "Desenvolvimento craniano normal" : `${asymmetryType} ${severityLevel}`}
-                </p>
-              </div>
-              
-              <div>
-                <p className="text-sm text-muted-foreground print:text-xs">Recomendações</p>
-                <ul className="list-disc pl-5 space-y-1 mt-1 print:pl-4 print:space-y-0.5">
-                  {medicaoEspecifica.recomendacoes && medicaoEspecifica.recomendacoes.length > 0 ? (
-                    medicaoEspecifica.recomendacoes.map((rec: string, idx: number) => (
-                      <li key={idx}>{rec}</li>
-                    ))
-                  ) : (
-                    <li>Nenhuma recomendação específica registrada.</li>
-                  )}
-                </ul>
-              </div>
-              
-              <div>
-                <p className="text-sm text-muted-foreground print:text-xs">Próxima avaliação sugerida</p>
-                <p className="font-medium print:text-base">
-                  {severityLevel === "normal" ? "Em 3 meses" : 
-                   severityLevel === "leve" ? "Em 2 meses" :
-                   "Em 1 mês"}
-                </p>
-              </div>
-              
-              <div className="pt-2 print:pt-1">
-                <p className="text-sm text-muted-foreground print:text-xs">Idade na avaliação</p>
-                <p className="font-medium print:text-base">{idadeNaMedicao}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <RecomendacoesCard 
+          recomendacoes={medicaoEspecifica.recomendacoes}
+          severityLevel={severityLevel}
+          isReadOnly={false}
+          medicaoId={medicaoEspecifica.id}
+          onRecomendacoesUpdated={handleRecomendacoesUpdated}
+        />
       </div>
       
       <div className="space-y-6 print:mt-6">
