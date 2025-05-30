@@ -112,7 +112,7 @@ export class MedicaoExportUtils {
         cvai: medicao.cvai || 0
       };
       
-      // Criar o elemento PDF Component
+      // Criar o elemento PDF Component usando React.createElement
       const pdfElement = React.createElement(CranialMeasurementPDF, {
         pacienteData: paciente,
         medicaoData: medicaoFormatada,
