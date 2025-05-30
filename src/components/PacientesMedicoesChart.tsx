@@ -1,9 +1,10 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Bar, 
   Line, 
-  ComposedChart, 
+  ComposedChart,
+  BarChart,
+  LineChart, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -15,6 +16,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { DateRange } from "@/hooks/useChartFilters";
+import { ChartType } from "@/hooks/useChartType";
+import { ChartTypeToggle } from "@/components/ChartTypeToggle";
 
 interface DataPoint {
   mes: string;
@@ -26,6 +29,8 @@ interface PacientesMedicoesChartProps {
   altura?: number;
   dateRange?: DateRange;
   measurementType?: string;
+  chartType?: ChartType;
+  onChartTypeChange?: (type: ChartType) => void;
 }
 
 // Função para gerar dados simulados como fallback
@@ -79,7 +84,9 @@ const obterPeriodoDinamico = (dateRange: DateRange) => {
 export function PacientesMedicoesChart({ 
   altura = 350, 
   dateRange = { startDate: new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] },
-  measurementType = "all"
+  measurementType = "all",
+  chartType = "combined",
+  onChartTypeChange
 }: PacientesMedicoesChartProps) {
   const [dados, setDados] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,13 +168,124 @@ export function PacientesMedicoesChart({
     carregarDados();
   }, [dateRange, measurementType]);
   
+  // Renderizar o gráfico baseado no tipo selecionado
+  const renderChart = () => {
+    const commonProps = {
+      data: dados
+    };
+
+    const tooltipProps = {
+      contentStyle: {
+        backgroundColor: "var(--card)",
+        borderColor: "var(--border)",
+        borderRadius: "var(--radius)",
+      }
+    };
+
+    switch (chartType) {
+      case "bar":
+        return (
+          <BarChart {...commonProps}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis dataKey="mes" />
+            <YAxis />
+            <Tooltip {...tooltipProps} />
+            <Legend />
+            <Bar 
+              dataKey="pacientes" 
+              fill="#029daf" 
+              name="Pacientes" 
+              barSize={40}
+              radius={[4, 4, 0, 0]} 
+            />
+            <Bar 
+              dataKey="medicoes" 
+              fill="#AF5B5B" 
+              name="Medições" 
+              barSize={40}
+              radius={[4, 4, 0, 0]} 
+            />
+          </BarChart>
+        );
+
+      case "line":
+        return (
+          <LineChart {...commonProps}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis dataKey="mes" />
+            <YAxis />
+            <Tooltip {...tooltipProps} />
+            <Legend />
+            <Line 
+              type="monotone" 
+              dataKey="pacientes" 
+              stroke="#029daf" 
+              name="Pacientes" 
+              strokeWidth={2}
+              dot={{ r: 4, fill: "#029daf" }}
+              activeDot={{ r: 6, fill: "#029daf" }}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="medicoes" 
+              stroke="#AF5B5B" 
+              name="Medições" 
+              strokeWidth={2}
+              dot={{ r: 4, fill: "#AF5B5B" }}
+              activeDot={{ r: 6, fill: "#AF5B5B" }}
+            />
+          </LineChart>
+        );
+
+      default: // "combined"
+        return (
+          <ComposedChart {...commonProps}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis dataKey="mes" />
+            <YAxis yAxisId="left" />
+            <YAxis yAxisId="right" orientation="right" />
+            <Tooltip {...tooltipProps} />
+            <Legend />
+            <Bar 
+              yAxisId="left" 
+              dataKey="pacientes" 
+              fill="#029daf" 
+              name="Pacientes" 
+              barSize={40}
+              radius={[4, 4, 0, 0]} 
+            />
+            <Line 
+              yAxisId="right" 
+              type="monotone" 
+              dataKey="medicoes" 
+              stroke="#AF5B5B" 
+              name="Medições" 
+              strokeWidth={2}
+              dot={{ r: 4, fill: "#AF5B5B" }}
+              activeDot={{ r: 6, fill: "#AF5B5B" }}
+            />
+          </ComposedChart>
+        );
+    }
+  };
+  
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Evolução de Pacientes e Medições</CardTitle>
-        <CardDescription>
-          Comparativo entre pacientes registrados e medições realizadas no período selecionado
-        </CardDescription>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle>Evolução de Pacientes e Medições</CardTitle>
+            <CardDescription>
+              Comparativo entre pacientes registrados e medições realizadas no período selecionado
+            </CardDescription>
+          </div>
+          {onChartTypeChange && (
+            <ChartTypeToggle
+              currentType={chartType}
+              onTypeChange={onChartTypeChange}
+            />
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -176,36 +294,7 @@ export function PacientesMedicoesChart({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={altura}>
-            <ComposedChart data={dados}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis dataKey="mes" />
-              <YAxis yAxisId="left" />
-              <YAxis yAxisId="right" orientation="right" />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: "var(--card)",
-                  borderColor: "var(--border)",
-                  borderRadius: "var(--radius)",
-                }}
-              />
-              <Legend />
-              <Bar 
-                yAxisId="left" 
-                dataKey="pacientes" 
-                fill="#029daf" 
-                name="Pacientes" 
-                barSize={40}
-                radius={[4, 4, 0, 0]} 
-              />
-              <Line 
-                yAxisId="right" 
-                type="monotone" 
-                dataKey="medicoes" 
-                stroke="#AF5B5B" 
-                name="Medições" 
-                strokeWidth={2}
-              />
-            </ComposedChart>
+            {renderChart()}
           </ResponsiveContainer>
         )}
       </CardContent>

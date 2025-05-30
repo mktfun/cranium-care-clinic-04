@@ -22,6 +22,7 @@ import { SelectPatientDialog } from "@/components/SelectPatientDialog";
 import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
 import { ChartFilters } from "@/components/ChartFilters";
 import { useChartFilters } from "@/hooks/useChartFilters";
+import { useChartType } from "@/hooks/useChartType";
 
 interface TrendData {
   value: number;
@@ -71,6 +72,9 @@ export default function Dashboard() {
     updateCustomDateRange,
     resetFilters
   } = useChartFilters();
+
+  // Adicionar hook de tipos de gráfico
+  const { getChartType, updateChartType } = useChartType();
 
   useEffect(() => {
     async function carregarDados() {
@@ -362,6 +366,8 @@ export default function Dashboard() {
               altura={350} 
               dateRange={dateRange}
               measurementType={filters.measurementType}
+              chartType={getChartType("pacientesMedicoes")}
+              onChartTypeChange={(type) => updateChartType("pacientesMedicoes", type)}
             />
           </div>
           
@@ -371,6 +377,8 @@ export default function Dashboard() {
               altura={350}
               dateRange={dateRange}
               measurementType={filters.measurementType}
+              chartType={getChartType("medicoesPorDia")}
+              onChartTypeChange={(type) => updateChartType("medicoesPorDia", type)}
             />
           </div>
         </div>

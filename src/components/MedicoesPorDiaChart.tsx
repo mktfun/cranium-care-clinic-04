@@ -1,11 +1,13 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, Line, ComposedChart, BarChart, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 import { DateRange } from "@/hooks/useChartFilters";
+import { ChartType } from "@/hooks/useChartType";
+import { ChartTypeToggle } from "@/components/ChartTypeToggle";
 
 interface DataPoint {
   dia: string;
@@ -16,28 +18,26 @@ interface MedicoesPorDiaChartProps {
   altura?: number;
   dateRange?: DateRange;
   measurementType?: string;
+  chartType?: ChartType;
+  onChartTypeChange?: (type: ChartType) => void;
 }
 
-// Função para obter período dinâmico baseado no dateRange
+// Função corrigida para usar corretamente o dateRange dos filtros
 const obterPeriodoDinamico = (dateRange: DateRange) => {
   const startDate = new Date(dateRange.startDate);
   const endDate = new Date(dateRange.endDate);
   
   const dias = [];
-  const diffTime = endDate.getTime() - startDate.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const currentDate = new Date(startDate);
   
-  // Limitar a 30 dias para evitar gráfico muito denso
-  const maxDays = Math.min(diffDays, 30);
-  
-  for (let i = maxDays - 1; i >= 0; i--) {
-    const data = new Date();
-    data.setDate(data.getDate() - i);
+  // Gerar todos os dias entre startDate e endDate
+  while (currentDate <= endDate) {
     dias.push({
-      data: data,
-      formatado: `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1).toString().padStart(2, '0')}`,
-      diaCompleto: data.toISOString().split('T')[0]
+      data: new Date(currentDate),
+      formatado: `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`,
+      diaCompleto: currentDate.toISOString().split('T')[0]
     });
+    currentDate.setDate(currentDate.getDate() + 1);
   }
   
   return dias;
@@ -46,7 +46,9 @@ const obterPeriodoDinamico = (dateRange: DateRange) => {
 export function MedicoesPorDiaChart({
   altura = 350,
   dateRange = { startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] },
-  measurementType = "all"
+  measurementType = "all",
+  chartType = "bar",
+  onChartTypeChange
 }: MedicoesPorDiaChartProps) {
   const [dados, setDados] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export function MedicoesPorDiaChart({
         setLoading(true);
         const dias = obterPeriodoDinamico(dateRange);
 
-        // Buscar medições do Supabase com filtros
+        // Buscar medições do Supabase com filtros corretos
         let medicoesQuery = supabase
           .from('medicoes')
           .select('id, data')
@@ -138,13 +140,132 @@ export function MedicoesPorDiaChart({
     return "Medições Realizadas no Período";
   };
 
+  // Renderizar o gráfico baseado no tipo selecionado
+  const renderChart = () => {
+    const commonProps = {
+      data: dados,
+      margin: {
+        top: 20,
+        right: isSmallScreen ? 10 : 20,
+        left: isSmallScreen ? 0 : 10,
+        bottom: isSmallScreen ? 5 : 10
+      }
+    };
+
+    const xAxisProps = {
+      dataKey: "dia",
+      stroke: "#888888",
+      fontSize: isSmallScreen ? 11 : 12,
+      tickLine: false,
+      axisLine: false,
+      tickFormatter: formatXAxisTick,
+      tickMargin: isSmallScreen ? 5 : 8
+    };
+
+    const yAxisProps = {
+      stroke: "#888888",
+      fontSize: isSmallScreen ? 11 : 12,
+      tickLine: false,
+      axisLine: false,
+      tickFormatter: (value: number) => `${value}`,
+      width: isSmallScreen ? 25 : 35,
+      allowDecimals: false,
+      domain: [0, yAxisMax]
+    };
+
+    const tooltipProps = {
+      contentStyle: {
+        backgroundColor: 'var(--background)',
+        borderColor: 'var(--border)',
+        fontSize: isSmallScreen ? '12px' : '14px',
+        padding: isSmallScreen ? '6px 8px' : '8px 12px',
+        borderRadius: '6px',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+      },
+      formatter: (value: number) => [`${value} medição${value !== 1 ? 'ões' : ''}`, 'Total'],
+      labelFormatter: (label: string) => `Dia ${label}`
+    };
+
+    switch (chartType) {
+      case "line":
+        return (
+          <LineChart {...commonProps}>
+            <XAxis {...xAxisProps} />
+            <YAxis {...yAxisProps} />
+            <Tooltip {...tooltipProps} />
+            <Line 
+              type="monotone"
+              dataKey="medicoes" 
+              stroke="#276FBF" 
+              strokeWidth={2}
+              dot={{ r: 4, fill: "#276FBF" }}
+              activeDot={{ r: 6, fill: "#276FBF" }}
+              name="Medições" 
+            />
+          </LineChart>
+        );
+
+      case "combined":
+        return (
+          <ComposedChart {...commonProps}>
+            <XAxis {...xAxisProps} />
+            <YAxis {...yAxisProps} />
+            <Tooltip {...tooltipProps} />
+            <Bar 
+              dataKey="medicoes" 
+              fill="#276FBF" 
+              radius={[6, 6, 0, 0]} 
+              name="Medições" 
+              barSize={isSmallScreen ? 20 : 30}
+              fillOpacity={0.7}
+            />
+            <Line 
+              type="monotone"
+              dataKey="medicoes" 
+              stroke="#1e40af" 
+              strokeWidth={2}
+              dot={{ r: 3, fill: "#1e40af" }}
+              name="Tendência" 
+            />
+          </ComposedChart>
+        );
+
+      default: // "bar"
+        return (
+          <BarChart {...commonProps}>
+            <XAxis {...xAxisProps} />
+            <YAxis {...yAxisProps} />
+            <Tooltip {...tooltipProps} />
+            <Bar 
+              dataKey="medicoes" 
+              fill="#276FBF" 
+              radius={[6, 6, 0, 0]} 
+              name="Medições" 
+              barSize={isSmallScreen ? 28 : 40}
+            />
+          </BarChart>
+        );
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-medium">{getTitle()}</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">
-          Total de avaliações por dia no período selecionado
-        </CardDescription>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg font-medium">{getTitle()}</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              Total de avaliações por dia no período selecionado
+            </CardDescription>
+          </div>
+          {onChartTypeChange && (
+            <ChartTypeToggle
+              currentType={chartType}
+              onTypeChange={onChartTypeChange}
+              size={isSmallScreen ? "sm" : "default"}
+            />
+          )}
+        </div>
       </CardHeader>
       <CardContent className="pb-4">
         {loading ? (
@@ -153,60 +274,7 @@ export function MedicoesPorDiaChart({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={chartHeight}>
-            <BarChart 
-              data={dados} 
-              margin={{
-                top: 20,
-                right: isSmallScreen ? 10 : 20,
-                left: isSmallScreen ? 0 : 10,
-                bottom: isSmallScreen ? 5 : 10
-              }}
-            >
-              <XAxis 
-                dataKey="dia" 
-                stroke="#888888" 
-                fontSize={isSmallScreen ? 11 : 12} 
-                tickLine={false} 
-                axisLine={false} 
-                tickFormatter={formatXAxisTick} 
-                tickMargin={isSmallScreen ? 5 : 8}
-              />
-              <YAxis 
-                stroke="#888888" 
-                fontSize={isSmallScreen ? 11 : 12} 
-                tickLine={false} 
-                axisLine={false} 
-                tickFormatter={value => `${value}`}
-                width={isSmallScreen ? 25 : 35}
-                allowDecimals={false}
-                domain={[0, yAxisMax]}
-                label={{ 
-                  value: 'Medições', 
-                  angle: -90, 
-                  position: 'insideLeft',
-                  style: { textAnchor: 'middle', fontSize: isSmallScreen ? '10px' : '12px' }
-                }}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'var(--background)',
-                  borderColor: 'var(--border)',
-                  fontSize: isSmallScreen ? '12px' : '14px',
-                  padding: isSmallScreen ? '6px 8px' : '8px 12px',
-                  borderRadius: '6px',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                }}
-                formatter={(value: number) => [`${value} medição${value !== 1 ? 'ões' : ''}`, 'Total']}
-                labelFormatter={(label: string) => `Dia ${label}`}
-              />
-              <Bar 
-                dataKey="medicoes" 
-                fill="#276FBF" 
-                radius={[6, 6, 0, 0]} 
-                name="Medições" 
-                barSize={isSmallScreen ? 28 : 40}
-              />
-            </BarChart>
+            {renderChart()}
           </ResponsiveContainer>
         )}
       </CardContent>

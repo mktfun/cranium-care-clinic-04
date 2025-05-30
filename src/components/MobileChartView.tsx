@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 import { ChartFilters } from "@/components/ChartFilters";
 import { useChartFilters } from "@/hooks/useChartFilters";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useChartType } from "@/hooks/useChartType";
 
 export function MobileChartView() {
   const [currentChartIndex, setCurrentChartIndex] = useState(0);
@@ -27,6 +27,9 @@ export function MobileChartView() {
     updateCustomDateRange,
     resetFilters
   } = useChartFilters();
+  
+  // Adicionar hook de tipos de gráfico
+  const { getChartType, updateChartType } = useChartType();
   
   // Define chart types available - removed status distribution chart
   const chartTypes = [
@@ -147,6 +150,8 @@ export function MobileChartView() {
                 altura={chartHeight - 10} 
                 dateRange={dateRange}
                 measurementType={filters.measurementType}
+                chartType={getChartType("pacientesMedicoes")}
+                onChartTypeChange={(type) => updateChartType("pacientesMedicoes", type)}
               />
             )}
             
@@ -155,6 +160,8 @@ export function MobileChartView() {
                 altura={chartHeight - 10}
                 dateRange={dateRange}
                 measurementType={filters.measurementType}
+                chartType={getChartType("medicoesPorDia")}
+                onChartTypeChange={(type) => updateChartType("medicoesPorDia", type)}
               />
             )}
           </div>
