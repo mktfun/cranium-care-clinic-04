@@ -353,11 +353,11 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Charts Section - Enhanced Layout for Better Analytics */}
+      {/* Charts Section - Simplified Layout without Status Chart */}
       {!isMobile && (
-        <div className="grid gap-6 lg:grid-cols-12 mt-6">
+        <div className="grid gap-6 lg:grid-cols-3 mt-6">
           {/* Main chart takes more space */}
-          <div className="lg:col-span-8">
+          <div className="lg:col-span-2">
             <PacientesMedicoesChart 
               altura={350} 
               dateRange={dateRange}
@@ -365,15 +365,10 @@ export default function Dashboard() {
             />
           </div>
           
-          {/* Side charts in a column */}
-          <div className="lg:col-span-4 space-y-6">
+          {/* Single side chart */}
+          <div className="lg:col-span-1">
             <MedicoesPorDiaChart 
-              altura={165}
-              dateRange={dateRange}
-              measurementType={filters.measurementType}
-            />
-            <PacientesStatusChart 
-              altura={165}
+              altura={350}
               dateRange={dateRange}
               measurementType={filters.measurementType}
             />

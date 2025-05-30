@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, RotateCcw, Maximize, MinusCircle, PlusCircle
 import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 import { cn } from "@/lib/utils";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
-import { PacientesStatusChart } from "@/components/PacientesStatusChart";
 import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 import { ChartFilters } from "@/components/ChartFilters";
 import { useChartFilters } from "@/hooks/useChartFilters";
@@ -29,7 +28,7 @@ export function MobileChartView() {
     resetFilters
   } = useChartFilters();
   
-  // Define chart types available - now with clinic-relevant metrics only
+  // Define chart types available - removed status distribution chart
   const chartTypes = [
     {
       id: "pacientesMedicoes",
@@ -40,11 +39,6 @@ export function MobileChartView() {
       id: "medicoesPorDia",
       title: "Medições por Dia",
       description: "Frequência de medições no período selecionado"
-    },
-    {
-      id: "statusDistribuicao",
-      title: "Status dos Pacientes",
-      description: "Distribuição de pacientes por severidade craniana"
     }
   ];
   
@@ -158,14 +152,6 @@ export function MobileChartView() {
             
             {currentChart.id === "medicoesPorDia" && (
               <MedicoesPorDiaChart 
-                altura={chartHeight - 10}
-                dateRange={dateRange}
-                measurementType={filters.measurementType}
-              />
-            )}
-            
-            {currentChart.id === "statusDistribuicao" && (
-              <PacientesStatusChart 
                 altura={chartHeight - 10}
                 dateRange={dateRange}
                 measurementType={filters.measurementType}
