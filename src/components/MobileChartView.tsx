@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, RotateCcw, Maximize, MinusCircle, PlusCircle
 import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 import { cn } from "@/lib/utils";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
+import { PacientesStatusChart } from "@/components/PacientesStatusChart";
 import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 
 export function MobileChartView() {
@@ -30,7 +31,7 @@ export function MobileChartView() {
     {
       id: "statusDistribuicao",
       title: "Status dos Pacientes",
-      description: "Distribuição de pacientes por status de avaliação"
+      description: "Distribuição de pacientes por severidade craniana"
     }
   ];
   
@@ -117,7 +118,7 @@ export function MobileChartView() {
           )}
           
           {currentChart.id === "statusDistribuicao" && (
-            <StatusDistribuicaoChart altura={chartHeight - 10} />
+            <PacientesStatusChart altura={chartHeight - 10} />
           )}
         </div>
         
@@ -138,40 +139,5 @@ export function MobileChartView() {
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-// New component for status distribution chart
-function StatusDistribuicaoChart({ altura = 300 }: { altura?: number }) {
-  // Using recharts for consistency with other charts
-  const statusData = [
-    { name: 'Normal', valor: 65, fill: '#10b981' },
-    { name: 'Leve', valor: 20, fill: '#f59e0b' },
-    { name: 'Moderado', valor: 10, fill: '#f97316' },
-    { name: 'Severo', valor: 5, fill: '#ef4444' },
-  ];
-
-  return (
-    <div className="flex flex-col items-center justify-center w-full h-full">
-      <div className="w-full max-w-md">
-        {statusData.map((item) => (
-          <div key={item.name} className="mb-3">
-            <div className="flex justify-between text-xs mb-1">
-              <span>{item.name}</span>
-              <span className="font-medium">{item.valor}%</span>
-            </div>
-            <div className="w-full bg-muted/30 rounded-full h-2.5">
-              <div 
-                className="h-2.5 rounded-full" 
-                style={{ width: `${item.valor}%`, backgroundColor: item.fill }}
-              />
-            </div>
-          </div>
-        ))}
-        <div className="text-xs text-center text-muted-foreground mt-4">
-          Distribuição dos pacientes por severidade na avaliação craniana
-        </div>
-      </div>
-    </div>
   );
 }

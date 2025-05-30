@@ -326,17 +326,28 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Charts Section - Responsive View */}
-      {!isMobile &&
-    // Desktop View - Grid Layout with Clinic-Relevant Charts
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
-          <div className="md:col-span-2">
+      {/* Charts Section - Enhanced Layout for Better Analytics */}
+      {!isMobile && (
+        <div className="grid gap-6 lg:grid-cols-12 mt-6">
+          {/* Main chart takes more space */}
+          <div className="lg:col-span-8">
             <PacientesMedicoesChart altura={350} />
           </div>
-          <div className="space-y-6 my-0 py-0">
+          
+          {/* Side charts in a column */}
+          <div className="lg:col-span-4 space-y-6">
             <MedicoesPorDiaChart altura={165} />
+            <PacientesStatusChart altura={165} />
           </div>
-        </div>}
+        </div>
+      )}
+
+      {/* Mobile Chart View */}
+      {isMobile && (
+        <div className="mt-6">
+          <MobileChartView />
+        </div>
+      )}
 
       {/* Main Layout with Patients and Tasks */}
       <div className="grid gap-6 lg:grid-cols-3 mt-6">

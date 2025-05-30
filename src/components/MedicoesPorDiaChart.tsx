@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useState, useEffect } from "react";
@@ -19,13 +20,16 @@ const obterUltimosSeteDias = () => {
   }
   return dias;
 };
+
 interface DataPoint {
   dia: string;
   medicoes: number;
 }
+
 interface MedicoesPorDiaChartProps {
   altura?: number;
 }
+
 export function MedicoesPorDiaChart({
   altura = 350
 }: MedicoesPorDiaChartProps) {
@@ -35,6 +39,7 @@ export function MedicoesPorDiaChart({
 
   // Ajustar altura do gráfico com base no dispositivo
   const chartHeight = isSmallScreen ? Math.min(altura, 200) : altura;
+
   useEffect(() => {
     async function carregarDados() {
       try {
@@ -46,6 +51,7 @@ export function MedicoesPorDiaChart({
           data: medicoes,
           error
         } = await supabase.from('medicoes').select('id, data');
+        
         if (error) {
           console.error("Erro ao buscar medições:", error);
           // Gerar dados simulados como fallback
@@ -86,6 +92,10 @@ export function MedicoesPorDiaChart({
     });
   };
 
+  // Calcular valor máximo dinamicamente para ajustar escala do eixo Y
+  const maxMedicoes = Math.max(...dados.map(d => d.medicoes), 1);
+  const yAxisMax = Math.ceil(maxMedicoes * 1.2); // 20% maior que o máximo para evitar "bater no teto"
+
   // Formatar rótulos para dispositivos móveis
   const formatXAxisTick = (value: string) => {
     if (isSmallScreen) {
@@ -94,37 +104,79 @@ export function MedicoesPorDiaChart({
     }
     return value;
   };
-  return <Card>
-      <CardHeader className="pb-2 my-0 py-0">
-        <CardTitle className="text-lg">Medições Realizadas</CardTitle>
-        <CardDescription className="text-sm">
-          Últimos 7 dias
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-medium">Medições Realizadas</CardTitle>
+        <CardDescription className="text-sm text-muted-foreground">
+          Últimos 7 dias - Total de avaliações por dia
         </CardDescription>
       </CardHeader>
-      <CardContent className="py-[98px]">
-        {loading ? <div className="flex justify-center items-center" style={{
-        height: chartHeight
-      }}>
+      <CardContent className="pb-4">
+        {loading ? (
+          <div className="flex justify-center items-center" style={{ height: chartHeight }}>
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div> : <ResponsiveContainer width="100%" height={chartHeight}>
-            <BarChart data={dados} margin={{
-          top: 5,
-          right: isSmallScreen ? 5 : 30,
-          left: isSmallScreen ? -15 : -20,
-          bottom: isSmallScreen ? 0 : 5
-        }}>
-              <XAxis dataKey="dia" stroke="#888888" fontSize={isSmallScreen ? 10 : 12} tickLine={false} axisLine={false} tickFormatter={formatXAxisTick} tickMargin={isSmallScreen ? 2 : 5} />
-              <YAxis stroke="#888888" fontSize={isSmallScreen ? 10 : 12} tickLine={false} axisLine={false} tickFormatter={value => `${value}`} width={isSmallScreen ? 20 : 30} allowDecimals={false} />
-              <Tooltip contentStyle={{
-            backgroundColor: 'var(--background)',
-            borderColor: 'var(--border)',
-            fontSize: isSmallScreen ? '12px' : '14px',
-            padding: isSmallScreen ? '4px' : '8px',
-            borderRadius: '4px'
-          }} />
-              <Bar dataKey="medicoes" fill="#276FBF" radius={[4, 4, 0, 0]} name="Medições" barSize={isSmallScreen ? 20 : 30} />
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <BarChart 
+              data={dados} 
+              margin={{
+                top: 20,
+                right: isSmallScreen ? 10 : 20,
+                left: isSmallScreen ? 0 : 10,
+                bottom: isSmallScreen ? 5 : 10
+              }}
+            >
+              <XAxis 
+                dataKey="dia" 
+                stroke="#888888" 
+                fontSize={isSmallScreen ? 11 : 12} 
+                tickLine={false} 
+                axisLine={false} 
+                tickFormatter={formatXAxisTick} 
+                tickMargin={isSmallScreen ? 5 : 8}
+              />
+              <YAxis 
+                stroke="#888888" 
+                fontSize={isSmallScreen ? 11 : 12} 
+                tickLine={false} 
+                axisLine={false} 
+                tickFormatter={value => `${value}`}
+                width={isSmallScreen ? 25 : 35}
+                allowDecimals={false}
+                domain={[0, yAxisMax]}
+                label={{ 
+                  value: 'Medições', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  style: { textAnchor: 'middle', fontSize: isSmallScreen ? '10px' : '12px' }
+                }}
+              />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: 'var(--background)',
+                  borderColor: 'var(--border)',
+                  fontSize: isSmallScreen ? '12px' : '14px',
+                  padding: isSmallScreen ? '6px 8px' : '8px 12px',
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                }}
+                formatter={(value: number) => [`${value} medição${value !== 1 ? 'ões' : ''}`, 'Total']}
+                labelFormatter={(label: string) => `Dia ${label}`}
+              />
+              <Bar 
+                dataKey="medicoes" 
+                fill="#276FBF" 
+                radius={[6, 6, 0, 0]} 
+                name="Medições" 
+                barSize={isSmallScreen ? 28 : 40}
+              />
             </BarChart>
-          </ResponsiveContainer>}
+          </ResponsiveContainer>
+        )}
       </CardContent>
-    </Card>;
+    </Card>
+  );
 }
