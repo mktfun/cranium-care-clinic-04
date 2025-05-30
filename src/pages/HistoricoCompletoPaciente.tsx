@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -118,8 +119,10 @@ export default function HistoricoCompletoPaciente() {
       await MedicaoExportUtils.exportToPDF(
         medicaoMaisRecente, 
         paciente, 
-        [],
-        { nome: "CraniumCare Clinic", profissional: "Médico Responsável" }
+        medicoes,
+        medicaoMaisRecente.recomendacoes || [],
+        { nome: "CraniumCare Clinic", profissional: "Médico Responsável" },
+        false
       );
       toast.success("PDF gerado com sucesso!");
     } catch (error) {
