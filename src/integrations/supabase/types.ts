@@ -334,8 +334,13 @@ export type Database = {
       }
       pacientes: {
         Row: {
+          cep: string | null
+          cidade: string | null
+          cpf: string | null
           created_at: string | null
           data_nascimento: string
+          endereco: string | null
+          estado: string | null
           id: string
           local_nascimento: string | null
           nome: string
@@ -345,8 +350,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cep?: string | null
+          cidade?: string | null
+          cpf?: string | null
           created_at?: string | null
           data_nascimento: string
+          endereco?: string | null
+          estado?: string | null
           id?: string
           local_nascimento?: string | null
           nome: string
@@ -356,8 +366,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cep?: string | null
+          cidade?: string | null
+          cpf?: string | null
           created_at?: string | null
           data_nascimento?: string
+          endereco?: string | null
+          estado?: string | null
           id?: string
           local_nascimento?: string | null
           nome?: string

@@ -6,20 +6,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { useInputMask } from "@/hooks/use-input-mask";
+
+const ESTADOS_BRASIL = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
+  "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
+  "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+];
 
 export default function RegistroPaciente() {
   const navigate = useNavigate();
+  const { formatCPF, formatCEP, validateCPF, validateCEP } = useInputMask();
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Dados pessoais
   const [nome, setNome] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
   const [sexo, setSexo] = useState<"M" | "F">("M");
+  const [cpf, setCpf] = useState("");
+
+  // Endereço
+  const [endereco, setEndereco] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
+  const [cep, setCep] = useState("");
+
+  // Responsável
   const [responsavelNome, setResponsavelNome] = useState("");
   const [responsavelTelefone, setResponsavelTelefone] = useState("");
   const [responsavelEmail, setResponsavelEmail] = useState("");
-  const [userId, setUserId] = useState<string | null>(null);
 
   // Fetch current user information
   useEffect(() => {
@@ -41,6 +61,16 @@ export default function RegistroPaciente() {
     
     getCurrentUser();
   }, [navigate]);
+
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCpf = formatCPF(e.target.value);
+    setCpf(formattedCpf);
+  };
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCep = formatCEP(e.target.value);
+    setCep(formattedCep);
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +83,17 @@ export default function RegistroPaciente() {
     
     if (!nome || !dataNascimento || !sexo) {
       toast.error("Preencha todos os dados obrigatórios do paciente.");
+      return;
+    }
+
+    // Validações opcionais
+    if (cpf && !validateCPF(cpf)) {
+      toast.error("CPF inválido. Verifique o formato.");
+      return;
+    }
+
+    if (cep && !validateCEP(cep)) {
+      toast.error("CEP inválido. Verifique o formato.");
       return;
     }
 
@@ -72,7 +113,13 @@ export default function RegistroPaciente() {
         data_nascimento: dataNascimento,
         sexo,
         user_id: userId,
-        responsaveis: responsaveisData.length > 0 ? responsaveisData : null
+        responsaveis: responsaveisData.length > 0 ? responsaveisData : null,
+        // Novos campos opcionais
+        cpf: cpf || null,
+        endereco: endereco || null,
+        cidade: cidade || null,
+        estado: estado || null,
+        cep: cep || null
       };
       
       console.log("Dados do paciente a serem inseridos:", novoPaciente);
@@ -114,8 +161,11 @@ export default function RegistroPaciente() {
           <CardTitle>Dados do Paciente</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Dados Pessoais */}
             <div className="space-y-4">
+              <h3 className="font-medium text-lg mb-4">Dados Pessoais</h3>
+              
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome completo *</Label>
@@ -129,7 +179,7 @@ export default function RegistroPaciente() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="dataNascimento">Data de Nascimento *</Label>
                   <Input 
@@ -154,10 +204,78 @@ export default function RegistroPaciente() {
                     </div>
                   </RadioGroup>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cpf">CPF</Label>
+                  <Input 
+                    id="cpf" 
+                    placeholder="000.000.000-00"
+                    value={cpf} 
+                    onChange={handleCpfChange}
+                    maxLength={14}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Endereço */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-lg mb-4">Endereço</h3>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="endereco">Endereço completo</Label>
+                  <Input 
+                    id="endereco" 
+                    placeholder="Rua, número, complemento" 
+                    value={endereco} 
+                    onChange={(e) => setEndereco(e.target.value)} 
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cidade">Cidade</Label>
+                  <Input 
+                    id="cidade" 
+                    placeholder="Nome da cidade" 
+                    value={cidade} 
+                    onChange={(e) => setCidade(e.target.value)} 
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="estado">Estado</Label>
+                  <Select value={estado} onValueChange={setEstado}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ESTADOS_BRASIL.map((uf) => (
+                        <SelectItem key={uf} value={uf}>
+                          {uf}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cep">CEP</Label>
+                  <Input 
+                    id="cep" 
+                    placeholder="00000-000"
+                    value={cep} 
+                    onChange={handleCepChange}
+                    maxLength={9}
+                  />
+                </div>
               </div>
             </div>
             
-            <div>
+            {/* Dados do Responsável */}
+            <div className="space-y-4">
               <h3 className="font-medium text-lg mb-4">Dados do Responsável</h3>
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">

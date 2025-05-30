@@ -1,4 +1,3 @@
-
 export interface Responsavel {
   nome: string;
   telefone?: string;
@@ -13,6 +12,11 @@ export interface Paciente {
   sexo: 'M' | 'F';
   responsaveis: Responsavel[];
   local_nascimento?: string;
+  cpf?: string;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
   created_at: string;
   updated_at: string;
   user_id: string;
