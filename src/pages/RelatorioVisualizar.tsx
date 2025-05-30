@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsMobileOrTabletPortrait } from "@/hooks/use-media-query";
 import CranialVisualizationCard from "@/components/relatorio/CranialVisualizationCard";
+import { MedicaoExportUtils } from "@/components/export/MedicaoExportUtils";
 
 export default function RelatorioVisualizar() {
   const { id, medicaoId } = useParams<{ id: string, medicaoId: string }>();
@@ -23,6 +24,7 @@ export default function RelatorioVisualizar() {
   const [medicoes, setMedicoes] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [modoConsolidado, setModoConsolidado] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const relatorioRef = useRef<HTMLDivElement>(null);
   const isMobileOrTablet = useIsMobileOrTabletPortrait();
   
@@ -72,6 +74,26 @@ export default function RelatorioVisualizar() {
     
     fetchPacienteData();
   }, [id, navigate]);
+  
+  const handleExportPDF = async () => {
+    if (!paciente || !medicao) return;
+    
+    setExportLoading(true);
+    try {
+      await MedicaoExportUtils.exportToPDF(
+        medicao, 
+        paciente, 
+        medicao.recomendacoes || [],
+        { nome: "CraniumCare Clinic", profissional: "Médico Responsável" }
+      );
+      toast.success("PDF gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Erro ao gerar PDF. Tente novamente.");
+    } finally {
+      setExportLoading(false);
+    }
+  };
   
   if (carregando) {
     return (
@@ -212,6 +234,7 @@ export default function RelatorioVisualizar() {
         modoConsolidado={modoConsolidado}
         onModoChange={handleToggleModo}
         onVoltar={handleVoltar}
+        onExportPDF={!modoConsolidado && medicao ? handleExportPDF : undefined}
       />
       
       <div className="grid gap-6 md:grid-cols-2">
