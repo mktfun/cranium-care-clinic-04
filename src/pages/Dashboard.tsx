@@ -20,7 +20,8 @@ import { PacientesStatusChart } from "@/components/PacientesStatusChart";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SelectPatientDialog } from "@/components/SelectPatientDialog";
 import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
-import { useChartFilters } from "@/hooks/use-chart-filters";
+import { ChartFilters } from "@/components/ChartFilters";
+import { useChartFilters } from "@/hooks/useChartFilters";
 
 interface TrendData {
   value: number;
