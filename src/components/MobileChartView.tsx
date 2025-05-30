@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,6 @@ import { PacientesMedicoesChart } from "@/components/PacientesMedicoesChart";
 import { cn } from "@/lib/utils";
 import { MedicoesPorDiaChart } from "@/components/MedicoesPorDiaChart";
 import { PacientesStatusChart } from "@/components/PacientesStatusChart";
-import { MedicoesPacientesDiarioChart } from "@/components/MedicoesPacientesDiarioChart";
 import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
 
 export function MobileChartView() {
@@ -14,7 +14,6 @@ export function MobileChartView() {
   const [chartHeight, setChartHeight] = useState(300);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [scrollMode, setScrollMode] = useState<"free" | "locked">("free");
-  const [chartTimePeriod, setChartTimePeriod] = useState("6months");
   const isMobileOrTablet = useIsMobileOrTabletPortrait();
   
   // Define chart types available - now with clinic-relevant metrics only
@@ -22,7 +21,7 @@ export function MobileChartView() {
     {
       id: "pacientesMedicoes",
       title: "Pacientes x Medições",
-      description: "Comparativo entre pacientes únicos e medições realizadas"
+      description: "Comparativo entre pacientes registrados e medições realizadas"
     },
     {
       id: "medicoesPorDia",
@@ -33,16 +32,6 @@ export function MobileChartView() {
       id: "statusDistribuicao",
       title: "Status dos Pacientes",
       description: "Distribuição de pacientes por severidade craniana"
-    },
-    {
-      id: "medicoesPacientesDiario14",
-      title: "Atividade Diária (14 dias)",
-      description: "Medições x Pacientes únicos - últimos 14 dias"
-    },
-    {
-      id: "medicoesPacientesDiario7",
-      title: "Atividade Diária (7 dias)",
-      description: "Medições x Pacientes únicos - última semana"
     }
   ];
   
@@ -121,7 +110,7 @@ export function MobileChartView() {
           style={{ height: chartHeight }}
         >
           {currentChart.id === "pacientesMedicoes" && (
-            <PacientesMedicoesChart altura={chartHeight - 10} timePeriod={chartTimePeriod} />
+            <PacientesMedicoesChart altura={chartHeight - 10} />
           )}
           
           {currentChart.id === "medicoesPorDia" && (
@@ -130,14 +119,6 @@ export function MobileChartView() {
           
           {currentChart.id === "statusDistribuicao" && (
             <PacientesStatusChart altura={chartHeight - 10} />
-          )}
-
-          {currentChart.id === "medicoesPacientesDiario14" && (
-            <MedicoesPacientesDiarioChart altura={chartHeight - 10} dias={14} />
-          )}
-
-          {currentChart.id === "medicoesPacientesDiario7" && (
-            <MedicoesPacientesDiarioChart altura={chartHeight - 10} dias={7} />
           )}
         </div>
         
