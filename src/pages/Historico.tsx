@@ -26,8 +26,8 @@ interface Medicao {
   id: string;
   paciente_id: string;
   data: string;
-  indice_craniano?: number;
-  cvai?: number;
+  indice_craniano: number;
+  cvai: number;
   perimetro_cefalico?: number;
   diferenca_diagonais?: number;
   comprimento?: number;
@@ -36,13 +36,14 @@ interface Medicao {
   diagonal_e?: number;
   pacienteNome?: string;
   pacienteNascimento?: string;
+  pacienteSexo?: 'M' | 'F';
 }
 
 interface Paciente {
   id: string;
   nome: string;
   data_nascimento: string;
-  sexo?: 'M' | 'F';
+  sexo: 'M' | 'F';
 }
 
 export default function Historico() {
@@ -82,16 +83,21 @@ export default function Historico() {
         
         // Criar um mapa para relacionar pacientes com medições
         const pacientesMap = (pacientesData || []).reduce((acc: Record<string, Paciente>, paciente) => {
-          acc[paciente.id] = paciente;
+          acc[paciente.id] = {
+            ...paciente,
+            sexo: (paciente.sexo as 'M' | 'F') || 'M'
+          };
           return acc;
         }, {});
         
         // Combinar os dados de medições com os dados de pacientes
         const medicoesCompletas = (medicoesData || []).map(medicao => ({
           ...medicao,
+          indice_craniano: medicao.indice_craniano || 0,
+          cvai: medicao.cvai || 0,
           pacienteNome: pacientesMap[medicao.paciente_id]?.nome || "Paciente desconhecido",
           pacienteNascimento: pacientesMap[medicao.paciente_id]?.data_nascimento || "",
-          pacienteSexo: pacientesMap[medicao.paciente_id]?.sexo || 'M'
+          pacienteSexo: pacientesMap[medicao.paciente_id]?.sexo || 'M' as 'M' | 'F'
         }));
         
         setMedicoes(medicoesCompletas);
@@ -118,7 +124,7 @@ export default function Historico() {
   };
 
   const handleExportPDF = async (medicao: Medicao) => {
-    if (!medicao.pacienteNome || !medicao.pacienteNascimento) {
+    if (!medicao.pacienteNome || !medicao.pacienteNascimento || !medicao.pacienteSexo) {
       toast.error("Dados do paciente incompletos");
       return;
     }
@@ -128,7 +134,7 @@ export default function Historico() {
       const pacienteData = {
         nome: medicao.pacienteNome,
         data_nascimento: medicao.pacienteNascimento,
-        sexo: (medicao as any).pacienteSexo || 'M' as 'M' | 'F'
+        sexo: medicao.pacienteSexo
       };
 
       await MedicaoExportUtils.exportToPDF(
@@ -205,8 +211,8 @@ export default function Historico() {
                     medicoesFiltradas.map((medicao) => {
                       // Get the cranial status for the current measurement
                       const { asymmetryType, severityLevel } = getCranialStatus(
-                        (medicao as any).indice_craniano || 0,
-                        (medicao as any).cvai || 0
+                        medicao.indice_craniano || 0,
+                        medicao.cvai || 0
                       );
                       
                       return (
@@ -224,10 +230,10 @@ export default function Historico() {
                             {medicao.diferenca_diagonais ? `${medicao.diferenca_diagonais} mm` : "N/A"}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
-                            {(medicao as any).indice_craniano ? `${(medicao as any).indice_craniano}%` : "N/A"}
+                            {medicao.indice_craniano ? `${medicao.indice_craniano}%` : "N/A"}
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">
-                            {(medicao as any).cvai ? `${(medicao as any).cvai}%` : "N/A"}
+                            {medicao.cvai ? `${medicao.cvai}%` : "N/A"}
                           </TableCell>
                           <TableCell>
                             <StatusBadge status={severityLevel} asymmetryType={asymmetryType} showAsymmetryType={true} />

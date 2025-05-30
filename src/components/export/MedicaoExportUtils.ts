@@ -112,19 +112,18 @@ export class MedicaoExportUtils {
         cvai: medicao.cvai
       };
       
-      // Criar o PDF component
-      const pdfComponent = React.createElement(CranialMeasurementPDF, {
-        pacienteData: paciente,
-        medicaoData: medicaoFormatada,
-        idadeNaAvaliacao: idadeNaAvaliacao,
-        diagnosis: cranialStatus.diagnosis,
-        choaClassification: cranialStatus.choaClassification,
-        recomendacoes: recomendacoes,
-        clinicaInfo: clinicaInfo
-      });
-      
-      // Gerar o PDF
-      const blob = await pdf(pdfComponent).toBlob();
+      // Gerar o PDF diretamente
+      const blob = await pdf(
+        <CranialMeasurementPDF
+          pacienteData={paciente}
+          medicaoData={medicaoFormatada}
+          idadeNaAvaliacao={idadeNaAvaliacao}
+          diagnosis={cranialStatus.diagnosis}
+          choaClassification={cranialStatus.choaClassification}
+          recomendacoes={recomendacoes}
+          clinicaInfo={clinicaInfo}
+        />
+      ).toBlob();
       
       // Download
       const url = URL.createObjectURL(blob);
