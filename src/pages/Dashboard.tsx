@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -359,10 +360,10 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Charts Section - Layout reorganizado conforme solicitado */}
+      {/* Charts Section - LAYOUT CORRIGIDO */}
       {!isMobile && (
         <div className="grid gap-6 lg:grid-cols-3 mt-6">
-          {/* Gráfico "Medições Realizadas no Período" agora ocupa a posição principal (2/3 do espaço - caixa azul) */}
+          {/* AGORA: "Medições Realizadas no Período" ocupa 2/3 do espaço (posição principal) */}
           <div className="lg:col-span-2">
             <MedicoesPorDiaChart 
               altura={350} 
@@ -373,7 +374,7 @@ export default function Dashboard() {
             />
           </div>
           
-          {/* Gráfico "Evolução de Pacientes e Medições" agora fica na lateral (1/3 do espaço - caixa verde) */}
+          {/* AGORA: "Evolução de Pacientes e Medições" fica na lateral (1/3 do espaço) */}
           <div className="lg:col-span-1">
             <PacientesMedicoesChart 
               altura={350}
@@ -421,3 +422,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
