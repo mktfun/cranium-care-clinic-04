@@ -52,7 +52,13 @@ export function useMedicaoCalculations({
   useEffect(() => {
     if (perimetroCefalico && pacienteDataNascimento) {
       const valor = Number(perimetroCefalico);
-      const resultado = validatePerimetroCefalico(valor, pacienteDataNascimento);
+      
+      // Calculate age in months from birth date
+      const birthDate = new Date(pacienteDataNascimento);
+      const currentDate = new Date();
+      const ageInMonths = Math.floor((currentDate.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)); // Average days per month
+      
+      const resultado = validatePerimetroCefalico(valor, ageInMonths);
       if (!resultado.isValid) {
         setPerimetroError(resultado.message || null);
       } else {

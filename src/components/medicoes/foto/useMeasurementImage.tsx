@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { validatePerimetroCefalico } from "@/lib/cranial-utils";
@@ -411,7 +410,12 @@ export default function useMeasurementImage(pacienteDataNascimento: string) {
 
     // Validar o perímetro cefálico calculado
     if (perimetroCefalico && pacienteDataNascimento) {
-      const validation = validatePerimetroCefalico(perimetroCefalico, pacienteDataNascimento);
+      // Calculate age in months from birth date
+      const birthDate = new Date(pacienteDataNascimento);
+      const currentDate = new Date();
+      const ageInMonths = Math.floor((currentDate.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)); // Average days per month
+      
+      const validation = validatePerimetroCefalico(perimetroCefalico, ageInMonths);
       if (!validation.isValid) {
         setPerimetroError(validation.message || "Perímetro cefálico calculado está fora dos limites esperados");
         toast({
