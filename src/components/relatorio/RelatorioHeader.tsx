@@ -1,11 +1,9 @@
 
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, FileDown, Eye, BarChart2, Loader2 } from "lucide-react";
-import { useIsMobileOrTabletPortrait } from "@/hooks/use-media-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { usePDFGeneration } from "@/hooks/usePDFGeneration";
+import { ArrowLeft, FileDown, BarChart3 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 interface RelatorioHeaderProps {
   pacienteNome: string;
@@ -15,6 +13,8 @@ interface RelatorioHeaderProps {
   onModoChange: () => void;
   onVoltar: () => void;
   onExportPDF?: () => void;
+  onExportPDFWithCharts?: () => void;
+  exportLoading?: boolean;
 }
 
 export function RelatorioHeader({
@@ -24,108 +24,74 @@ export function RelatorioHeader({
   modoConsolidado,
   onModoChange,
   onVoltar,
-  onExportPDF
+  onExportPDF,
+  onExportPDFWithCharts,
+  exportLoading = false
 }: RelatorioHeaderProps) {
-  const isMobileOrTablet = useIsMobileOrTabletPortrait();
-  const { isGenerating } = usePDFGeneration();
-  const [clinicaInfo, setClinicaInfo] = useState<{
-    nome: string;
-    logo_url: string | null;
-    profissional: string;
-  }>({
-    nome: "CraniumCare Clinic",
-    logo_url: null,
-    profissional: "",
-  });
-  
-  useEffect(() => {
-    async function fetchClinicaInfo() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data, error } = await supabase
-            .from('usuarios')
-            .select('nome, clinica_nome, clinica_logo')
-            .eq('id', user.id)
-            .single();
-            
-          if (error) {
-            console.error("Erro ao buscar informações da clínica:", error);
-            return;
-          }
-            
-          if (data) {
-            setClinicaInfo({
-              nome: data.clinica_nome || "CraniumCare Clinic",
-              logo_url: data.clinica_logo || null,
-              profissional: data.nome || "Médico Responsável",
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao carregar informações da clínica:", error);
-      }
-    }
-    
-    fetchClinicaInfo();
-  }, []);
-
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 print:hidden">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={onVoltar}>
-          <ChevronLeft className="h-5 w-5" />
+    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 print:hidden">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" onClick={onVoltar} className="shrink-0">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
         </Button>
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-bold">{pacienteNome}</h1>
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold">
+            {modoConsolidado ? 'Histórico Completo' : 'Relatório de Medição'}
+          </h1>
           <p className="text-muted-foreground">
-            {idadeAtual} {dataFormatada ? ` • Avaliação em: ${dataFormatada}` : ''}
+            {pacienteNome} • {idadeAtual}
+            {dataFormatada && !modoConsolidado && ` • ${dataFormatada}`}
           </p>
         </div>
       </div>
       
-      <div className="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
-        <Button
-          variant="outline"
-          size={isMobileOrTablet ? "sm" : "default"}
-          onClick={onModoChange}
-          className="flex items-center gap-1"
-        >
-          {modoConsolidado ? (
-            <>
-              <Eye className="h-4 w-4" />
-              <span className="hidden sm:inline">Ver avaliação individual</span>
-              <span className="sm:hidden">Individual</span>
-            </>
-          ) : (
-            <>
-              <BarChart2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Ver histórico consolidado</span>
-              <span className="sm:hidden">Consolidado</span>
-            </>
-          )}
-        </Button>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="modo-consolidado"
+            checked={modoConsolidado}
+            onCheckedChange={onModoChange}
+          />
+          <Label htmlFor="modo-consolidado" className="text-sm">
+            Modo histórico
+          </Label>
+        </div>
         
-        {onExportPDF && (
-          <Button
-            variant="outline"
-            size={isMobileOrTablet ? "sm" : "default"}
-            onClick={onExportPDF}
-            disabled={isGenerating}
-            className="flex items-center gap-1"
-          >
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FileDown className="h-4 w-4" />
+        {!modoConsolidado && (
+          <div className="flex gap-2">
+            {onExportPDF && (
+              <Button 
+                variant="outline" 
+                onClick={onExportPDF}
+                disabled={exportLoading}
+                className="shrink-0"
+              >
+                {exportLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4 mr-2" />
+                )}
+                PDF
+              </Button>
             )}
-            <span className="hidden sm:inline">
-              {isGenerating ? "Gerando..." : "Exportar PDF"}
-            </span>
-            <span className="sm:hidden">
-              {isGenerating ? "..." : "PDF"}
-            </span>
-          </Button>
+            {onExportPDFWithCharts && (
+              <Button 
+                variant="outline" 
+                onClick={onExportPDFWithCharts}
+                disabled={exportLoading}
+                className="shrink-0"
+                title="PDF com gráficos de evolução"
+              >
+                {exportLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                )}
+                PDF + Gráficos
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </div>

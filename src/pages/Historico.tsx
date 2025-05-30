@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -12,7 +11,7 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, FileDown } from "lucide-react";
+import { Download, FileDown, BarChart3 } from "lucide-react";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { SeverityLevel, AsymmetryType } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +56,12 @@ export default function Historico() {
     async function loadMedicoes() {
       try {
         setLoading(true);
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast.error("Sessão expirada. Faça login novamente.");
+          return;
+        }
         
         // Primeiro, obter todas as medições
         const { data: medicoesData, error: medicoesError } = await supabase
@@ -123,7 +128,7 @@ export default function Historico() {
     return data.toLocaleDateString('pt-BR');
   };
 
-  const handleExportPDF = async (medicao: Medicao) => {
+  const handleExportPDF = async (medicao: Medicao, includeCharts: boolean = false) => {
     if (!medicao.pacienteNome || !medicao.pacienteNascimento || !medicao.pacienteSexo) {
       toast.error("Dados do paciente incompletos");
       return;
@@ -137,18 +142,25 @@ export default function Historico() {
         sexo: medicao.pacienteSexo
       };
 
-      // Garantir que os campos obrigatórios existam
       const medicaoParaExport = {
         ...medicao,
         indice_craniano: medicao.indice_craniano || 0,
         cvai: medicao.cvai || 0
       };
 
+      // Se incluir gráficos, buscar todas as medições do paciente
+      let todasMedicoes: Medicao[] = [];
+      if (includeCharts) {
+        todasMedicoes = medicoes.filter(m => m.paciente_id === medicao.paciente_id);
+      }
+
       await MedicaoExportUtils.exportToPDF(
         medicaoParaExport, 
         pacienteData, 
+        todasMedicoes,
         [],
-        { nome: "CraniumCare Clinic", profissional: "Médico Responsável" }
+        { nome: "CraniumCare Clinic", profissional: "Médico Responsável" },
+        includeCharts
       );
       toast.success("PDF gerado com sucesso!");
     } catch (error) {
@@ -216,11 +228,14 @@ export default function Historico() {
                 <TableBody>
                   {medicoesFiltradas.length > 0 ? (
                     medicoesFiltradas.map((medicao) => {
-                      // Get the cranial status for the current measurement
                       const { asymmetryType, severityLevel } = getCranialStatus(
                         medicao.indice_craniano || 0,
                         medicao.cvai || 0
                       );
+                      
+                      // Verificar se há dados históricos suficientes para gráficos
+                      const medicoesPaciente = medicoes.filter(m => m.paciente_id === medicao.paciente_id);
+                      const hasHistoricalData = medicoesPaciente.length > 1;
                       
                       return (
                         <TableRow key={medicao.id}>
@@ -251,7 +266,7 @@ export default function Historico() {
                                 size="sm" 
                                 variant="outline" 
                                 className="hidden sm:inline-flex"
-                                onClick={() => handleExportPDF(medicao)}
+                                onClick={() => handleExportPDF(medicao, false)}
                                 disabled={exportLoading === medicao.id}
                               >
                                 {exportLoading === medicao.id ? (
@@ -261,6 +276,23 @@ export default function Historico() {
                                 )}
                                 PDF
                               </Button>
+                              {hasHistoricalData && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="hidden lg:inline-flex"
+                                  onClick={() => handleExportPDF(medicao, true)}
+                                  disabled={exportLoading === medicao.id}
+                                  title="PDF com gráficos de evolução"
+                                >
+                                  {exportLoading === medicao.id ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <BarChart3 className="h-4 w-4 mr-2" />
+                                  )}
+                                  +Gráficos
+                                </Button>
+                              )}
                               <Button asChild variant="outline" size="sm">
                                 <Link to={`/pacientes/${medicao.paciente_id}/relatorios/${medicao.id}`}>Ver</Link>
                               </Button>

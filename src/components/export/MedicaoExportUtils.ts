@@ -3,6 +3,7 @@ import { formatAge } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { pdf } from "@react-pdf/renderer";
+import { generateChartImages } from "@/lib/chart-to-image-utils";
 
 interface MedicaoExportable {
   data: string;
@@ -125,6 +126,24 @@ const styles = StyleSheet.create({
     lineHeight: 1.3,
     color: '#475569',
   },
+  chartsSection: {
+    marginBottom: 25,
+  },
+  chartContainer: {
+    marginBottom: 15,
+    alignItems: 'center',
+  },
+  chartTitle: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+  },
+  chartImage: {
+    width: 450,
+    height: 300,
+    objectFit: 'contain',
+  },
   clinicInfo: {
     position: 'absolute',
     fontSize: 8,
@@ -198,8 +217,10 @@ export class MedicaoExportUtils {
   static async exportToPDF(
     medicao: MedicaoExportable, 
     paciente: PacienteExportable, 
+    medicoes: MedicaoExportable[] = [],
     recomendacoes: string[] = [],
-    clinicaInfo: { nome: string; profissional: string }
+    clinicaInfo: { nome: string; profissional: string },
+    includeCharts: boolean = false
   ): Promise<void> {
     try {
       const cranialStatus = getCranialStatus(medicao.indice_craniano || 0, medicao.cvai || 0);
@@ -216,6 +237,15 @@ export class MedicaoExportUtils {
         diferenca_diagonais: medicao.diferenca_diagonais || 0,
         cvai: medicao.cvai || 0
       };
+
+      let chartImages;
+      if (includeCharts && medicoes.length > 1) {
+        try {
+          chartImages = await generateChartImages(medicoes, paciente);
+        } catch (error) {
+          console.error('Erro ao gerar gráficos:', error);
+        }
+      }
 
       const formatarData = (dataString: string) => {
         const data = new Date(dataString);
@@ -296,6 +326,26 @@ export class MedicaoExportUtils {
             React.createElement(Text, { style: styles.sectionTitle }, "Diagnóstico"),
             React.createElement(Text, { style: styles.diagnosticText }, cranialStatus.diagnosis.diagnosis)
           ),
+
+          // Gráficos (se incluídos)
+          chartImages ? React.createElement(View, { style: styles.chartsSection },
+            React.createElement(Text, { style: styles.sectionTitle }, "Evolução das Medições"),
+            
+            chartImages.icChart ? React.createElement(View, { style: styles.chartContainer },
+              React.createElement(Text, { style: styles.chartTitle }, "Evolução do Índice Craniano"),
+              React.createElement('Image', { src: chartImages.icChart, style: styles.chartImage })
+            ) : null,
+            
+            chartImages.cvaiChart ? React.createElement(View, { style: styles.chartContainer },
+              React.createElement(Text, { style: styles.chartTitle }, "Evolução do CVAI"),
+              React.createElement('Image', { src: chartImages.cvaiChart, style: styles.chartImage })
+            ) : null,
+            
+            chartImages.perimeterChart ? React.createElement(View, { style: styles.chartContainer },
+              React.createElement(Text, { style: styles.chartTitle }, "Evolução do Perímetro Cefálico"),
+              React.createElement('Image', { src: chartImages.perimeterChart, style: styles.chartImage })
+            ) : null
+          ) : null,
           
           // Recomendações
           recomendacoes.length > 0 ? React.createElement(View, { style: styles.recommendationsSection },

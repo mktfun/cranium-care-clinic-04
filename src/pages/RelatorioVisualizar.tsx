@@ -75,7 +75,7 @@ export default function RelatorioVisualizar() {
     fetchPacienteData();
   }, [id, navigate]);
   
-  const handleExportPDF = async () => {
+  const handleExportPDF = async (includeCharts: boolean = false) => {
     if (!paciente || !medicao) return;
     
     setExportLoading(true);
@@ -83,8 +83,10 @@ export default function RelatorioVisualizar() {
       await MedicaoExportUtils.exportToPDF(
         medicao, 
         paciente, 
+        includeCharts ? medicoes : [],
         medicao.recomendacoes || [],
-        { nome: "CraniumCare Clinic", profissional: "Médico Responsável" }
+        { nome: "CraniumCare Clinic", profissional: "Médico Responsável" },
+        includeCharts
       );
       toast.success("PDF gerado com sucesso!");
     } catch (error) {
@@ -128,7 +130,6 @@ export default function RelatorioVisualizar() {
   }
   
   const handleRecomendacoesUpdated = (novasRecomendacoes: string[]) => {
-    // Atualizar a medição específica nas medicoes
     setMedicoes(prev => prev.map(m => 
       m.id === medicaoId ? { ...m, recomendacoes: novasRecomendacoes } : m
     ));
@@ -163,14 +164,12 @@ export default function RelatorioVisualizar() {
   
   const idadeAtual = formatAge(paciente.data_nascimento);
   
-  // Calculate age in months for CHOA recommendations
   const calculateAgeInMonths = (birthDate: string, measurementDate?: string): number => {
     const birth = new Date(birthDate);
     const measurement = measurementDate ? new Date(measurementDate) : new Date();
     return (measurement.getFullYear() - birth.getFullYear()) * 12 + (measurement.getMonth() - birth.getMonth());
   };
   
-  // Use the new classification system with CHOA integration
   const cranialStatusInfo = medicao
     ? getCranialStatus(
         medicao.indice_craniano, 
@@ -221,6 +220,8 @@ export default function RelatorioVisualizar() {
     setModoConsolidado(!modoConsolidado);
   };
 
+  const hasHistoricalData = medicoes.length > 1;
+
   return (
     <div 
       ref={relatorioRef} 
@@ -234,7 +235,9 @@ export default function RelatorioVisualizar() {
         modoConsolidado={modoConsolidado}
         onModoChange={handleToggleModo}
         onVoltar={handleVoltar}
-        onExportPDF={!modoConsolidado && medicao ? handleExportPDF : undefined}
+        onExportPDF={!modoConsolidado && medicao ? () => handleExportPDF(false) : undefined}
+        onExportPDFWithCharts={!modoConsolidado && medicao && hasHistoricalData ? () => handleExportPDF(true) : undefined}
+        exportLoading={exportLoading}
       />
       
       <div className="grid gap-6 md:grid-cols-2">
@@ -257,7 +260,6 @@ export default function RelatorioVisualizar() {
         )}
       </div>
 
-      {/* Visualização craniana consolidada */}
       {!modoConsolidado && medicao && (
         <CranialVisualizationCard
           medicao={medicao}
