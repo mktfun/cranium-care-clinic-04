@@ -1,3 +1,4 @@
+
 import React from "react";
 import { formatAge } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
@@ -111,8 +112,8 @@ export class MedicaoExportUtils {
         cvai: medicao.cvai
       };
       
-      // Criar o elemento usando React.createElement
-      const pdfElement = React.createElement(CranialMeasurementPDF, {
+      // Criar o PDF component
+      const pdfComponent = React.createElement(CranialMeasurementPDF, {
         pacienteData: paciente,
         medicaoData: medicaoFormatada,
         idadeNaAvaliacao: idadeNaAvaliacao,
@@ -123,7 +124,7 @@ export class MedicaoExportUtils {
       });
       
       // Gerar o PDF
-      const blob = await pdf(pdfElement).toBlob();
+      const blob = await pdf(pdfComponent).toBlob();
       
       // Download
       const url = URL.createObjectURL(blob);

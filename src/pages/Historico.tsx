@@ -12,13 +12,15 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download } from "lucide-react";
+import { Download, FileDown } from "lucide-react";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { SeverityLevel, AsymmetryType } from "@/lib/cranial-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MedicaoExportUtils } from "@/components/export/MedicaoExportUtils";
+import { Loader2 } from "lucide-react";
 
 interface Medicao {
   id: string;
@@ -28,6 +30,10 @@ interface Medicao {
   cvai?: number;
   perimetro_cefalico?: number;
   diferenca_diagonais?: number;
+  comprimento?: number;
+  largura?: number;
+  diagonal_d?: number;
+  diagonal_e?: number;
   pacienteNome?: string;
   pacienteNascimento?: string;
 }
@@ -36,12 +42,14 @@ interface Paciente {
   id: string;
   nome: string;
   data_nascimento: string;
+  sexo?: 'M' | 'F';
 }
 
 export default function Historico() {
   const [filtro, setFiltro] = useState("");
   const [medicoes, setMedicoes] = useState<Medicao[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exportLoading, setExportLoading] = useState<string | null>(null);
   
   // Carregar dados das medições do Supabase
   useEffect(() => {
@@ -64,7 +72,7 @@ export default function Historico() {
         // Depois, obter todos os pacientes para relacionar com as medições
         const { data: pacientesData, error: pacientesError } = await supabase
           .from('pacientes')
-          .select('id, nome, data_nascimento');
+          .select('id, nome, data_nascimento, sexo');
           
         if (pacientesError) {
           console.error("Erro ao carregar pacientes:", pacientesError);
@@ -82,7 +90,8 @@ export default function Historico() {
         const medicoesCompletas = (medicoesData || []).map(medicao => ({
           ...medicao,
           pacienteNome: pacientesMap[medicao.paciente_id]?.nome || "Paciente desconhecido",
-          pacienteNascimento: pacientesMap[medicao.paciente_id]?.data_nascimento || ""
+          pacienteNascimento: pacientesMap[medicao.paciente_id]?.data_nascimento || "",
+          pacienteSexo: pacientesMap[medicao.paciente_id]?.sexo || 'M'
         }));
         
         setMedicoes(medicoesCompletas);
@@ -106,6 +115,35 @@ export default function Historico() {
   const formatarData = (dataString: string) => {
     const data = new Date(dataString);
     return data.toLocaleDateString('pt-BR');
+  };
+
+  const handleExportPDF = async (medicao: Medicao) => {
+    if (!medicao.pacienteNome || !medicao.pacienteNascimento) {
+      toast.error("Dados do paciente incompletos");
+      return;
+    }
+
+    setExportLoading(medicao.id);
+    try {
+      const pacienteData = {
+        nome: medicao.pacienteNome,
+        data_nascimento: medicao.pacienteNascimento,
+        sexo: (medicao as any).pacienteSexo || 'M' as 'M' | 'F'
+      };
+
+      await MedicaoExportUtils.exportToPDF(
+        medicao, 
+        pacienteData, 
+        [],
+        { nome: "CraniumCare Clinic", profissional: "Médico Responsável" }
+      );
+      toast.success("PDF gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Erro ao gerar PDF. Tente novamente.");
+    } finally {
+      setExportLoading(null);
+    }
   };
 
   return (
@@ -166,7 +204,6 @@ export default function Historico() {
                   {medicoesFiltradas.length > 0 ? (
                     medicoesFiltradas.map((medicao) => {
                       // Get the cranial status for the current measurement
-                      // Fix: indice_craniano is already defined in our Medicao interface
                       const { asymmetryType, severityLevel } = getCranialStatus(
                         (medicao as any).indice_craniano || 0,
                         (medicao as any).cvai || 0
@@ -197,8 +234,18 @@ export default function Historico() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button size="sm" variant="outline" className="hidden sm:inline-flex">
-                                <Download className="h-4 w-4 mr-2" />
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="hidden sm:inline-flex"
+                                onClick={() => handleExportPDF(medicao)}
+                                disabled={exportLoading === medicao.id}
+                              >
+                                {exportLoading === medicao.id ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <FileDown className="h-4 w-4 mr-2" />
+                                )}
                                 PDF
                               </Button>
                               <Button asChild variant="outline" size="sm">
