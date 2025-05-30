@@ -59,18 +59,23 @@ export default function RegistroPaciente() {
     setLoading(true);
 
     try {
-      // First create the patient record
+      // Create the patient record with proper responsaveis structure
+      const responsaveisData = responsavelNome ? [{
+        nome: responsavelNome,
+        telefone: responsavelTelefone || '',
+        email: responsavelEmail || '',
+        parentesco: 'Responsável'
+      }] : [];
+
       const novoPaciente = {
         nome,
         data_nascimento: dataNascimento,
         sexo,
-        user_id: userId, // Include the user_id here
-        responsaveis: responsavelNome ? {
-          nome: responsavelNome,
-          telefone: responsavelTelefone,
-          email: responsavelEmail
-        } : null
+        user_id: userId,
+        responsaveis: responsaveisData.length > 0 ? responsaveisData : null
       };
+      
+      console.log("Dados do paciente a serem inseridos:", novoPaciente);
       
       const { data: paciente, error } = await supabase
         .from("pacientes")
@@ -79,6 +84,7 @@ export default function RegistroPaciente() {
         .single();
       
       if (error) {
+        console.error("Erro ao inserir paciente:", error);
         throw error;
       }
       

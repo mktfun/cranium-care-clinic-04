@@ -42,8 +42,8 @@ export function RegistroForm() {
         password,
         options: {
           data: {
-            nome: nome, // Esses dados serão usados pelo trigger handle_new_user 
-            clinica_nome: clinicaNome || "CraniumCare", // para preencher a tabela usuarios
+            nome: nome,
+            clinica_nome: clinicaNome || "CraniumCare",
           }
         }
       });
