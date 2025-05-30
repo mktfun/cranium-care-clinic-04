@@ -63,7 +63,7 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
   const [patientDialogOpen, setPatientDialogOpen] = useState(false);
 
-  // Adicionar hook de filtros para o dashboard
+  // Hooks de filtros e tipos de gráfico
   const {
     filters,
     dateRange,
@@ -73,7 +73,6 @@ export default function Dashboard() {
     resetFilters
   } = useChartFilters();
 
-  // Adicionar hook de tipos de gráfico
   const { getChartType, updateChartType } = useChartType();
 
   useEffect(() => {
@@ -342,43 +341,45 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Filtros para Desktop - Apenas quando não mobile */}
+      {/* Filtros de Análise - Posicionados acima dos gráficos (onde estava a caixa vermelha) */}
       {!isMobile && (
-        <ChartFilters
-          timePeriod={filters.timePeriod}
-          onTimePeriodChange={updateTimePeriod}
-          measurementType={filters.measurementType}
-          onMeasurementTypeChange={updateMeasurementType}
-          showMeasurementFilter={true}
-          customDateRange={filters.customDateRange}
-          onCustomDateRangeChange={updateCustomDateRange}
-          showCustomDateRange={true}
-          onResetFilters={resetFilters}
-        />
+        <div className="mb-6">
+          <ChartFilters
+            timePeriod={filters.timePeriod}
+            onTimePeriodChange={updateTimePeriod}
+            measurementType={filters.measurementType}
+            onMeasurementTypeChange={updateMeasurementType}
+            showMeasurementFilter={true}
+            customDateRange={filters.customDateRange}
+            onCustomDateRangeChange={updateCustomDateRange}
+            showCustomDateRange={true}
+            onResetFilters={resetFilters}
+          />
+        </div>
       )}
 
-      {/* Charts Section - Simplified Layout without Status Chart */}
+      {/* Charts Section - Layout reorganizado */}
       {!isMobile && (
         <div className="grid gap-6 lg:grid-cols-3 mt-6">
-          {/* Main chart takes more space */}
+          {/* Gráfico "Medições Realizadas" agora ocupa a posição principal (2/3 do espaço - onde estava a caixa azul) */}
           <div className="lg:col-span-2">
-            <PacientesMedicoesChart 
-              altura={350} 
-              dateRange={dateRange}
-              measurementType={filters.measurementType}
-              chartType={getChartType("pacientesMedicoes")}
-              onChartTypeChange={(type) => updateChartType("pacientesMedicoes", type)}
-            />
-          </div>
-          
-          {/* Single side chart */}
-          <div className="lg:col-span-1">
             <MedicoesPorDiaChart 
-              altura={350}
+              altura={350} 
               dateRange={dateRange}
               measurementType={filters.measurementType}
               chartType={getChartType("medicoesPorDia")}
               onChartTypeChange={(type) => updateChartType("medicoesPorDia", type)}
+            />
+          </div>
+          
+          {/* Gráfico "Evolução de Pacientes e Medições" agora fica na lateral (1/3 do espaço) */}
+          <div className="lg:col-span-1">
+            <PacientesMedicoesChart 
+              altura={350}
+              dateRange={dateRange}
+              measurementType={filters.measurementType}
+              chartType={getChartType("pacientesMedicoes")}
+              onChartTypeChange={(type) => updateChartType("pacientesMedicoes", type)}
             />
           </div>
         </div>

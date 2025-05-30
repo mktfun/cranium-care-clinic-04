@@ -22,21 +22,41 @@ interface MedicoesPorDiaChartProps {
   onChartTypeChange?: (type: ChartType) => void;
 }
 
-// Função corrigida para usar corretamente o dateRange dos filtros
+// Função corrigida para mostrar dias individuais quando período é ≤ 7 dias
 const obterPeriodoDinamico = (dateRange: DateRange) => {
   const startDate = new Date(dateRange.startDate);
   const endDate = new Date(dateRange.endDate);
+  
+  // Calcular diferença em dias
+  const diffTime = endDate.getTime() - startDate.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir o dia final
   
   const dias = [];
   const currentDate = new Date(startDate);
   
   // Gerar todos os dias entre startDate e endDate
   while (currentDate <= endDate) {
+    let formatado;
+    
+    // Se período for 7 dias ou menos, mostrar DD/MM
+    if (diffDays <= 7) {
+      formatado = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+    } 
+    // Se período for até 30 dias, mostrar DD/MM
+    else if (diffDays <= 30) {
+      formatado = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+    }
+    // Para períodos maiores, mostrar mês/ano
+    else {
+      formatado = `${currentDate.toLocaleDateString('pt-BR', { month: 'short' })}/${currentDate.getFullYear().toString().slice(-2)}`;
+    }
+    
     dias.push({
       data: new Date(currentDate),
-      formatado: `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`,
+      formatado: formatado,
       diaCompleto: currentDate.toISOString().split('T')[0]
     });
+    
     currentDate.setDate(currentDate.getDate() + 1);
   }
   
@@ -133,11 +153,26 @@ export function MedicoesPorDiaChart({
   const getTitle = () => {
     const startDate = new Date(dateRange.startDate);
     const endDate = new Date(dateRange.endDate);
-    const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     
-    if (diffDays <= 7) return "Medições Realizadas";
-    if (diffDays <= 30) return "Medições por Dia";
+    if (diffDays <= 7) return "Medições Realizadas - Últimos 7 Dias";
+    if (diffDays <= 30) return "Medições Realizadas por Dia";
     return "Medições Realizadas no Período";
+  };
+
+  // Determinar descrição baseada no período
+  const getDescription = () => {
+    const startDate = new Date(dateRange.startDate);
+    const endDate = new Date(dateRange.endDate);
+    const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    
+    const startFormatted = startDate.toLocaleDateString('pt-BR');
+    const endFormatted = endDate.toLocaleDateString('pt-BR');
+    
+    if (diffDays <= 7) {
+      return `Avaliações diárias de ${startFormatted} a ${endFormatted}`;
+    }
+    return `Total de avaliações por dia no período de ${startFormatted} a ${endFormatted}`;
   };
 
   // Renderizar o gráfico baseado no tipo selecionado
@@ -255,7 +290,7 @@ export function MedicoesPorDiaChart({
           <div>
             <CardTitle className="text-lg font-medium">{getTitle()}</CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
-              Total de avaliações por dia no período selecionado
+              {getDescription()}
             </CardDescription>
           </div>
           {onChartTypeChange && (
