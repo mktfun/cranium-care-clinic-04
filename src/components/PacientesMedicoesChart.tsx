@@ -15,35 +15,88 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
-// Função para obter os últimos 6 meses em formato MMM/YY
-const obterUltimosSeisMeses = () => {
-  const meses = [];
-  for (let i = 5; i >= 0; i--) {
-    const data = new Date();
-    data.setMonth(data.getMonth() - i);
-    const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
-    const ano = data.getFullYear().toString().slice(-2);
-    meses.push({
-      data: data,
-      formatado: `${mes}/${ano}`,
-      mes: data.getMonth(),
-      ano: data.getFullYear()
-    });
+// Função para obter períodos baseados no filtro
+const obterPeriodoPorFiltro = (filtro: string) => {
+  const now = new Date();
+  let periodos = [];
+  
+  switch (filtro) {
+    case "7days":
+      for (let i = 6; i >= 0; i--) {
+        const data = new Date(now);
+        data.setDate(data.getDate() - i);
+        periodos.push({
+          data: data,
+          formatado: `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1).toString().padStart(2, '0')}`,
+          mes: data.getMonth(),
+          ano: data.getFullYear(),
+          diaCompleto: data.toISOString().split('T')[0]
+        });
+      }
+      break;
+    case "30days":
+      for (let i = 29; i >= 0; i--) {
+        const data = new Date(now);
+        data.setDate(data.getDate() - i);
+        periodos.push({
+          data: data,
+          formatado: `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1).toString().padStart(2, '0')}`,
+          mes: data.getMonth(),
+          ano: data.getFullYear(),
+          diaCompleto: data.toISOString().split('T')[0]
+        });
+      }
+      break;
+    case "6months":
+      for (let i = 5; i >= 0; i--) {
+        const data = new Date(now);
+        data.setMonth(data.getMonth() - i);
+        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+        const ano = data.getFullYear().toString().slice(-2);
+        periodos.push({
+          data: data,
+          formatado: `${mes}/${ano}`,
+          mes: data.getMonth(),
+          ano: data.getFullYear()
+        });
+      }
+      break;
+    case "1year":
+      for (let i = 11; i >= 0; i--) {
+        const data = new Date(now);
+        data.setMonth(data.getMonth() - i);
+        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+        const ano = data.getFullYear().toString().slice(-2);
+        periodos.push({
+          data: data,
+          formatado: `${mes}/${ano}`,
+          mes: data.getMonth(),
+          ano: data.getFullYear()
+        });
+      }
+      break;
+    default:
+      return obterPeriodoPorFiltro("6months");
   }
-  return meses;
+  
+  return periodos;
 };
 
 interface DataPoint {
-  mes: string;
-  pacientes: number;
-  medicoes: number;
+  periodo: string;
+  pacientesUnicos: number;
+  totalMedicoes: number;
 }
 
 interface PacientesMedicoesChartProps {
   altura?: number;
+  timePeriod?: string;
 }
 
-export function PacientesMedicoesChart({ altura = 350 }: PacientesMedicoesChartProps) {
+export function PacientesMedicoesChart({ 
+  altura = 350, 
+  timePeriod = "6months" 
+}: PacientesMedicoesChartProps) {
   const [dados, setDados] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -51,7 +104,7 @@ export function PacientesMedicoesChart({ altura = 350 }: PacientesMedicoesChartP
     async function carregarDados() {
       try {
         setLoading(true);
-        const meses = obterUltimosSeisMeses();
+        const periodos = obterPeriodoPorFiltro(timePeriod);
         
         // Buscar pacientes do Supabase
         const { data: pacientes, error: pacientesError } = await supabase
@@ -60,83 +113,108 @@ export function PacientesMedicoesChart({ altura = 350 }: PacientesMedicoesChartP
         
         if (pacientesError) {
           console.error("Erro ao buscar pacientes:", pacientesError);
-          // Gerar dados simulados como fallback
-          setDados(gerarDadosSimulados());
+          setDados(gerarDadosSimulados(timePeriod));
           return;
         }
         
         // Buscar medições do Supabase
         const { data: medicoes, error: medicoesError } = await supabase
           .from('medicoes')
-          .select('id, data');
+          .select('id, data, paciente_id');
         
         if (medicoesError) {
           console.error("Erro ao buscar medições:", medicoesError);
-          // Gerar dados simulados como fallback
-          setDados(gerarDadosSimulados());
+          setDados(gerarDadosSimulados(timePeriod));
           return;
         }
         
-        // Processar dados por mês
-        const dadosPorMes = meses.map(mes => {
-          // Contar pacientes criados neste mês
-          const pacientesCriados = pacientes 
-            ? pacientes.filter(p => {
-                const dataCriacao = new Date(p.created_at);
-                return dataCriacao.getMonth() === mes.mes && dataCriacao.getFullYear() === mes.ano;
-              }).length
-            : 0;
+        // Processar dados por período
+        const dadosPorPeriodo = periodos.map(periodo => {
+          let pacientesUnicos = 0;
+          let totalMedicoes = 0;
+          
+          if (timePeriod === "7days" || timePeriod === "30days") {
+            // Para dias: contar pacientes únicos que fizeram medições neste dia
+            const pacientesNoDia = new Set<string>();
+            const medicoesNoDia = medicoes?.filter(m => {
+              const dataMedicao = new Date(m.data);
+              return dataMedicao.toISOString().split('T')[0] === periodo.diaCompleto;
+            }) || [];
             
-          // Contar medições realizadas neste mês
-          const medicoesRealizadas = medicoes
-            ? medicoes.filter(m => {
-                const dataMedicao = new Date(m.data);
-                return dataMedicao.getMonth() === mes.mes && dataMedicao.getFullYear() === mes.ano;
-              }).length
-            : 0;
+            medicoesNoDia.forEach(m => {
+              pacientesNoDia.add(m.paciente_id);
+            });
             
+            pacientesUnicos = pacientesNoDia.size;
+            totalMedicoes = medicoesNoDia.length;
+          } else {
+            // Para meses: contar pacientes únicos que fizeram medições neste mês
+            const pacientesNoMes = new Set<string>();
+            const medicoesNoMes = medicoes?.filter(m => {
+              const dataMedicao = new Date(m.data);
+              return dataMedicao.getMonth() === periodo.mes && dataMedicao.getFullYear() === periodo.ano;
+            }) || [];
+            
+            medicoesNoMes.forEach(m => {
+              pacientesNoMes.add(m.paciente_id);
+            });
+            
+            pacientesUnicos = pacientesNoMes.size;
+            totalMedicoes = medicoesNoMes.length;
+          }
+          
           return {
-            mes: mes.formatado,
-            pacientes: pacientesCriados,
-            medicoes: medicoesRealizadas
+            periodo: periodo.formatado,
+            pacientesUnicos,
+            totalMedicoes
           };
         });
         
-        setDados(dadosPorMes);
+        setDados(dadosPorPeriodo);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
-        setDados(gerarDadosSimulados());
+        setDados(gerarDadosSimulados(timePeriod));
       } finally {
         setLoading(false);
       }
     }
     
     carregarDados();
-  }, []);
+  }, [timePeriod]);
   
   // Função para gerar dados simulados como fallback
-  const gerarDadosSimulados = (): DataPoint[] => {
-    const meses = obterUltimosSeisMeses();
+  const gerarDadosSimulados = (filtro: string): DataPoint[] => {
+    const periodos = obterPeriodoPorFiltro(filtro);
     
-    return meses.map(mes => {
-      // Simular dados com números aleatórios de pacientes e medições
-      const pacientes = Math.floor(Math.random() * 10) + 2;
-      const medicoes = Math.floor(Math.random() * 15) + 5;
+    return periodos.map(periodo => {
+      // Simular dados coerentes: pacientes únicos sempre menor que medições
+      const pacientesUnicos = Math.floor(Math.random() * 8) + 1;
+      const totalMedicoes = pacientesUnicos + Math.floor(Math.random() * (pacientesUnicos * 2));
       
       return {
-        mes: mes.formatado,
-        pacientes: pacientes,
-        medicoes: medicoes
+        periodo: periodo.formatado,
+        pacientesUnicos,
+        totalMedicoes
       };
     });
+  };
+
+  const getDescricaoPeriodo = () => {
+    switch (timePeriod) {
+      case "7days": return "Pacientes únicos e medições realizadas nos últimos 7 dias";
+      case "30days": return "Pacientes únicos e medições realizadas nos últimos 30 dias";
+      case "6months": return "Pacientes únicos e medições realizadas nos últimos 6 meses";
+      case "1year": return "Pacientes únicos e medições realizadas no último ano";
+      default: return "Comparativo entre pacientes únicos e medições realizadas";
+    }
   };
   
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Evolução de Pacientes e Medições</CardTitle>
+        <CardTitle>Pacientes Únicos vs Medições</CardTitle>
         <CardDescription>
-          Comparativo entre pacientes registrados e medições realizadas nos últimos 6 meses
+          {getDescricaoPeriodo()}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -148,32 +226,70 @@ export function PacientesMedicoesChart({ altura = 350 }: PacientesMedicoesChartP
           <ResponsiveContainer width="100%" height={altura}>
             <ComposedChart data={dados}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis dataKey="mes" />
-              <YAxis yAxisId="left" />
-              <YAxis yAxisId="right" orientation="right" />
+              <XAxis 
+                dataKey="periodo" 
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis 
+                yAxisId="left" 
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                label={{ 
+                  value: 'Pacientes', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  style: { textAnchor: 'middle' }
+                }}
+              />
+              <YAxis 
+                yAxisId="right" 
+                orientation="right" 
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                label={{ 
+                  value: 'Medições', 
+                  angle: 90, 
+                  position: 'insideRight',
+                  style: { textAnchor: 'middle' }
+                }}
+              />
               <Tooltip 
                 contentStyle={{
                   backgroundColor: "var(--card)",
                   borderColor: "var(--border)",
                   borderRadius: "var(--radius)",
                 }}
+                formatter={(value: number, name: string) => [
+                  value,
+                  name === "pacientesUnicos" ? "Pacientes Únicos" : "Total de Medições"
+                ]}
+                labelFormatter={(label: string) => `Período: ${label}`}
               />
-              <Legend />
+              <Legend 
+                formatter={(value: string) => 
+                  value === "pacientesUnicos" ? "Pacientes Únicos" : "Total de Medições"
+                }
+              />
               <Bar 
                 yAxisId="left" 
-                dataKey="pacientes" 
+                dataKey="pacientesUnicos" 
                 fill="#029daf" 
-                name="Pacientes" 
+                name="pacientesUnicos" 
                 barSize={40}
                 radius={[4, 4, 0, 0]} 
               />
               <Line 
                 yAxisId="right" 
                 type="monotone" 
-                dataKey="medicoes" 
+                dataKey="totalMedicoes" 
                 stroke="#AF5B5B" 
-                name="Medições" 
-                strokeWidth={2}
+                name="totalMedicoes" 
+                strokeWidth={3}
+                dot={{ fill: "#AF5B5B", strokeWidth: 2, r: 4 }}
               />
             </ComposedChart>
           </ResponsiveContainer>

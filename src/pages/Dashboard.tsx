@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Users, Activity, Calendar, AlertTriangle, Loader2, Plus, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +20,8 @@ import { PacientesStatusChart } from "@/components/PacientesStatusChart";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SelectPatientDialog } from "@/components/SelectPatientDialog";
 import { convertSupabasePacienteToPaciente } from "@/lib/patient-utils";
+import { ChartFilters } from "@/components/ChartFilters";
+import { MedicoesPacientesDiarioChart } from "@/components/MedicoesPacientesDiarioChart";
 
 interface TrendData {
   value: number;
@@ -60,6 +61,7 @@ export default function Dashboard() {
   const [percentualPacientesAlerta, setPercentualPacientesAlerta] = useState(0);
   const isMobile = useIsMobile();
   const [patientDialogOpen, setPatientDialogOpen] = useState(false);
+  const [chartTimePeriod, setChartTimePeriod] = useState("6months");
 
   useEffect(() => {
     async function carregarDados() {
@@ -327,12 +329,20 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Chart Filters */}
+      {!isMobile && (
+        <ChartFilters
+          timePeriod={chartTimePeriod}
+          onTimePeriodChange={setChartTimePeriod}
+        />
+      )}
+
       {/* Charts Section - Enhanced Layout for Better Analytics */}
       {!isMobile && (
         <div className="grid gap-6 lg:grid-cols-12 mt-6">
           {/* Main chart takes more space */}
           <div className="lg:col-span-8">
-            <PacientesMedicoesChart altura={350} />
+            <PacientesMedicoesChart altura={350} timePeriod={chartTimePeriod} />
           </div>
           
           {/* Side charts in a column */}
@@ -340,6 +350,14 @@ export default function Dashboard() {
             <MedicoesPorDiaChart altura={165} />
             <PacientesStatusChart altura={165} />
           </div>
+        </div>
+      )}
+
+      {/* Novo gráfico diário - Visível apenas em desktop */}
+      {!isMobile && (
+        <div className="grid gap-6 lg:grid-cols-2 mt-6">
+          <MedicoesPacientesDiarioChart altura={300} dias={14} />
+          <MedicoesPacientesDiarioChart altura={300} dias={7} />
         </div>
       )}
 
