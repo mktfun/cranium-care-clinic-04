@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SeverityLevel } from "@/lib/cranial-utils";
@@ -8,6 +7,7 @@ import { PenLine, Save, Plus, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { type CHOAClassification } from "@/lib/choa-plagiocephaly-scale";
 
 interface RecomendacoesCardProps {
   recomendacoes?: string[] | null;
@@ -15,6 +15,8 @@ interface RecomendacoesCardProps {
   isReadOnly?: boolean;
   medicaoId?: string;
   onRecomendacoesUpdated?: (recomendacoes: string[]) => void;
+  choaClassification?: CHOAClassification;
+  choaRecommendations?: string[];
 }
 
 export function RecomendacoesCard({ 
@@ -22,7 +24,9 @@ export function RecomendacoesCard({
   severityLevel,
   isReadOnly = false,
   medicaoId,
-  onRecomendacoesUpdated
+  onRecomendacoesUpdated,
+  choaClassification,
+  choaRecommendations = []
 }: RecomendacoesCardProps) {
   // Ensure recomendacoes is always an array, never null
   const safeRecomendacoes = Array.isArray(recomendacoes) ? recomendacoes : [];
@@ -32,13 +36,18 @@ export function RecomendacoesCard({
   const [novaRecomendacao, setNovaRecomendacao] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Recomendações padrão baseadas no nível de severidade
+  // Usar recomendações CHOA como padrão quando disponíveis
   const getDefaultRecomendacoes = () => {
+    if (choaRecommendations.length > 0) {
+      return choaRecommendations;
+    }
+    
+    // Fallback para recomendações baseadas em severidade
     if (severityLevel === "normal") {
       return ["Manter acompanhamento preventivo do desenvolvimento craniano"];
     } else if (severityLevel === "leve") {
       return [
-        "Reposicionamento ativo durante períodos de vigília",
+        "Programa de reposicionamento ativo",
         "Exercícios de fisioterapia para fortalecimento cervical",
         "Tempo supervisionado de barriga para baixo (tummy time)"
       ];
@@ -46,15 +55,13 @@ export function RecomendacoesCard({
       return [
         "Programa intensivo de reposicionamento e fisioterapia",
         "Considerar uso de travesseiro terapêutico específico",
-        "Avaliar necessidade de órtese craniana nas próximas 4-6 semanas",
-        "Considerar avaliação para órtese craniana se não houver melhora em 4-6 semanas"
+        "Avaliar necessidade de órtese craniana nas próximas 4-6 semanas"
       ];
     } else { // severa
       return [
         "Encaminhamento para avaliação especializada de órtese craniana",
         "Iniciar tratamento com capacete ortopédico o mais breve possível",
-        "Consulta com neurocirurgião pediátrico recomendada",
-        "Encaminhamento para especialista em órtese craniana recomendado"
+        "Consulta com neurocirurgião pediátrico recomendada"
       ];
     }
   };
@@ -84,7 +91,6 @@ export function RecomendacoesCard({
       toast.success("Recomendações salvas com sucesso!");
       setIsEditing(false);
       
-      // Notificar componente pai sobre a atualização
       if (onRecomendacoesUpdated) {
         onRecomendacoesUpdated(editedRecomendacoes);
       }
@@ -134,7 +140,12 @@ export function RecomendacoesCard({
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Recomendações Clínicas</CardTitle>
-          <CardDescription>Baseadas no protocolo de avaliação craniana</CardDescription>
+          <CardDescription>
+            {choaClassification 
+              ? `Baseadas na Escala CHOA (Nível ${choaClassification.level}) - Children's Healthcare of Atlanta`
+              : "Baseadas no protocolo de avaliação craniana"
+            }
+          </CardDescription>
         </div>
         {!isReadOnly && medicaoId && (
           isEditing ? (
@@ -171,6 +182,17 @@ export function RecomendacoesCard({
         )}
       </CardHeader>
       <CardContent>
+        {choaClassification && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm font-medium text-blue-800 mb-1">
+              Recomendação CHOA (Nível {choaClassification.level}):
+            </p>
+            <p className="text-sm text-blue-700">
+              {choaClassification.recommendation}
+            </p>
+          </div>
+        )}
+
         {isEditing ? (
           <div className="space-y-4">
             {editedRecomendacoes.length > 0 ? (
@@ -218,7 +240,10 @@ export function RecomendacoesCard({
               className="mt-2 w-full"
               onClick={handleAddDefaultRecomendacoes}
             >
-              Adicionar Recomendações Padrão
+              {choaRecommendations.length > 0 
+                ? "Adicionar Recomendações CHOA" 
+                : "Adicionar Recomendações Padrão"
+              }
             </Button>
           </div>
         ) : (
@@ -230,32 +255,16 @@ export function RecomendacoesCard({
             </ul>
           ) : (
             <div>
-              <p className="text-muted-foreground">Recomendações gerais baseadas no tipo de assimetria e severidade:</p>
+              <p className="text-muted-foreground">
+                {choaRecommendations.length > 0 
+                  ? "Recomendações baseadas na Escala CHOA:"
+                  : "Recomendações gerais baseadas no tipo de assimetria e severidade:"
+                }
+              </p>
               <ul className="list-disc pl-5 space-y-2 mt-2">
-                {severityLevel === "normal" && (
-                  <li>Manter acompanhamento preventivo do desenvolvimento craniano</li>
-                )}
-                {severityLevel === "leve" && (
-                  <>
-                    <li>Reposicionamento ativo durante períodos de vigília</li>
-                    <li>Exercícios de fisioterapia para fortalecimento cervical</li>
-                    <li>Tempo supervisionado de barriga para baixo (tummy time)</li>
-                  </>
-                )}
-                {severityLevel === "moderada" && (
-                  <>
-                    <li>Programa intensivo de reposicionamento e fisioterapia</li>
-                    <li>Considerar uso de travesseiro terapêutico específico</li>
-                    <li>Avaliar necessidade de órtese craniana nas próximas 4-6 semanas</li>
-                  </>
-                )}
-                {severityLevel === "severa" && (
-                  <>
-                    <li>Encaminhamento para avaliação especializada de órtese craniana</li>
-                    <li>Iniciar tratamento com capacete ortopédico o mais breve possível</li>
-                    <li>Consulta com neurocirurgião pediátrico recomendada</li>
-                  </>
-                )}
+                {(choaRecommendations.length > 0 ? choaRecommendations : getDefaultRecomendacoes()).map((rec, idx) => (
+                  <li key={idx}>{rec}</li>
+                ))}
               </ul>
             </div>
           )

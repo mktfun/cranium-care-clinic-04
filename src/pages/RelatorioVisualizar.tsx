@@ -141,9 +141,20 @@ export default function RelatorioVisualizar() {
   
   const idadeAtual = formatAge(paciente.data_nascimento);
   
-  // Use the new classification system
+  // Calculate age in months for CHOA recommendations
+  const calculateAgeInMonths = (birthDate: string, measurementDate?: string): number => {
+    const birth = new Date(birthDate);
+    const measurement = measurementDate ? new Date(measurementDate) : new Date();
+    return (measurement.getFullYear() - birth.getFullYear()) * 12 + (measurement.getMonth() - birth.getMonth());
+  };
+  
+  // Use the new classification system with CHOA integration
   const cranialStatusInfo = medicao
-    ? getCranialStatus(medicao.indice_craniano, medicao.cvai)
+    ? getCranialStatus(
+        medicao.indice_craniano, 
+        medicao.cvai,
+        calculateAgeInMonths(paciente.data_nascimento, medicao.data)
+      )
     : { 
         asymmetryType: "Normal" as AsymmetryType, 
         severityLevel: "normal" as SeverityLevel,
@@ -156,10 +167,29 @@ export default function RelatorioVisualizar() {
           plagiocefalia: "normal" as const,
           braquicefalia: "normal" as const,
           dolicocefalia: "normal" as const
-        }
+        },
+        choaClassification: {
+          level: 1 as const,
+          clinicalPresentation: "Simetria dentro dos limites normais",
+          recommendation: "Nenhum tratamento necessário",
+          cvaiRange: "< 3,5%",
+          severity: "normal" as const,
+          needsTreatment: false,
+          urgency: "none" as const
+        },
+        choaRecommendations: [],
+        choaDiagnosis: "Desenvolvimento craniano normal"
       };
   
-  const { asymmetryType, severityLevel, diagnosis, individualClassifications } = cranialStatusInfo;
+  const { 
+    asymmetryType, 
+    severityLevel, 
+    diagnosis, 
+    individualClassifications,
+    choaClassification,
+    choaRecommendations,
+    choaDiagnosis 
+  } = cranialStatusInfo;
   
   const handleVoltar = () => {
     navigate(`/pacientes/${id}`);
@@ -200,6 +230,7 @@ export default function RelatorioVisualizar() {
             severityLevel={severityLevel}
             asymmetryType={asymmetryType}
             diagnosis={diagnosis}
+            choaClassification={choaClassification}
           />
         )}
       </div>
@@ -240,6 +271,8 @@ export default function RelatorioVisualizar() {
           isReadOnly={false}
           medicaoId={medicao.id}
           onRecomendacoesUpdated={handleRecomendacoesUpdated}
+          choaClassification={choaClassification}
+          choaRecommendations={choaRecommendations}
         />
       )}
       
