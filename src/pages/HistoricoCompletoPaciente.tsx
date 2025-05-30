@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -111,11 +110,17 @@ export default function HistoricoCompletoPaciente() {
   };
 
   const handleExportPDF = async () => {
-    if (!paciente) return;
+    if (!paciente || medicoes.length === 0) return;
     
     setExportLoading(true);
     try {
-      await MedicaoExportUtils.exportToPDF(medicoes, paciente);
+      const medicaoMaisRecente = medicoes[0];
+      await MedicaoExportUtils.exportToPDF(
+        medicaoMaisRecente, 
+        paciente, 
+        [],
+        { nome: "CraniumCare Clinic", profissional: "Médico Responsável" }
+      );
       toast.success("PDF gerado com sucesso!");
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);

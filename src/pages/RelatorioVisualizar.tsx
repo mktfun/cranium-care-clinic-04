@@ -212,7 +212,6 @@ export default function RelatorioVisualizar() {
         modoConsolidado={modoConsolidado}
         onModoChange={handleToggleModo}
         onVoltar={handleVoltar}
-        relatorioElementId="relatorio-para-exportar"
       />
       
       <div className="grid gap-6 md:grid-cols-2">

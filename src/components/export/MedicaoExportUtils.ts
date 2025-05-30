@@ -1,4 +1,4 @@
-
+import React from "react";
 import { formatAge } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
 import { CranialMeasurementPDF } from "@/components/pdf/CranialMeasurementPDF";
