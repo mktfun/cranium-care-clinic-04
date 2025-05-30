@@ -7,6 +7,7 @@ import { Loader2, ChevronLeft, FileText, Edit, History, Plus, Camera, RotateCcw,
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditarPacienteForm } from "@/components/EditarPacienteForm";
+import { PatientTasks } from "@/components/PatientTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Paciente } from "@/types";
@@ -196,6 +197,7 @@ export default function DetalhePaciente() {
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
           <TabsTrigger value="prontuarios">Prontuários</TabsTrigger>
           <TabsTrigger value="medicoes">Medições</TabsTrigger>
+          <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
           <TabsTrigger value="editar">Editar Paciente</TabsTrigger>
         </TabsList>
         
@@ -468,6 +470,10 @@ export default function DetalhePaciente() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="tarefas">
+          <PatientTasks patientId={id || ''} />
         </TabsContent>
         
         <TabsContent value="editar">

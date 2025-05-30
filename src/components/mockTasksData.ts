@@ -1,6 +1,5 @@
 
-import { Task } from "@/types";
+// This file has been deprecated - tasks are now managed through Supabase
+// All task data is now stored in the 'tarefas' table
 
-// This file is empty now that we don't use mocked data anymore
-
-export const mockUrgentTasks: Task[] = [];
+export const mockUrgentTasks: any[] = [];

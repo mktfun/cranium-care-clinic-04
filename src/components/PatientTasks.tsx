@@ -1,71 +1,24 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, CheckCircle, Circle, Clock, Edit, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-
-// Define task type
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  dueDate: string;
-  status: 'pending' | 'completed' | 'overdue';
-  patientId: string;
-  responsible: string;
-}
-
-// Sample tasks for demonstration
-const initialTasks: Task[] = [
-  {
-    id: "task-1",
-    title: "Reavaliação craniana",
-    description: "Realizar nova medição e avaliar a evolução do tratamento",
-    dueDate: "2025-05-15",
-    status: "pending",
-    patientId: "1",
-    responsible: "Dr. Ana"
-  },
-  {
-    id: "task-2",
-    title: "Verificar adaptação à órtese",
-    description: "Avaliar se o paciente está se adaptando bem ao capacete e fazer ajustes necessários",
-    dueDate: "2025-05-10",
-    status: "pending",
-    patientId: "1",
-    responsible: "Dr. Ana"
-  },
-  {
-    id: "task-3",
-    title: "Acompanhamento de exercícios",
-    description: "Verificar se os exercícios de fisioterapia estão sendo realizados corretamente",
-    dueDate: "2025-04-30",
-    status: "overdue",
-    patientId: "1",
-    responsible: "Fisioterapeuta João"
-  },
-  {
-    id: "task-4",
-    title: "Encaminhar para neurologista",
-    description: "Enviar relatório e solicitar avaliação neurológica",
-    dueDate: "2025-05-03",
-    status: "completed",
-    patientId: "1",
-    responsible: "Dr. Ana"
-  }
-];
+import { supabase } from "@/integrations/supabase/client";
+import { Task } from "@/types";
 
 interface PatientTasksProps {
   patientId: string;
 }
 
 export function PatientTasks({ patientId }: PatientTasksProps) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks.filter(task => task.patientId === patientId));
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
   const [isEditTaskDialogOpen, setIsEditTaskDialogOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
@@ -75,73 +28,173 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
   const [taskDescription, setTaskDescription] = useState("");
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskResponsible, setTaskResponsible] = useState("");
+  const [taskStatus, setTaskStatus] = useState<'pendente' | 'em_progresso' | 'concluida'>('pendente');
+
+  // Fetch tasks from Supabase
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('tarefas')
+        .select('*')
+        .eq('paciente_id', patientId)
+        .order('due_date', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao buscar tarefas:', error);
+        toast.error('Erro ao carregar tarefas');
+        return;
+      }
+
+      setTasks(data || []);
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      toast.error('Erro inesperado ao carregar tarefas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (patientId) {
+      fetchTasks();
+    }
+  }, [patientId]);
   
-  const handleCreateTask = () => {
+  const handleCreateTask = async () => {
     if (!taskTitle || !taskDueDate || !taskResponsible) {
       toast.error("Por favor, preencha todos os campos obrigatórios");
       return;
     }
     
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      title: taskTitle,
-      description: taskDescription,
-      dueDate: taskDueDate,
-      status: 'pending',
-      patientId,
-      responsible: taskResponsible
-    };
-    
-    setTasks([...tasks, newTask]);
-    resetTaskForm();
-    setIsNewTaskDialogOpen(false);
-    toast.success("Tarefa criada com sucesso!");
+    try {
+      const { data, error } = await supabase
+        .from('tarefas')
+        .insert({
+          titulo: taskTitle,
+          descricao: taskDescription,
+          due_date: taskDueDate,
+          status: 'pendente',
+          paciente_id: patientId,
+          responsible: taskResponsible,
+          user_id: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar tarefa:', error);
+        toast.error('Erro ao criar tarefa');
+        return;
+      }
+
+      setTasks([...tasks, data]);
+      resetTaskForm();
+      setIsNewTaskDialogOpen(false);
+      toast.success("Tarefa criada com sucesso!");
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      toast.error('Erro inesperado ao criar tarefa');
+    }
   };
   
-  const handleEditTask = () => {
+  const handleEditTask = async () => {
     if (!currentTask || !taskTitle || !taskDueDate || !taskResponsible) {
       toast.error("Por favor, preencha todos os campos obrigatórios");
       return;
     }
     
-    const updatedTasks = tasks.map(task => 
-      task.id === currentTask.id 
-        ? { 
-            ...task, 
-            title: taskTitle, 
-            description: taskDescription, 
-            dueDate: taskDueDate, 
-            responsible: taskResponsible 
-          } 
-        : task
-    );
+    try {
+      const { data, error } = await supabase
+        .from('tarefas')
+        .update({
+          titulo: taskTitle,
+          descricao: taskDescription,
+          due_date: taskDueDate,
+          responsible: taskResponsible,
+          status: taskStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentTask.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao atualizar tarefa:', error);
+        toast.error('Erro ao atualizar tarefa');
+        return;
+      }
+
+      const updatedTasks = tasks.map(task => 
+        task.id === currentTask.id ? data : task
+      );
+      
+      setTasks(updatedTasks);
+      resetTaskForm();
+      setCurrentTask(null);
+      setIsEditTaskDialogOpen(false);
+      toast.success("Tarefa atualizada com sucesso!");
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      toast.error('Erro inesperado ao atualizar tarefa');
+    }
+  };
+  
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tarefas')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Erro ao excluir tarefa:', error);
+        toast.error('Erro ao excluir tarefa');
+        return;
+      }
+
+      setTasks(tasks.filter(task => task.id !== taskId));
+      toast.success("Tarefa excluída com sucesso!");
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      toast.error('Erro inesperado ao excluir tarefa');
+    }
+  };
+  
+  const handleToggleTaskStatus = async (task: Task) => {
+    const newStatus = task.status === 'concluida' ? 'pendente' : 'concluida';
     
-    setTasks(updatedTasks);
-    resetTaskForm();
-    setCurrentTask(null);
-    setIsEditTaskDialogOpen(false);
-    toast.success("Tarefa atualizada com sucesso!");
-  };
-  
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
-    toast.success("Tarefa excluída com sucesso!");
-  };
-  
-  const handleToggleTaskStatus = (taskId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, status: task.status === 'completed' ? 'pending' : 'completed' } 
-        : task
-    ));
+    try {
+      const { data, error } = await supabase
+        .from('tarefas')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', task.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao atualizar status:', error);
+        toast.error('Erro ao atualizar status da tarefa');
+        return;
+      }
+
+      setTasks(tasks.map(t => t.id === task.id ? data : t));
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      toast.error('Erro inesperado ao atualizar status');
+    }
   };
   
   const handleOpenEditDialog = (task: Task) => {
     setCurrentTask(task);
-    setTaskTitle(task.title);
-    setTaskDescription(task.description);
-    setTaskDueDate(task.dueDate);
-    setTaskResponsible(task.responsible);
+    setTaskTitle(task.titulo);
+    setTaskDescription(task.descricao || "");
+    setTaskDueDate(task.due_date);
+    setTaskResponsible(task.responsible || "");
+    setTaskStatus(task.status);
     setIsEditTaskDialogOpen(true);
   };
   
@@ -150,6 +203,7 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
     setTaskDescription("");
     setTaskDueDate("");
     setTaskResponsible("");
+    setTaskStatus('pendente');
   };
   
   const formatDate = (dateString: string) => {
@@ -159,16 +213,16 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
   
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-500 hover:bg-green-600';
-      case 'overdue': return 'bg-red-500 hover:bg-red-600';
+      case 'concluida': return 'bg-green-500 hover:bg-green-600';
+      case 'em_progresso': return 'bg-blue-500 hover:bg-blue-600';
       default: return 'bg-yellow-500 hover:bg-yellow-600';
     }
   };
   
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'completed': return 'Concluída';
-      case 'overdue': return 'Atrasada';
+      case 'concluida': return 'Concluída';
+      case 'em_progresso': return 'Em Progresso';
       default: return 'Pendente';
     }
   };
@@ -180,24 +234,31 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
     return dueDate < today && dateString !== '';
   };
   
-  // Update status for overdue tasks
-  const tasksWithUpdatedStatus = tasks.map(task => {
-    if (task.status !== 'completed' && isPastDue(task.dueDate)) {
-      return { ...task, status: 'overdue' as 'overdue' };
-    }
-    return task;
-  });
-  
   // Sort tasks by status and due date
-  const sortedTasks = [...tasksWithUpdatedStatus].sort((a, b) => {
-    // Sort by status priority (overdue > pending > completed)
-    const statusPriority = { overdue: 0, pending: 1, completed: 2 };
+  const sortedTasks = [...tasks].sort((a, b) => {
+    // Sort by status priority (pending > in_progress > completed)
+    const statusPriority = { pendente: 0, em_progresso: 1, concluida: 2 };
     if (statusPriority[a.status] !== statusPriority[b.status]) {
       return statusPriority[a.status] - statusPriority[b.status];
     }
     // Then sort by due date (earliest first)
-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
   });
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Tarefas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">
+            <p className="text-muted-foreground">Carregando tarefas...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -285,7 +346,7 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
                     rows={3}
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="edit-dueDate" className="text-sm font-medium">Data de Vencimento*</label>
                     <Input
@@ -303,6 +364,19 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
                       onChange={(e) => setTaskResponsible(e.target.value)}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-status" className="text-sm font-medium">Status</label>
+                    <Select value={taskStatus} onValueChange={setTaskStatus}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pendente">Pendente</SelectItem>
+                        <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                        <SelectItem value="concluida">Concluída</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
               <DialogFooter>
@@ -319,37 +393,44 @@ export function PatientTasks({ patientId }: PatientTasksProps) {
                 <div 
                   key={task.id} 
                   className={`p-3 border rounded-md transition-all duration-200 ${
-                    task.status === 'completed' ? 'bg-muted/50 border-muted' : 'bg-card hover:bg-muted/10'
-                  }`}
+                    task.status === 'concluida' ? 'bg-muted/50 border-muted' : 'bg-card hover:bg-muted/10'
+                  } ${isPastDue(task.due_date) && task.status !== 'concluida' ? 'border-red-200 bg-red-50' : ''}`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
                       <button 
-                        onClick={() => handleToggleTaskStatus(task.id)}
+                        onClick={() => handleToggleTaskStatus(task)}
                         className="mt-1 text-muted-foreground hover:text-primary transition-colors"
                       >
-                        {task.status === 'completed' ? (
+                        {task.status === 'concluida' ? (
                           <CheckCircle className="h-5 w-5 text-green-500" />
                         ) : (
                           <Circle className="h-5 w-5" />
                         )}
                       </button>
                       <div>
-                        <h4 className={`font-medium ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
-                          {task.title}
+                        <h4 className={`font-medium ${task.status === 'concluida' ? 'line-through text-muted-foreground' : ''}`}>
+                          {task.titulo}
                         </h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {task.description}
-                        </p>
+                        {task.descricao && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {task.descricao}
+                          </p>
+                        )}
                         <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Calendar className="h-3.5 w-3.5" />
-                            <span>{formatDate(task.dueDate)}</span>
+                            <span>{formatDate(task.due_date)}</span>
+                            {isPastDue(task.due_date) && task.status !== 'concluida' && (
+                              <span className="text-red-500 font-medium">(Atrasada)</span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>{task.responsible}</span>
-                          </div>
+                          {task.responsible && (
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Clock className="h-3.5 w-3.5" />
+                              <span>{task.responsible}</span>
+                            </div>
+                          )}
                           <Badge 
                             className={`text-white ${getStatusColor(task.status)}`}
                           >
