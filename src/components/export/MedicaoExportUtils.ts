@@ -1,8 +1,7 @@
-
 import React from "react";
 import { formatAge } from "@/lib/age-utils";
 import { getCranialStatus } from "@/lib/cranial-utils";
-import { CranialMeasurementPDF } from "@/components/pdf/CranialMeasurementPDF";
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { pdf } from "@react-pdf/renderer";
 
 interface MedicaoExportable {
@@ -26,6 +25,119 @@ interface PacienteExportable {
   data_nascimento: string;
   sexo: 'M' | 'F';
 }
+
+// PDF Styles
+const styles = StyleSheet.create({
+  page: {
+    paddingTop: 35,
+    paddingBottom: 65,
+    paddingHorizontal: 35,
+    fontFamily: 'Helvetica',
+    fontSize: 10,
+  },
+  title: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+    fontWeight: 'bold',
+    color: '#6E59A5',
+  },
+  subtitle: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#666',
+  },
+  patientInfoSection: {
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#cccccc',
+    paddingBottom: 15,
+  },
+  patientInfoRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  label: {
+    width: '35%',
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  value: {
+    width: '65%',
+    color: '#666',
+  },
+  measurementSection: {
+    marginBottom: 25,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#6E59A5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#6E59A5',
+    paddingBottom: 5,
+  },
+  measurementRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    backgroundColor: '#f8f9fa',
+  },
+  measurementRowAlt: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  measurementLabel: {
+    width: '65%',
+    fontSize: 10,
+  },
+  measurementValue: {
+    width: '35%',
+    textAlign: 'right',
+    fontWeight: 'bold',
+    fontSize: 10,
+  },
+  diagnosticSection: {
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 5,
+  },
+  diagnosticText: {
+    fontSize: 11,
+    color: '#334155',
+    lineHeight: 1.4,
+  },
+  recommendationsSection: {
+    marginBottom: 20,
+  },
+  recommendationItem: {
+    marginBottom: 8,
+    paddingLeft: 15,
+    fontSize: 10,
+    lineHeight: 1.3,
+    color: '#475569',
+  },
+  clinicInfo: {
+    position: 'absolute',
+    fontSize: 8,
+    bottom: 30,
+    left: 35,
+    right: 35,
+    textAlign: 'center',
+    color: '#6b7280',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    paddingTop: 10,
+  },
+});
 
 export class MedicaoExportUtils {
   static exportToCSV(medicoes: MedicaoExportable[], paciente: PacienteExportable): void {
@@ -59,11 +171,9 @@ export class MedicaoExportUtils {
       ];
     });
 
-    // Criar o conteúdo CSV
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.map(cell => {
-        // Escapa valores com vírgulas
         if (cell && typeof cell === 'string' && cell.includes(',')) {
           return `"${cell}"`;
         }
@@ -71,20 +181,16 @@ export class MedicaoExportUtils {
       }).join(','))
     ].join('\n');
 
-    // Criar um blob com o conteúdo CSV
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
 
-    // Criar um link para download
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `historico_medicoes_${paciente.nome.replace(/\s+/g, '_').toLowerCase()}.csv`);
     document.body.appendChild(link);
     
-    // Disparar o clique para iniciar o download
     link.click();
     
-    // Limpar
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }
@@ -99,7 +205,6 @@ export class MedicaoExportUtils {
       const cranialStatus = getCranialStatus(medicao.indice_craniano || 0, medicao.cvai || 0);
       const idadeNaAvaliacao = formatAge(paciente.data_nascimento, medicao.data);
       
-      // Converte medicao para o formato esperado pelo PDF
       const medicaoFormatada = {
         data: medicao.data,
         comprimento: medicao.comprimento || medicao.comprimento_maximo || 0,
@@ -111,20 +216,104 @@ export class MedicaoExportUtils {
         diferenca_diagonais: medicao.diferenca_diagonais || 0,
         cvai: medicao.cvai || 0
       };
+
+      const formatarData = (dataString: string) => {
+        const data = new Date(dataString);
+        return data.toLocaleDateString('pt-BR');
+      };
       
-      // Criar o elemento PDF Component usando React.createElement
-      const pdfElement = React.createElement(CranialMeasurementPDF, {
-        pacienteData: paciente,
-        medicaoData: medicaoFormatada,
-        idadeNaAvaliacao,
-        diagnosis: cranialStatus.diagnosis,
-        choaClassification: cranialStatus.choaClassification,
-        recomendacoes,
-        clinicaInfo
-      });
+      // Criar o elemento PDF Document diretamente
+      const pdfDocument = React.createElement(Document, {
+        title: `Relatório de Avaliação Craniana - ${paciente.nome}`
+      }, 
+        React.createElement(Page, { size: "A4", style: styles.page },
+          React.createElement(Text, { style: styles.title }, "Relatório de Avaliação Craniana"),
+          React.createElement(Text, { style: styles.subtitle }, clinicaInfo.nome),
+          
+          // Informações do Paciente
+          React.createElement(View, { style: styles.patientInfoSection },
+            React.createElement(View, { style: styles.patientInfoRow },
+              React.createElement(Text, { style: styles.label }, "Paciente:"),
+              React.createElement(Text, { style: styles.value }, paciente.nome)
+            ),
+            React.createElement(View, { style: styles.patientInfoRow },
+              React.createElement(Text, { style: styles.label }, "Data de Nascimento:"),
+              React.createElement(Text, { style: styles.value }, formatarData(paciente.data_nascimento))
+            ),
+            React.createElement(View, { style: styles.patientInfoRow },
+              React.createElement(Text, { style: styles.label }, "Sexo:"),
+              React.createElement(Text, { style: styles.value }, paciente.sexo === 'M' ? 'Masculino' : 'Feminino')
+            ),
+            React.createElement(View, { style: styles.patientInfoRow },
+              React.createElement(Text, { style: styles.label }, "Idade na Avaliação:"),
+              React.createElement(Text, { style: styles.value }, idadeNaAvaliacao)
+            ),
+            React.createElement(View, { style: styles.patientInfoRow },
+              React.createElement(Text, { style: styles.label }, "Data da Avaliação:"),
+              React.createElement(Text, { style: styles.value }, formatarData(medicaoFormatada.data))
+            )
+          ),
+          
+          // Medições
+          React.createElement(View, { style: styles.measurementSection },
+            React.createElement(Text, { style: styles.sectionTitle }, "Medições Cranianas"),
+            React.createElement(View, { style: styles.measurementRow },
+              React.createElement(Text, { style: styles.measurementLabel }, "Comprimento Anteroposterior (AP):"),
+              React.createElement(Text, { style: styles.measurementValue }, `${medicaoFormatada.comprimento.toFixed(1)} mm`)
+            ),
+            React.createElement(View, { style: styles.measurementRowAlt },
+              React.createElement(Text, { style: styles.measurementLabel }, "Largura Mediolateral (ML):"),
+              React.createElement(Text, { style: styles.measurementValue }, `${medicaoFormatada.largura.toFixed(1)} mm`)
+            ),
+            React.createElement(View, { style: styles.measurementRow },
+              React.createElement(Text, { style: styles.measurementLabel }, "Diagonal Direita:"),
+              React.createElement(Text, { style: styles.measurementValue }, `${medicaoFormatada.diagonal_d.toFixed(1)} mm`)
+            ),
+            React.createElement(View, { style: styles.measurementRowAlt },
+              React.createElement(Text, { style: styles.measurementLabel }, "Diagonal Esquerda:"),
+              React.createElement(Text, { style: styles.measurementValue }, `${medicaoFormatada.diagonal_e.toFixed(1)} mm`)
+            ),
+            medicaoFormatada.perimetro_cefalico ? React.createElement(View, { style: styles.measurementRow },
+              React.createElement(Text, { style: styles.measurementLabel }, "Perímetro Cefálico:"),
+              React.createElement(Text, { style: styles.measurementValue }, `${medicaoFormatada.perimetro_cefalico.toFixed(1)} mm`)
+            ) : null,
+            React.createElement(View, { style: styles.measurementRowAlt },
+              React.createElement(Text, { style: styles.measurementLabel }, "Diferença de Diagonais:"),
+              React.createElement(Text, { style: styles.measurementValue }, `${medicaoFormatada.diferenca_diagonais.toFixed(1)} mm`)
+            ),
+            React.createElement(View, { style: styles.measurementRow },
+              React.createElement(Text, { style: styles.measurementLabel }, "Índice Craniano (CI):"),
+              React.createElement(Text, { style: styles.measurementValue }, `${medicaoFormatada.indice_craniano.toFixed(1)}%`)
+            ),
+            React.createElement(View, { style: styles.measurementRowAlt },
+              React.createElement(Text, { style: styles.measurementLabel }, "CVAI (Índice de Assimetria):"),
+              React.createElement(Text, { style: styles.measurementValue }, `${medicaoFormatada.cvai.toFixed(1)}%`)
+            )
+          ),
+          
+          // Diagnóstico
+          React.createElement(View, { style: styles.diagnosticSection },
+            React.createElement(Text, { style: styles.sectionTitle }, "Diagnóstico"),
+            React.createElement(Text, { style: styles.diagnosticText }, cranialStatus.diagnosis.diagnosis)
+          ),
+          
+          // Recomendações
+          recomendacoes.length > 0 ? React.createElement(View, { style: styles.recommendationsSection },
+            React.createElement(Text, { style: styles.sectionTitle }, "Recomendações"),
+            ...recomendacoes.map((recomendacao, index) => 
+              React.createElement(Text, { key: index, style: styles.recommendationItem }, `• ${recomendacao}`)
+            )
+          ) : null,
+          
+          // Rodapé
+          React.createElement(Text, { style: styles.clinicInfo, fixed: true }, 
+            `Relatório gerado pelo sistema ${clinicaInfo.nome} em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}\nProfissional responsável: ${clinicaInfo.profissional} • © ${new Date().getFullYear()} ${clinicaInfo.nome} - Uso exclusivamente clínico`
+          )
+        )
+      );
       
       // Gerar o PDF
-      const blob = await pdf(pdfElement).toBlob();
+      const blob = await pdf(pdfDocument).toBlob();
       
       // Download
       const url = URL.createObjectURL(blob);
@@ -142,7 +331,6 @@ export class MedicaoExportUtils {
     }
   }
   
-  // Métodos auxiliares de tradução
   private static translateAsymmetryType(type: string): string {
     const translations: Record<string, string> = {
       "Normal": "Normal",
