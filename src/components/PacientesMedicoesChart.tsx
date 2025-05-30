@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Bar, 
@@ -20,7 +21,7 @@ import { ChartType } from "@/hooks/useChartType";
 import { ChartTypeToggle } from "@/components/ChartTypeToggle";
 
 interface DataPoint {
-  mes: string;
+  periodo: string;
   pacientes: number;
   medicoes: number;
 }
@@ -33,52 +34,71 @@ interface PacientesMedicoesChartProps {
   onChartTypeChange?: (type: ChartType) => void;
 }
 
-// Função para gerar dados simulados como fallback
-const gerarDadosSimulados = (dateRange: DateRange): DataPoint[] => {
+// Função para determinar se deve agrupar por dias ou meses
+const determinarTipoAgrupamento = (dateRange: DateRange): 'dia' | 'mes' => {
   const startDate = new Date(dateRange.startDate);
   const endDate = new Date(dateRange.endDate);
+  const diffTime = endDate.getTime() - startDate.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   
-  // Calcular quantos meses de diferença
-  const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
-  const meses = [];
-  
-  for (let i = monthsDiff - 1; i >= 0; i--) {
-    const data = new Date();
-    data.setMonth(data.getMonth() - i);
-    const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
-    const ano = data.getFullYear().toString().slice(-2);
-    
-    meses.push({
-      mes: `${mes}/${ano}`,
-      pacientes: Math.floor(Math.random() * 10) + 2,
-      medicoes: Math.floor(Math.random() * 15) + 5
-    });
-  }
-  
-  return meses;
+  // Se período for 30 dias ou menos, agrupar por dia
+  return diffDays <= 30 ? 'dia' : 'mes';
 };
 
-// Função para obter período dinâmico baseado no dateRange
-const obterPeriodoDinamico = (dateRange: DateRange) => {
+// Função para gerar períodos dinâmicos (dias ou meses)
+const obterPeriodosDinamicos = (dateRange: DateRange, tipoAgrupamento: 'dia' | 'mes') => {
   const startDate = new Date(dateRange.startDate);
   const endDate = new Date(dateRange.endDate);
   
-  // Calcular quantos meses de diferença
-  const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
-  const meses = [];
-  
-  for (let i = monthsDiff - 1; i >= 0; i--) {
-    const data = new Date();
-    data.setMonth(data.getMonth() - i);
-    meses.push({
-      data: data,
-      formatado: `${data.toLocaleDateString('pt-BR', { month: 'short' })}/${data.getFullYear().toString().slice(-2)}`,
-      mes: data.getMonth(),
-      ano: data.getFullYear()
-    });
+  if (tipoAgrupamento === 'dia') {
+    const periodos = [];
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      const formatado = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      
+      periodos.push({
+        data: new Date(currentDate),
+        formatado: formatado,
+        diaCompleto: currentDate.toISOString().split('T')[0],
+        tipo: 'dia' as const
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return periodos;
+  } else {
+    // Agrupamento por mês (lógica original)
+    const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    const meses = [];
+    
+    for (let i = monthsDiff - 1; i >= 0; i--) {
+      const data = new Date();
+      data.setMonth(data.getMonth() - i);
+      meses.push({
+        data: data,
+        formatado: `${data.toLocaleDateString('pt-BR', { month: 'short' })}/${data.getFullYear().toString().slice(-2)}`,
+        mes: data.getMonth(),
+        ano: data.getFullYear(),
+        tipo: 'mes' as const
+      });
+    }
+    
+    return meses;
   }
+};
+
+// Função para gerar dados simulados como fallback
+const gerarDadosSimulados = (dateRange: DateRange): DataPoint[] => {
+  const tipoAgrupamento = determinarTipoAgrupamento(dateRange);
+  const periodos = obterPeriodosDinamicos(dateRange, tipoAgrupamento);
   
-  return meses;
+  return periodos.map(periodo => ({
+    periodo: periodo.formatado,
+    pacientes: Math.floor(Math.random() * 10) + 2,
+    medicoes: Math.floor(Math.random() * 15) + 5
+  }));
 };
 
 export function PacientesMedicoesChart({ 
@@ -95,7 +115,8 @@ export function PacientesMedicoesChart({
     async function carregarDados() {
       try {
         setLoading(true);
-        const meses = obterPeriodoDinamico(dateRange);
+        const tipoAgrupamento = determinarTipoAgrupamento(dateRange);
+        const periodos = obterPeriodosDinamicos(dateRange, tipoAgrupamento);
         
         // Buscar pacientes do Supabase com filtro de data
         const { data: pacientes, error: pacientesError } = await supabase
@@ -131,32 +152,48 @@ export function PacientesMedicoesChart({
           return;
         }
         
-        // Processar dados por mês
-        const dadosPorMes = meses.map(mes => {
-          // Contar pacientes criados neste mês
-          const pacientesCriados = pacientes 
-            ? pacientes.filter(p => {
-                const dataCriacao = new Date(p.created_at);
-                return dataCriacao.getMonth() === mes.mes && dataCriacao.getFullYear() === mes.ano;
-              }).length
-            : 0;
-            
-          // Contar medições realizadas neste mês
-          const medicoesRealizadas = medicoes
-            ? medicoes.filter(m => {
-                const dataMedicao = new Date(m.data);
-                return dataMedicao.getMonth() === mes.mes && dataMedicao.getFullYear() === mes.ano;
-              }).length
-            : 0;
+        // Processar dados por período (dia ou mês)
+        const dadosPorPeriodo = periodos.map(periodo => {
+          let pacientesCriados = 0;
+          let medicoesRealizadas = 0;
+          
+          if (tipoAgrupamento === 'dia') {
+            // Agrupar por dia específico
+            pacientesCriados = pacientes 
+              ? pacientes.filter(p => {
+                  const dataCriacao = new Date(p.created_at);
+                  return dataCriacao.toISOString().split('T')[0] === periodo.diaCompleto;
+                }).length
+              : 0;
+              
+            medicoesRealizadas = medicoes
+              ? medicoes.filter(m => m.data === periodo.diaCompleto).length
+              : 0;
+          } else {
+            // Agrupar por mês (lógica original)
+            pacientesCriados = pacientes 
+              ? pacientes.filter(p => {
+                  const dataCriacao = new Date(p.created_at);
+                  return dataCriacao.getMonth() === periodo.mes && dataCriacao.getFullYear() === periodo.ano;
+                }).length
+              : 0;
+              
+            medicoesRealizadas = medicoes
+              ? medicoes.filter(m => {
+                  const dataMedicao = new Date(m.data);
+                  return dataMedicao.getMonth() === periodo.mes && dataMedicao.getFullYear() === periodo.ano;
+                }).length
+              : 0;
+          }
             
           return {
-            mes: mes.formatado,
+            periodo: periodo.formatado,
             pacientes: pacientesCriados,
             medicoes: medicoesRealizadas
           };
         });
         
-        setDados(dadosPorMes);
+        setDados(dadosPorPeriodo);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
         setDados(gerarDadosSimulados(dateRange));
@@ -167,6 +204,28 @@ export function PacientesMedicoesChart({
     
     carregarDados();
   }, [dateRange, measurementType]);
+  
+  // Determinar título e descrição baseado no período
+  const tipoAgrupamento = determinarTipoAgrupamento(dateRange);
+  
+  const getTitle = () => {
+    if (tipoAgrupamento === 'dia') {
+      return "Evolução Diária de Pacientes e Medições";
+    }
+    return "Evolução de Pacientes e Medições";
+  };
+
+  const getDescription = () => {
+    const startDate = new Date(dateRange.startDate);
+    const endDate = new Date(dateRange.endDate);
+    const startFormatted = startDate.toLocaleDateString('pt-BR');
+    const endFormatted = endDate.toLocaleDateString('pt-BR');
+    
+    if (tipoAgrupamento === 'dia') {
+      return `Comparativo diário entre pacientes registrados e medições realizadas de ${startFormatted} a ${endFormatted}`;
+    }
+    return `Comparativo entre pacientes registrados e medições realizadas no período selecionado`;
+  };
   
   // Renderizar o gráfico baseado no tipo selecionado
   const renderChart = () => {
@@ -187,7 +246,7 @@ export function PacientesMedicoesChart({
         return (
           <BarChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="mes" />
+            <XAxis dataKey="periodo" />
             <YAxis />
             <Tooltip {...tooltipProps} />
             <Legend />
@@ -212,7 +271,7 @@ export function PacientesMedicoesChart({
         return (
           <LineChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="mes" />
+            <XAxis dataKey="periodo" />
             <YAxis />
             <Tooltip {...tooltipProps} />
             <Legend />
@@ -241,7 +300,7 @@ export function PacientesMedicoesChart({
         return (
           <ComposedChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="mes" />
+            <XAxis dataKey="periodo" />
             <YAxis yAxisId="left" />
             <YAxis yAxisId="right" orientation="right" />
             <Tooltip {...tooltipProps} />
@@ -274,9 +333,9 @@ export function PacientesMedicoesChart({
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle>Evolução de Pacientes e Medições</CardTitle>
+            <CardTitle>{getTitle()}</CardTitle>
             <CardDescription>
-              Comparativo entre pacientes registrados e medições realizadas no período selecionado
+              {getDescription()}
             </CardDescription>
           </div>
           {onChartTypeChange && (
