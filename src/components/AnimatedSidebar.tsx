@@ -13,6 +13,7 @@ import {
   Users,
   Calendar,
   Loader2,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -62,6 +63,13 @@ export function AnimatedSidebar() {
       href: "/historico",
       icon: (
         <Calendar className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+      ),
+    },
+    {
+      label: "Colaboradores",
+      href: "/colaboradores",
+      icon: (
+        <UserPlus className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
     {

@@ -17,9 +17,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Download, UserPlus, UserMinus, Check, X, UserX, Mail, Shield, Eye } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Loader2, Download } from "lucide-react";
 import AparenciaTab from "@/components/configuracoes/AparenciaTab";
+import { ColaboradoresTab } from "@/components/configuracoes/ColaboradoresTab";
 import { useNavigate } from "react-router-dom";
 import { ConfiguracoesTab } from "@/components/configuracoes/ConfiguracoesTab";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -609,11 +609,12 @@ export default function Configuracoes() {
         {isMobile ? (
           <ConfiguracoesTab value={activeTab} onChange={setActiveTab} />
         ) : (
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-5 w-full">
             <TabsTrigger value="perfil">Perfil</TabsTrigger>
             <TabsTrigger value="conta">Conta</TabsTrigger>
             <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
             <TabsTrigger value="aparencia">Aparência</TabsTrigger>
+            <TabsTrigger value="colaboradores">Colaboradores</TabsTrigger>
           </TabsList>
         )}
         
@@ -896,6 +897,10 @@ export default function Configuracoes() {
         
         <TabsContent value="aparencia">
           <AparenciaTab />
+        </TabsContent>
+
+        <TabsContent value="colaboradores">
+          <ColaboradoresTab />
         </TabsContent>
       </Tabs>
     </div>
