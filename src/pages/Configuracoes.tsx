@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { 
   Card, 
@@ -153,7 +152,7 @@ export default function Configuracoes() {
     
     carregarUsuario();
   }, []);
-
+  
   // Carregar colaboradores - usando mock data
   useEffect(() => {
     async function carregarColaboradores() {
@@ -610,12 +609,11 @@ export default function Configuracoes() {
         {isMobile ? (
           <ConfiguracoesTab value={activeTab} onChange={setActiveTab} />
         ) : (
-          <TabsList className="grid grid-cols-5 w-full">
+          <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="perfil">Perfil</TabsTrigger>
             <TabsTrigger value="conta">Conta</TabsTrigger>
             <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
             <TabsTrigger value="aparencia">Aparência</TabsTrigger>
-            <TabsTrigger value="colaboradores">Colaboradores</TabsTrigger>
           </TabsList>
         )}
         
@@ -898,175 +896,6 @@ export default function Configuracoes() {
         
         <TabsContent value="aparencia">
           <AparenciaTab />
-        </TabsContent>
-        
-        <TabsContent value="colaboradores">
-          <Card className="animate-fade-in">
-            <CardHeader className="card-header-highlight">
-              <CardTitle>Colaboradores</CardTitle>
-              <CardDescription>
-                Adicione ou remova usuários com acesso ao seu sistema.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-6">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="btn-hover">
-                    <UserPlus className="h-4 w-4 mr-2" /> Adicionar Colaborador
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Adicionar Colaborador</DialogTitle>
-                    <DialogDescription>
-                      Insira o email da pessoa que você deseja convidar para colaborar.
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email-colaborador">Email</Label>
-                      <Input
-                        id="email-colaborador"
-                        type="email"
-                        placeholder="colaborador@exemplo.com"
-                        value={novoColaborador.email}
-                        onChange={(e) => setNovoColaborador({...novoColaborador, email: e.target.value})}
-                        className="transition-all focus:border-primary/30 focus:shadow-sm"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="permissao">Permissões</Label>
-                      <select
-                        id="permissao"
-                        className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        value={novoColaborador.permissao}
-                        onChange={(e) => setNovoColaborador({...novoColaborador, permissao: e.target.value as any})}
-                      >
-                        <option value="visualizar">Visualizar (somente leitura)</option>
-                        <option value="editar">Editor (criar e editar)</option>
-                        <option value="admin">Administrador (acesso completo)</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <DialogFooter>
-                    <Button type="button" variant="secondary" onClick={() => setNovoColaborador({email: '', permissao: 'visualizar'})}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit" onClick={adicionarColaborador} className="btn-hover">
-                      Enviar Convite
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <div className="mb-4">
-                <TabsList className="w-full grid grid-cols-3">
-                  <TabsTrigger 
-                    value="ativos" 
-                    className={tabColaboradores === 'ativos' ? 'data-[state=active]:bg-primary' : ''}
-                    onClick={() => setTabColaboradores('ativos')}
-                  >
-                    <Check className="h-4 w-4 mr-2" /> Ativos
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="pendentes" 
-                    className={tabColaboradores === 'pendentes' ? 'data-[state=active]:bg-primary' : ''}
-                    onClick={() => setTabColaboradores('pendentes')}
-                  >
-                    <Mail className="h-4 w-4 mr-2" /> Pendentes
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="recusados" 
-                    className={tabColaboradores === 'recusados' ? 'data-[state=active]:bg-primary' : ''}
-                    onClick={() => setTabColaboradores('recusados')}
-                  >
-                    <X className="h-4 w-4 mr-2" /> Recusados
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-              
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Usuário</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Permissão</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {carregandoColaboradores ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-4">
-                          <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ) : colaboradores.filter(c => {
-                      if (tabColaboradores === 'ativos') return c.status === 'ativo';
-                      if (tabColaboradores === 'pendentes') return c.status === 'pendente';
-                      if (tabColaboradores === 'recusados') return c.status === 'recusado';
-                      return false;
-                    }).length > 0 ? (
-                      colaboradores.filter(c => {
-                        if (tabColaboradores === 'ativos') return c.status === 'ativo';
-                        if (tabColaboradores === 'pendentes') return c.status === 'pendente';
-                        if (tabColaboradores === 'recusados') return c.status === 'recusado';
-                        return false;
-                      }).map((colaborador) => (
-                        <TableRow key={colaborador.id}>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <Avatar className="h-7 w-7 mr-3">
-                                <AvatarFallback className="text-xs">
-                                  {colaborador.nome ? obterIniciais(colaborador.nome) : colaborador.email.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span>{colaborador.nome || colaborador.email.split('@')[0]}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{colaborador.email}</TableCell>
-                          <TableCell>
-                            {colaborador.permissao === 'admin' && <Shield className="h-4 w-4 mr-1 inline-block" />}
-                            {colaborador.permissao === 'editar' && <UserPlus className="h-4 w-4 mr-1 inline-block" />}
-                            {colaborador.permissao === 'visualizar' && <Eye className="h-4 w-4 mr-1 inline-block" />}
-                            {colaborador.permissao === 'admin' ? 'Administrador' : 
-                             colaborador.permissao === 'editar' ? 'Editor' : 'Visualizador'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-destructive hover:bg-destructive/10"
-                              onClick={() => removerColaborador(colaborador.id)}
-                              disabled={deletandoColaborador === colaborador.id}
-                            >
-                              {deletandoColaborador === colaborador.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <UserX className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                          {tabColaboradores === 'ativos' && "Nenhum colaborador ativo."}
-                          {tabColaboradores === 'pendentes' && "Nenhum convite pendente."}
-                          {tabColaboradores === 'recusados' && "Nenhum convite recusado."}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

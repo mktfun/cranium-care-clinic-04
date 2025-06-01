@@ -11,13 +11,12 @@ interface ConfiguracoesTabProps {
 export function ConfiguracoesTab({ value, onChange }: ConfiguracoesTabProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
   
-  // Opções para o select
+  // Opções para o select (removida a opção colaboradores)
   const options = [
     { value: "perfil", label: "Perfil" },
     { value: "conta", label: "Conta" },
     { value: "notificacoes", label: "Notificações" },
-    { value: "aparencia", label: "Aparência" },
-    { value: "colaboradores", label: "Colaboradores" }
+    { value: "aparencia", label: "Aparência" }
   ];
 
   if (isMobile) {

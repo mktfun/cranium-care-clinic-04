@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/ui/theme-provider";
@@ -25,6 +24,7 @@ import RelatorioMedicao from "@/pages/RelatorioMedicao";
 import RelatorioVisualizar from "@/pages/RelatorioVisualizar";
 import Relatorios from "@/pages/Relatorios";
 import Configuracoes from "@/pages/Configuracoes";
+import Colaboradores from "@/pages/Colaboradores";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -67,6 +67,7 @@ function App() {
               <Route path="relatorios" element={<Relatorios />} />
               <Route path="tarefas" element={<Tarefas />} />
               <Route path="configuracoes" element={<Configuracoes />} />
+              <Route path="colaboradores" element={<Colaboradores />} />
               <Route path="perfil" element={<Configuracoes />} />
               <Route path="notificacoes" element={<NotificacoesPage />} />
             </Route>
