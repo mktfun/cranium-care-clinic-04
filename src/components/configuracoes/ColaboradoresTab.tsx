@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, type Permissions } from "@/hooks/usePermissions";
 import { ProtectedComponent } from "@/components/ProtectedComponent";
 
 interface Colaborador {
@@ -32,14 +32,6 @@ interface Colaborador {
   updated_at: string;
 }
 
-interface PermissionForm {
-  patients: { view: boolean; create: boolean; edit: boolean; delete: boolean };
-  measurements: { view: boolean; create: boolean; edit: boolean; delete: boolean };
-  reports: { view: boolean; create: boolean; edit: boolean; delete: boolean };
-  settings: { view: boolean; edit: boolean };
-  collaborators: { view: boolean; manage: boolean };
-}
-
 export function ColaboradoresTab() {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +48,7 @@ export function ColaboradoresTab() {
     status: "pendente"
   });
 
-  const [permissionForm, setPermissionForm] = useState<PermissionForm>({
+  const [permissionForm, setPermissionForm] = useState<Permissions>({
     patients: { view: true, create: false, edit: false, delete: false },
     measurements: { view: true, create: false, edit: false, delete: false },
     reports: { view: true, create: false, edit: false, delete: false },
@@ -202,9 +194,10 @@ export function ColaboradoresTab() {
     }
 
     try {
+      // Converter permissionForm para o formato JSON compatível com Supabase
       const colaboradorData = {
         ...formData,
-        permissions: permissionForm,
+        permissions: JSON.parse(JSON.stringify(permissionForm)), // Conversão segura para JSON
         empresa_nome: currentUser.clinica_nome,
         empresa_id: currentUser.id
       };
@@ -255,7 +248,19 @@ export function ColaboradoresTab() {
       permissao: colaborador.permissao,
       status: colaborador.status
     });
-    setPermissionForm(colaborador.permissions || permissionForm);
+    
+    // Conversão segura das permissões
+    try {
+      if (colaborador.permissions && typeof colaborador.permissions === 'object') {
+        setPermissionForm(colaborador.permissions as Permissions);
+      } else {
+        updatePermissionsByRole(colaborador.permissao);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar permissões:', error);
+      updatePermissionsByRole(colaborador.permissao);
+    }
+    
     setIsDialogOpen(true);
   };
 

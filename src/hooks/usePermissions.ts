@@ -81,7 +81,22 @@ export function usePermissions() {
 
         if (colaboradorData) {
           setUserRole(colaboradorData.permissao);
-          setPermissions(colaboradorData.permissions as Permissions);
+          
+          // Conversão segura de Json para Permissions
+          let userPermissions: Permissions;
+          try {
+            if (colaboradorData.permissions && typeof colaboradorData.permissions === 'object') {
+              userPermissions = colaboradorData.permissions as unknown as Permissions;
+            } else {
+              // Fallback para permissões padrão baseadas no cargo
+              userPermissions = getDefaultPermissionsByRole(colaboradorData.permissao);
+            }
+          } catch (error) {
+            console.error('Erro ao processar permissões:', error);
+            userPermissions = getDefaultPermissionsByRole(colaboradorData.permissao);
+          }
+          
+          setPermissions(userPermissions);
         } else {
           // Usuário não autorizado
           navigate('/acesso-negado');
@@ -93,6 +108,36 @@ export function usePermissions() {
       navigate('/login');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getDefaultPermissionsByRole = (role: string): Permissions => {
+    switch (role) {
+      case 'admin':
+        return {
+          patients: { view: true, create: true, edit: true, delete: true },
+          measurements: { view: true, create: true, edit: true, delete: true },
+          reports: { view: true, create: true, edit: true, delete: true },
+          settings: { view: true, edit: true },
+          collaborators: { view: true, manage: true }
+        };
+      case 'editar':
+        return {
+          patients: { view: true, create: true, edit: true, delete: false },
+          measurements: { view: true, create: true, edit: true, delete: false },
+          reports: { view: true, create: true, edit: false, delete: false },
+          settings: { view: false, edit: false },
+          collaborators: { view: false, manage: false }
+        };
+      case 'visualizar':
+      default:
+        return {
+          patients: { view: true, create: false, edit: false, delete: false },
+          measurements: { view: true, create: false, edit: false, delete: false },
+          reports: { view: true, create: false, edit: false, delete: false },
+          settings: { view: false, edit: false },
+          collaborators: { view: false, manage: false }
+        };
     }
   };
 
