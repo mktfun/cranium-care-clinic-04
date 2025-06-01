@@ -62,39 +62,106 @@ export type Database = {
       }
       colaboradores: {
         Row: {
+          accepted_at: string | null
           created_at: string | null
           email: string
           empresa_id: string
           empresa_nome: string | null
           id: string
+          invite_expires_at: string | null
+          invite_token: string | null
+          invited_by: string | null
+          last_login: string | null
           nome: string | null
           permissao: string
+          permissions: Json | null
           status: string
           updated_at: string | null
         }
         Insert: {
+          accepted_at?: string | null
           created_at?: string | null
           email: string
           empresa_id: string
           empresa_nome?: string | null
           id?: string
+          invite_expires_at?: string | null
+          invite_token?: string | null
+          invited_by?: string | null
+          last_login?: string | null
           nome?: string | null
           permissao?: string
+          permissions?: Json | null
           status?: string
           updated_at?: string | null
         }
         Update: {
+          accepted_at?: string | null
           created_at?: string | null
           email?: string
           empresa_id?: string
           empresa_nome?: string | null
           id?: string
+          invite_expires_at?: string | null
+          invite_token?: string | null
+          invited_by?: string | null
+          last_login?: string | null
           nome?: string | null
           permissao?: string
+          permissions?: Json | null
           status?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "colaboradores_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collaborator_audit_logs: {
+        Row: {
+          action: string
+          collaborator_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          collaborator_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          collaborator_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collaborator_audit_logs_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "colaboradores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       consultas: {
         Row: {
@@ -626,9 +693,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: {
+        Args: { token_input: string; user_id_input: string }
+        Returns: Json
+      }
       restore_default_system_settings: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      validate_invite_token: {
+        Args: { token_input: string }
+        Returns: {
+          valid: boolean
+          collaborator_data: Json
+        }[]
       }
     }
     Enums: {
