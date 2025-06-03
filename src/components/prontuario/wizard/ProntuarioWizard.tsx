@@ -80,19 +80,35 @@ export function ProntuarioWizard({
   const createInitialProntuario = async () => {
     setIsLoading(true);
     try {
+      // Primeiro, obter o user_id atual
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error("Erro ao obter usuário:", userError);
+        toast.error("Erro de autenticação");
+        onOpenChange(false);
+        return;
+      }
+
+      console.log("Criando prontuário para user_id:", user.id);
+
       const { data, error } = await supabase
         .from('prontuarios')
         .insert({
           paciente_id: pacienteId,
+          user_id: user.id, // CRÍTICO: incluir user_id
           data_criacao: new Date().toISOString()
         })
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao criar prontuário:", error);
+        throw error;
+      }
       
       setProntuario(data as Prontuario);
-      console.log("Prontuário inicial criado:", data);
+      console.log("Prontuário inicial criado com sucesso:", data);
     } catch (error) {
       console.error("Erro ao criar prontuário:", error);
       toast.error("Erro ao iniciar prontuário");
@@ -103,7 +119,10 @@ export function ProntuarioWizard({
   };
 
   const saveCurrentStep = async () => {
-    if (!prontuario) return;
+    if (!prontuario) {
+      console.error("Nenhum prontuário disponível para salvar");
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -148,22 +167,29 @@ export function ProntuarioWizard({
           break;
       }
       
-      const { error } = await supabase
+      console.log(`Salvando etapa ${currentStep + 1} com dados:`, updateData);
+      
+      const { data, error } = await supabase
         .from('prontuarios')
         .update({ ...updateData, updated_at: new Date().toISOString() })
-        .eq('id', prontuario.id);
+        .eq('id', prontuario.id)
+        .select()
+        .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro detalhado ao salvar:', error);
+        throw error;
+      }
       
-      // Atualizar estado local
-      setProntuario(prev => prev ? { ...prev, ...updateData } : null);
+      // Atualizar estado local com dados confirmados do banco
+      setProntuario(data as Prontuario);
       
-      console.log(`Etapa ${currentStep + 1} salva:`, updateData);
+      console.log(`Etapa ${currentStep + 1} salva com sucesso:`, data);
       toast.success(`Etapa ${currentStep + 1} salva com sucesso!`);
       
     } catch (error) {
       console.error("Erro ao salvar etapa:", error);
-      toast.error("Erro ao salvar dados da etapa");
+      toast.error(`Erro ao salvar dados da etapa: ${error.message}`);
       throw error;
     } finally {
       setIsLoading(false);
@@ -182,10 +208,12 @@ export function ProntuarioWizard({
           onSuccess(prontuario);
           onOpenChange(false);
           navigate(`/pacientes/${pacienteId}/prontuario/${prontuario.id}`);
+          toast.success("Prontuário criado com sucesso!");
         }
       }
     } catch (error) {
-      // Erro já tratado no saveCurrentStep
+      // Erro já tratado no saveCurrentStep, não bloquear navegação
+      console.error("Falha ao salvar etapa:", error);
     }
   };
 
@@ -196,6 +224,7 @@ export function ProntuarioWizard({
   };
 
   const updateFormData = (field: string, value: any) => {
+    console.log(`Atualizando campo ${field} com valor:`, value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
