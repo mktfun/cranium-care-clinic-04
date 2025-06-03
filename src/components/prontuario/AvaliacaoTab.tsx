@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Activity, Clock, Heart, Brain, Save } from "lucide-react";
+import { Activity, Clock, Heart, Brain, Save, Edit } from "lucide-react";
 import { Prontuario } from "@/types";
 import { toast } from "sonner";
 
@@ -21,52 +21,88 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
   const [localIdadeCorrigida, setLocalIdadeCorrigida] = useState("");
   const [localObservacoesAnamnese, setLocalObservacoesAnamnese] = useState("");
   const [localAvaliacao, setLocalAvaliacao] = useState("");
-  const [hasChanges, setHasChanges] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Estados para rastrear valores salvos
+  const [savedQueixaPrincipal, setSavedQueixaPrincipal] = useState("");
+  const [savedIdadeGestacional, setSavedIdadeGestacional] = useState("");
+  const [savedIdadeCorrigida, setSavedIdadeCorrigida] = useState("");
+  const [savedObservacoesAnamnese, setSavedObservacoesAnamnese] = useState("");
+  const [savedAvaliacao, setSavedAvaliacao] = useState("");
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
+    if (!prontuario) return;
+
     console.log("Carregando dados de avaliação:", prontuario);
+    
     const queixaPrincipal = prontuario?.queixa_principal || "";
     const idadeGestacional = prontuario?.idade_gestacional || "";
     const idadeCorrigida = prontuario?.idade_corrigida || "";
     const observacoesAnamnese = prontuario?.observacoes_anamnese || "";
     const avaliacao = prontuario?.avaliacao || "";
 
+    // Atualizar estados locais e salvos
     setLocalQueixaPrincipal(queixaPrincipal);
     setLocalIdadeGestacional(idadeGestacional);
     setLocalIdadeCorrigida(idadeCorrigida);
     setLocalObservacoesAnamnese(observacoesAnamnese);
     setLocalAvaliacao(avaliacao);
-    setHasChanges(false);
+
+    setSavedQueixaPrincipal(queixaPrincipal);
+    setSavedIdadeGestacional(idadeGestacional);
+    setSavedIdadeCorrigida(idadeCorrigida);
+    setSavedObservacoesAnamnese(observacoesAnamnese);
+    setSavedAvaliacao(avaliacao);
+
+    // Se há dados salvos, não está em modo de edição
+    const hasData = queixaPrincipal || idadeGestacional || idadeCorrigida || observacoesAnamnese || avaliacao;
+    setIsEditing(!hasData);
 
     console.log("Estados locais de avaliação definidos:", { 
       queixaPrincipal, idadeGestacional, idadeCorrigida, observacoesAnamnese, avaliacao 
     });
   }, [prontuario]);
 
-  // Verificar mudanças
+  // Verificar se há mudanças não salvas
+  const hasUnsavedChanges = 
+    localQueixaPrincipal !== savedQueixaPrincipal ||
+    localIdadeGestacional !== savedIdadeGestacional ||
+    localIdadeCorrigida !== savedIdadeCorrigida ||
+    localObservacoesAnamnese !== savedObservacoesAnamnese ||
+    localAvaliacao !== savedAvaliacao;
+
+  // Ativar modo de edição quando houver mudanças
   useEffect(() => {
-    if (!prontuario) return;
+    if (hasUnsavedChanges) {
+      setIsEditing(true);
+    }
+  }, [hasUnsavedChanges]);
 
-    const currentQueixaPrincipal = prontuario?.queixa_principal || "";
-    const currentIdadeGestacional = prontuario?.idade_gestacional || "";
-    const currentIdadeCorrigida = prontuario?.idade_corrigida || "";
-    const currentObservacoesAnamnese = prontuario?.observacoes_anamnese || "";
-    const currentAvaliacao = prontuario?.avaliacao || "";
-
-    const changed = 
-      localQueixaPrincipal !== currentQueixaPrincipal ||
-      localIdadeGestacional !== currentIdadeGestacional ||
-      localIdadeCorrigida !== currentIdadeCorrigida ||
-      localObservacoesAnamnese !== currentObservacoesAnamnese ||
-      localAvaliacao !== currentAvaliacao;
-
-    setHasChanges(changed);
-  }, [localQueixaPrincipal, localIdadeGestacional, localIdadeCorrigida, localObservacoesAnamnese, localAvaliacao, prontuario]);
+  const handleFieldChange = (field: string, value: string) => {
+    switch (field) {
+      case 'queixaPrincipal':
+        setLocalQueixaPrincipal(value);
+        break;
+      case 'idadeGestacional':
+        setLocalIdadeGestacional(value);
+        break;
+      case 'idadeCorrigida':
+        setLocalIdadeCorrigida(value);
+        break;
+      case 'observacoesAnamnese':
+        setLocalObservacoesAnamnese(value);
+        break;
+      case 'avaliacao':
+        setLocalAvaliacao(value);
+        break;
+    }
+    setIsEditing(true);
+  };
 
   const handleSave = async () => {
-    if (!hasChanges) {
+    if (!hasUnsavedChanges) {
       toast.info("Nenhuma alteração para salvar.");
       return;
     }
@@ -76,37 +112,31 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
       const updates = [];
 
       // Verificar cada campo individualmente e salvar no banco
-      const currentQueixaPrincipal = prontuario?.queixa_principal || "";
-      const currentIdadeGestacional = prontuario?.idade_gestacional || "";
-      const currentIdadeCorrigida = prontuario?.idade_corrigida || "";
-      const currentObservacoesAnamnese = prontuario?.observacoes_anamnese || "";
-      const currentAvaliacao = prontuario?.avaliacao || "";
-
-      if (localQueixaPrincipal !== currentQueixaPrincipal) {
+      if (localQueixaPrincipal !== savedQueixaPrincipal) {
         const queixaValue = localQueixaPrincipal.trim() || null;
         updates.push(onUpdate?.("queixa_principal", queixaValue));
         console.log("Salvando queixa principal:", queixaValue);
       }
       
-      if (localIdadeGestacional !== currentIdadeGestacional) {
+      if (localIdadeGestacional !== savedIdadeGestacional) {
         const idadeGestValue = localIdadeGestacional.trim() || null;
         updates.push(onUpdate?.("idade_gestacional", idadeGestValue));
         console.log("Salvando idade gestacional:", idadeGestValue);
       }
       
-      if (localIdadeCorrigida !== currentIdadeCorrigida) {
+      if (localIdadeCorrigida !== savedIdadeCorrigida) {
         const idadeCorrValue = localIdadeCorrigida.trim() || null;
         updates.push(onUpdate?.("idade_corrigida", idadeCorrValue));
         console.log("Salvando idade corrigida:", idadeCorrValue);
       }
       
-      if (localObservacoesAnamnese !== currentObservacoesAnamnese) {
+      if (localObservacoesAnamnese !== savedObservacoesAnamnese) {
         const obsAnamValue = localObservacoesAnamnese.trim() || null;
         updates.push(onUpdate?.("observacoes_anamnese", obsAnamValue));
         console.log("Salvando observações anamnese:", obsAnamValue);
       }
       
-      if (localAvaliacao !== currentAvaliacao) {
+      if (localAvaliacao !== savedAvaliacao) {
         const avaliacaoValue = localAvaliacao.trim() || null;
         updates.push(onUpdate?.("avaliacao", avaliacaoValue));
         console.log("Salvando avaliação:", avaliacaoValue);
@@ -114,6 +144,16 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
 
       // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
+
+      // Atualizar estados salvos após sucesso
+      setSavedQueixaPrincipal(localQueixaPrincipal);
+      setSavedIdadeGestacional(localIdadeGestacional);
+      setSavedIdadeCorrigida(localIdadeCorrigida);
+      setSavedObservacoesAnamnese(localObservacoesAnamnese);
+      setSavedAvaliacao(localAvaliacao);
+
+      // Sair do modo de edição
+      setIsEditing(false);
       
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
@@ -124,6 +164,12 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
     }
   };
 
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const showSaveButton = isEditing || hasUnsavedChanges;
+
   return (
     <div className="space-y-6">
       <Card>
@@ -133,14 +179,25 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
               <Activity className="h-5 w-5 text-turquesa" />
               Anamnese
             </CardTitle>
-            <Button 
-              onClick={handleSave} 
-              disabled={!hasChanges || isSaving}
-              className="bg-turquesa hover:bg-turquesa/90"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? "Salvando..." : "Salvar"}
-            </Button>
+            {showSaveButton ? (
+              <Button 
+                onClick={handleSave} 
+                disabled={!hasUnsavedChanges || isSaving}
+                className="bg-turquesa hover:bg-turquesa/90"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? "Salvando..." : "Salvar"}
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleEdit} 
+                variant="outline"
+                className="border-turquesa text-turquesa hover:bg-turquesa hover:text-white"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -150,8 +207,9 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
               id="queixa_principal"
               placeholder="Descreva a queixa principal que motivou a consulta..."
               value={localQueixaPrincipal}
-              onChange={(e) => setLocalQueixaPrincipal(e.target.value)}
+              onChange={(e) => handleFieldChange('queixaPrincipal', e.target.value)}
               className="min-h-[100px]"
+              disabled={!isEditing}
             />
           </div>
 
@@ -162,7 +220,8 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
                 id="idade_gestacional"
                 placeholder="Ex: 38 semanas"
                 value={localIdadeGestacional}
-                onChange={(e) => setLocalIdadeGestacional(e.target.value)}
+                onChange={(e) => handleFieldChange('idadeGestacional', e.target.value)}
+                disabled={!isEditing}
               />
             </div>
             <div>
@@ -171,7 +230,8 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
                 id="idade_corrigida"
                 placeholder="Ex: 2 meses corrigidos"
                 value={localIdadeCorrigida}
-                onChange={(e) => setLocalIdadeCorrigida(e.target.value)}
+                onChange={(e) => handleFieldChange('idadeCorrigida', e.target.value)}
+                disabled={!isEditing}
               />
             </div>
           </div>
@@ -182,12 +242,13 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
               id="observacoes_anamnese"
               placeholder="Observações complementares sobre a história clínica..."
               value={localObservacoesAnamnese}
-              onChange={(e) => setLocalObservacoesAnamnese(e.target.value)}
+              onChange={(e) => handleFieldChange('observacoesAnamnese', e.target.value)}
               className="min-h-[120px]"
+              disabled={!isEditing}
             />
           </div>
 
-          {hasChanges && (
+          {hasUnsavedChanges && (
             <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
               Há alterações não salvas nesta aba.
             </div>
@@ -209,8 +270,9 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
               id="avaliacao"
               placeholder="Descreva os achados da avaliação clínica..."
               value={localAvaliacao}
-              onChange={(e) => setLocalAvaliacao(e.target.value)}
+              onChange={(e) => handleFieldChange('avaliacao', e.target.value)}
               className="min-h-[150px]"
+              disabled={!isEditing}
             />
           </div>
         </CardContent>

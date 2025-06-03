@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Baby, User, Heart, Scale, Ruler, Droplet, Save } from "lucide-react";
+import { Baby, User, Heart, Scale, Ruler, Droplet, Save, Edit } from "lucide-react";
 import { Prontuario } from "@/types";
 import { toast } from "sonner";
 
@@ -21,50 +21,86 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
   const [localTipoSanguineo, setLocalTipoSanguineo] = useState("");
   const [localAlergias, setLocalAlergias] = useState("");
   const [localObservacoesGerais, setLocalObservacoesGerais] = useState("");
-  const [hasChanges, setHasChanges] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Estados para rastrear valores salvos
+  const [savedPeso, setSavedPeso] = useState("");
+  const [savedAltura, setSavedAltura] = useState("");
+  const [savedTipoSanguineo, setSavedTipoSanguineo] = useState("");
+  const [savedAlergias, setSavedAlergias] = useState("");
+  const [savedObservacoesGerais, setSavedObservacoesGerais] = useState("");
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
+    if (!prontuario) return;
+
     console.log("Carregando dados do prontuário:", prontuario);
+    
     const peso = prontuario?.peso?.toString() || "";
     const altura = prontuario?.altura?.toString() || "";
     const tipoSanguineo = prontuario?.tipo_sanguineo || "";
     const alergias = prontuario?.alergias || "";
     const observacoesGerais = prontuario?.observacoes_gerais || "";
 
+    // Atualizar estados locais e salvos
     setLocalPeso(peso);
     setLocalAltura(altura);
     setLocalTipoSanguineo(tipoSanguineo);
     setLocalAlergias(alergias);
     setLocalObservacoesGerais(observacoesGerais);
-    setHasChanges(false);
+
+    setSavedPeso(peso);
+    setSavedAltura(altura);
+    setSavedTipoSanguineo(tipoSanguineo);
+    setSavedAlergias(alergias);
+    setSavedObservacoesGerais(observacoesGerais);
+
+    // Se há dados salvos, não está em modo de edição
+    const hasData = peso || altura || tipoSanguineo || alergias || observacoesGerais;
+    setIsEditing(!hasData);
 
     console.log("Estados locais definidos:", { peso, altura, tipoSanguineo, alergias, observacoesGerais });
   }, [prontuario]);
 
-  // Verificar mudanças
+  // Verificar se há mudanças não salvas
+  const hasUnsavedChanges = 
+    localPeso !== savedPeso ||
+    localAltura !== savedAltura ||
+    localTipoSanguineo !== savedTipoSanguineo ||
+    localAlergias !== savedAlergias ||
+    localObservacoesGerais !== savedObservacoesGerais;
+
+  // Ativar modo de edição quando houver mudanças
   useEffect(() => {
-    if (!prontuario) return;
+    if (hasUnsavedChanges) {
+      setIsEditing(true);
+    }
+  }, [hasUnsavedChanges]);
 
-    const currentPeso = prontuario?.peso?.toString() || "";
-    const currentAltura = prontuario?.altura?.toString() || "";
-    const currentTipoSanguineo = prontuario?.tipo_sanguineo || "";
-    const currentAlergias = prontuario?.alergias || "";
-    const currentObservacoesGerais = prontuario?.observacoes_gerais || "";
-
-    const changed = 
-      localPeso !== currentPeso ||
-      localAltura !== currentAltura ||
-      localTipoSanguineo !== currentTipoSanguineo ||
-      localAlergias !== currentAlergias ||
-      localObservacoesGerais !== currentObservacoesGerais;
-
-    setHasChanges(changed);
-  }, [localPeso, localAltura, localTipoSanguineo, localAlergias, localObservacoesGerais, prontuario]);
+  const handleFieldChange = (field: string, value: string) => {
+    switch (field) {
+      case 'peso':
+        setLocalPeso(value);
+        break;
+      case 'altura':
+        setLocalAltura(value);
+        break;
+      case 'tipoSanguineo':
+        setLocalTipoSanguineo(value);
+        break;
+      case 'alergias':
+        setLocalAlergias(value);
+        break;
+      case 'observacoesGerais':
+        setLocalObservacoesGerais(value);
+        break;
+    }
+    setIsEditing(true);
+  };
 
   const handleSave = async () => {
-    if (!hasChanges) {
+    if (!hasUnsavedChanges) {
       toast.info("Nenhuma alteração para salvar.");
       return;
     }
@@ -74,37 +110,31 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
       const updates = [];
 
       // Verificar cada campo individualmente e salvar no banco
-      const currentPeso = prontuario?.peso?.toString() || "";
-      const currentAltura = prontuario?.altura?.toString() || "";
-      const currentTipoSanguineo = prontuario?.tipo_sanguineo || "";
-      const currentAlergias = prontuario?.alergias || "";
-      const currentObservacoesGerais = prontuario?.observacoes_gerais || "";
-
-      if (localPeso !== currentPeso) {
+      if (localPeso !== savedPeso) {
         const pesoValue = localPeso.trim() ? parseFloat(localPeso) : null;
         updates.push(onUpdate?.("peso", pesoValue));
         console.log("Salvando peso:", pesoValue);
       }
       
-      if (localAltura !== currentAltura) {
+      if (localAltura !== savedAltura) {
         const alturaValue = localAltura.trim() ? parseFloat(localAltura) : null;
         updates.push(onUpdate?.("altura", alturaValue));
         console.log("Salvando altura:", alturaValue);
       }
       
-      if (localTipoSanguineo !== currentTipoSanguineo) {
+      if (localTipoSanguineo !== savedTipoSanguineo) {
         const tipoValue = localTipoSanguineo.trim() || null;
         updates.push(onUpdate?.("tipo_sanguineo", tipoValue));
         console.log("Salvando tipo sanguíneo:", tipoValue);
       }
       
-      if (localAlergias !== currentAlergias) {
+      if (localAlergias !== savedAlergias) {
         const alergiasValue = localAlergias.trim() || null;
         updates.push(onUpdate?.("alergias", alergiasValue));
         console.log("Salvando alergias:", alergiasValue);
       }
       
-      if (localObservacoesGerais !== currentObservacoesGerais) {
+      if (localObservacoesGerais !== savedObservacoesGerais) {
         const observacoesValue = localObservacoesGerais.trim() || null;
         updates.push(onUpdate?.("observacoes_gerais", observacoesValue));
         console.log("Salvando observações gerais:", observacoesValue);
@@ -112,6 +142,16 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
 
       // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
+
+      // Atualizar estados salvos após sucesso
+      setSavedPeso(localPeso);
+      setSavedAltura(localAltura);
+      setSavedTipoSanguineo(localTipoSanguineo);
+      setSavedAlergias(localAlergias);
+      setSavedObservacoesGerais(localObservacoesGerais);
+
+      // Sair do modo de edição
+      setIsEditing(false);
       
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
@@ -121,6 +161,12 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
       setIsSaving(false);
     }
   };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const showSaveButton = isEditing || hasUnsavedChanges;
 
   const formatarData = (dataString: string) => {
     if (!dataString) return "N/A";
@@ -169,14 +215,25 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
               <User className="h-5 w-5 text-turquesa" />
               Dados Atuais da Consulta
             </CardTitle>
-            <Button 
-              onClick={handleSave} 
-              disabled={!hasChanges || isSaving}
-              className="bg-turquesa hover:bg-turquesa/90"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? "Salvando..." : "Salvar"}
-            </Button>
+            {showSaveButton ? (
+              <Button 
+                onClick={handleSave} 
+                disabled={!hasUnsavedChanges || isSaving}
+                className="bg-turquesa hover:bg-turquesa/90"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? "Salvando..." : "Salvar"}
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleEdit} 
+                variant="outline"
+                className="border-turquesa text-turquesa hover:bg-turquesa hover:text-white"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -192,7 +249,8 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
                 step="0.1"
                 placeholder="Ex: 3.5"
                 value={localPeso}
-                onChange={(e) => setLocalPeso(e.target.value)}
+                onChange={(e) => handleFieldChange('peso', e.target.value)}
+                disabled={!isEditing}
               />
             </div>
             <div>
@@ -206,7 +264,8 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
                 step="0.1"
                 placeholder="Ex: 50.5"
                 value={localAltura}
-                onChange={(e) => setLocalAltura(e.target.value)}
+                onChange={(e) => handleFieldChange('altura', e.target.value)}
+                disabled={!isEditing}
               />
             </div>
             <div>
@@ -218,7 +277,8 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
                 id="tipo_sanguineo"
                 placeholder="Ex: O+"
                 value={localTipoSanguineo}
-                onChange={(e) => setLocalTipoSanguineo(e.target.value)}
+                onChange={(e) => handleFieldChange('tipoSanguineo', e.target.value)}
+                disabled={!isEditing}
               />
             </div>
           </div>
@@ -232,8 +292,9 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
               id="alergias"
               placeholder="Descreva alergias conhecidas, medicamentosas ou alimentares..."
               value={localAlergias}
-              onChange={(e) => setLocalAlergias(e.target.value)}
+              onChange={(e) => handleFieldChange('alergias', e.target.value)}
               className="min-h-[80px]"
+              disabled={!isEditing}
             />
           </div>
 
@@ -243,12 +304,13 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
               id="observacoes_gerais"
               placeholder="Observações gerais sobre o paciente..."
               value={localObservacoesGerais}
-              onChange={(e) => setLocalObservacoesGerais(e.target.value)}
+              onChange={(e) => handleFieldChange('observacoesGerais', e.target.value)}
               className="min-h-[100px]"
+              disabled={!isEditing}
             />
           </div>
 
-          {hasChanges && (
+          {hasUnsavedChanges && (
             <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
               Há alterações não salvas nesta aba.
             </div>
