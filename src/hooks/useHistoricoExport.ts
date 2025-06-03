@@ -30,6 +30,14 @@ export function useHistoricoExport(allMedicoes: Medicao[]) {
     }
 
     setExportLoading(medicao.id);
+    
+    // Mostrar toast de loading com informação sobre gráficos
+    const loadingMessage = includeCharts 
+      ? "Gerando PDF com gráficos (2 páginas)..." 
+      : "Gerando PDF...";
+    
+    const loadingToast = toast.loading(loadingMessage);
+    
     try {
       const pacienteData = {
         nome: medicao.pacienteNome,
@@ -47,6 +55,12 @@ export function useHistoricoExport(allMedicoes: Medicao[]) {
       let todasMedicoes: Medicao[] = [];
       if (includeCharts) {
         todasMedicoes = allMedicoes.filter(m => m.paciente_id === medicao.paciente_id);
+        
+        // Verificar se há dados suficientes para gráficos
+        if (todasMedicoes.length < 2) {
+          toast.warning("Dados insuficientes para gráficos. Gerando PDF simples.");
+          includeCharts = false;
+        }
       }
 
       await MedicaoExportUtils.exportToPDF(
@@ -57,9 +71,16 @@ export function useHistoricoExport(allMedicoes: Medicao[]) {
         { nome: "CraniumCare Clinic", profissional: "Médico Responsável" },
         includeCharts
       );
-      toast.success("PDF gerado com sucesso!");
+      
+      toast.dismiss(loadingToast);
+      const successMessage = includeCharts 
+        ? "PDF com gráficos gerado com sucesso!" 
+        : "PDF gerado com sucesso!";
+      toast.success(successMessage);
+      
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
+      toast.dismiss(loadingToast);
       toast.error("Erro ao gerar PDF. Tente novamente.");
     } finally {
       setExportLoading(null);
