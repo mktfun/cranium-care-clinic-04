@@ -1,13 +1,14 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Baby, User, Heart, Scale, Ruler, Droplet, Save } from "lucide-react";
+import { Baby, User, Heart, Scale, Ruler, Droplet, Save, AlertTriangle } from "lucide-react";
 import { Prontuario } from "@/types";
 import { toast } from "sonner";
+import { useProntuarioBackup } from "@/hooks/useProntuarioBackup";
 
 interface DadosPessoaisTabProps {
   paciente: any;
@@ -23,29 +24,93 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
   const [localObservacoesGerais, setLocalObservacoesGerais] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasBackupData, setHasBackupData] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  const { saveToBackup, loadFromBackup, clearBackup } = useProntuarioBackup(prontuario?.id);
+
+  // Auto-save timer
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Verificar se há dados de backup disponíveis
+  const checkBackupData = useCallback(() => {
+    const pesoBackup = loadFromBackup('peso');
+    const alturaBackup = loadFromBackup('altura');
+    const tipoSangBackup = loadFromBackup('tipo_sanguineo');
+    const alergiasBackup = loadFromBackup('alergias');
+    const obsGeraisBackup = loadFromBackup('observacoes_gerais');
+    setHasBackupData(!!(pesoBackup || alturaBackup || tipoSangBackup || alergiasBackup || obsGeraisBackup));
+  }, [loadFromBackup]);
+
+  // Recuperar dados de backup se disponível
+  const recoverFromBackup = useCallback(() => {
+    const pesoBackup = loadFromBackup('peso');
+    const alturaBackup = loadFromBackup('altura');
+    const tipoSangBackup = loadFromBackup('tipo_sanguineo');
+    const alergiasBackup = loadFromBackup('alergias');
+    const obsGeraisBackup = loadFromBackup('observacoes_gerais');
+    
+    if (pesoBackup) {
+      setLocalPeso(pesoBackup.toString());
+      toast.info("Dados de peso recuperados do backup local");
+    }
+    if (alturaBackup) {
+      setLocalAltura(alturaBackup.toString());
+      toast.info("Dados de altura recuperados do backup local");
+    }
+    if (tipoSangBackup) {
+      setLocalTipoSanguineo(tipoSangBackup);
+      toast.info("Dados de tipo sanguíneo recuperados do backup local");
+    }
+    if (alergiasBackup) {
+      setLocalAlergias(alergiasBackup);
+      toast.info("Dados de alergias recuperados do backup local");
+    }
+    if (obsGeraisBackup) {
+      setLocalObservacoesGerais(obsGeraisBackup);
+      toast.info("Dados de observações gerais recuperados do backup local");
+    }
+    
+    setHasBackupData(false);
+  }, [loadFromBackup]);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
+    if (!prontuario) return;
+
     console.log("Carregando dados do prontuário:", prontuario);
+    
+    // Verificar backup primeiro
+    checkBackupData();
+    
     const peso = prontuario?.peso?.toString() || "";
     const altura = prontuario?.altura?.toString() || "";
     const tipoSanguineo = prontuario?.tipo_sanguineo || "";
     const alergias = prontuario?.alergias || "";
     const observacoesGerais = prontuario?.observacoes_gerais || "";
 
-    setLocalPeso(peso);
-    setLocalAltura(altura);
-    setLocalTipoSanguineo(tipoSanguineo);
-    setLocalAlergias(alergias);
-    setLocalObservacoesGerais(observacoesGerais);
-    setHasChanges(false);
+    // Só sobrescrever se não houver backup E não estiver inicializado OU se não há mudanças locais pendentes
+    const shouldUpdate = (!hasBackupData && !isInitialized) || !hasChanges;
+    
+    if (shouldUpdate) {
+      setLocalPeso(peso);
+      setLocalAltura(altura);
+      setLocalTipoSanguineo(tipoSanguineo);
+      setLocalAlergias(alergias);
+      setLocalObservacoesGerais(observacoesGerais);
+      setHasChanges(false);
+      setIsInitialized(true);
+    }
 
-    console.log("Estados locais definidos:", { peso, altura, tipoSanguineo, alergias, observacoesGerais });
-  }, [prontuario]);
+    console.log("Estados locais definidos:", { 
+      peso, altura, tipoSanguineo, alergias, observacoesGerais,
+      shouldUpdate, hasBackupData, isInitialized, hasChanges
+    });
+  }, [prontuario, hasBackupData, isInitialized, hasChanges, checkBackupData]);
 
-  // Verificar mudanças
+  // Verificar mudanças e fazer backup automático
   useEffect(() => {
-    if (!prontuario) return;
+    if (!prontuario || !isInitialized) return;
 
     const currentPeso = prontuario?.peso?.toString() || "";
     const currentAltura = prontuario?.altura?.toString() || "";
@@ -61,7 +126,40 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
       localObservacoesGerais !== currentObservacoesGerais;
 
     setHasChanges(changed);
-  }, [localPeso, localAltura, localTipoSanguineo, localAlergias, localObservacoesGerais, prontuario]);
+
+    // Auto-backup com debounce
+    if (changed) {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+      
+      const timer = setTimeout(() => {
+        if (localPeso !== currentPeso) {
+          saveToBackup('peso', localPeso);
+        }
+        if (localAltura !== currentAltura) {
+          saveToBackup('altura', localAltura);
+        }
+        if (localTipoSanguineo !== currentTipoSanguineo) {
+          saveToBackup('tipo_sanguineo', localTipoSanguineo);
+        }
+        if (localAlergias !== currentAlergias) {
+          saveToBackup('alergias', localAlergias);
+        }
+        if (localObservacoesGerais !== currentObservacoesGerais) {
+          saveToBackup('observacoes_gerais', localObservacoesGerais);
+        }
+      }, 2000); // 2 segundos de debounce
+      
+      setAutoSaveTimer(timer);
+    }
+
+    return () => {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+    };
+  }, [localPeso, localAltura, localTipoSanguineo, localAlergias, localObservacoesGerais, prontuario, saveToBackup, autoSaveTimer, isInitialized]);
 
   const handleSave = async () => {
     if (!hasChanges) {
@@ -112,10 +210,17 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
 
       // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
+
+      // Limpar backups após salvamento bem-sucedido
+      clearBackup('peso');
+      clearBackup('altura');
+      clearBackup('tipo_sanguineo');
+      clearBackup('alergias');
+      clearBackup('observacoes_gerais');
       
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
-      toast.error("Erro ao salvar dados.");
+      toast.error("Erro ao salvar dados. Os dados foram mantidos localmente.");
       console.error("Erro ao salvar:", error);
     } finally {
       setIsSaving(false);
@@ -131,6 +236,36 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
 
   return (
     <div className="space-y-6">
+      {hasBackupData && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-orange-700">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">Dados recuperados encontrados</span>
+            </div>
+            <p className="text-sm text-orange-600 mt-1">
+              Foram encontrados dados não salvos anteriormente. Deseja recuperá-los?
+            </p>
+            <div className="flex gap-2 mt-3">
+              <Button 
+                size="sm" 
+                onClick={recoverFromBackup}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                Recuperar Dados
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setHasBackupData(false)}
+              >
+                Descartar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Dados de Nascimento */}
       <Card>
         <CardHeader>
@@ -250,7 +385,7 @@ export function DadosPessoaisTab({ paciente, prontuario, onUpdate }: DadosPessoa
 
           {hasChanges && (
             <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-              Há alterações não salvas nesta aba.
+              Há alterações não salvas nesta aba. Os dados estão sendo salvos automaticamente localmente.
             </div>
           )}
         </CardContent>

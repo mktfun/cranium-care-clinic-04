@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -200,11 +199,6 @@ export default function ProntuarioMedico() {
       setProntuarios(prev => prev.map(p => 
         p.id === currentProntuario.id ? updatedProntuario : p
       ));
-      
-      // Fazer reload apenas como backup, sem sobrescrever dados locais
-      setTimeout(() => {
-        reloadCurrentProntuario();
-      }, 1000);
       
     } catch (err) {
       console.error('Erro ao salvar:', err);
