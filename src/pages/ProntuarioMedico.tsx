@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,7 @@ export default function ProntuarioMedico() {
   const [activeTab, setActiveTab] = useState("dados-do-bebe");
   const isMobile = useIsMobile();
 
-  // Função para recarregar dados do prontuário atual com melhor tratamento de erro
+  // Função para recarregar dados do prontuário atual - simplificada
   const reloadCurrentProntuario = async () => {
     if (!currentProntuario?.id) return;
     
@@ -47,39 +46,18 @@ export default function ProntuarioMedico() {
       
       if (error) {
         console.error('Erro ao recarregar prontuário:', error);
-        
-        // Se o erro for de dados não encontrados, manter dados atuais
-        if (error.code === 'PGRST116') {
-          console.warn('Prontuário não encontrado no banco, mantendo dados atuais');
-          return;
-        }
-        
-        toast.error('Erro ao recarregar dados do prontuário');
         return;
       }
       
       if (data) {
         console.log('Dados recarregados do banco:', data);
-        
-        // Verificar se os dados realmente mudaram antes de atualizar
-        const hasChanges = JSON.stringify(currentProntuario) !== JSON.stringify(data);
-        
-        if (hasChanges) {
-          setCurrentProntuario(data as Prontuario);
-          // Também atualizar na lista de prontuários
-          setProntuarios(prev => prev.map(p => 
-            p.id === data.id ? data as Prontuario : p
-          ));
-          console.log('Prontuário atualizado com novos dados do banco');
-        } else {
-          console.log('Dados do banco são iguais aos locais, não atualizando');
-        }
-      } else {
-        console.warn('Nenhum dado retornado do banco para o prontuário');
+        setCurrentProntuario(data as Prontuario);
+        setProntuarios(prev => prev.map(p => 
+          p.id === data.id ? data as Prontuario : p
+        ));
       }
     } catch (err) {
       console.error('Erro inesperado ao recarregar prontuário:', err);
-      toast.error('Erro inesperado ao atualizar dados');
     }
   };
   
@@ -168,6 +146,7 @@ export default function ProntuarioMedico() {
     navigate(`/pacientes/${id}/prontuario/${prontuario.id}`);
   };
 
+  // Função de atualização simplificada - sem setTimeout problemático
   const handleUpdateProntuario = async (field: string, value: any) => {
     if (!currentProntuario) return;
     
@@ -189,7 +168,7 @@ export default function ProntuarioMedico() {
       
       console.log(`Campo ${field} salvo com sucesso no banco de dados`);
       
-      // Atualizar prontuário local imediatamente para evitar perda de dados
+      // Atualizar prontuário local imediatamente
       const updatedProntuario = {
         ...currentProntuario,
         [field]: value,
@@ -201,10 +180,8 @@ export default function ProntuarioMedico() {
         p.id === currentProntuario.id ? updatedProntuario : p
       ));
       
-      // Fazer reload apenas como backup, sem sobrescrever dados locais
-      setTimeout(() => {
-        reloadCurrentProntuario();
-      }, 1000);
+      // Fazer reload como backup - sem timeout
+      await reloadCurrentProntuario();
       
     } catch (err) {
       console.error('Erro ao salvar:', err);
@@ -277,7 +254,10 @@ export default function ProntuarioMedico() {
             prontuarios={prontuarios}
             currentProntuario={currentProntuario}
             onSelecionarProntuario={handleSelecionarProntuario}
-            onNovoProntuario={() => setIsDialogOpen(true)}
+            onNovoProntuario={handleNovoProntuario}
+            pacienteId={id || ''}
+            pacienteNome={paciente?.nome || ''}
+            paciente={paciente}
           />
         </div>
 

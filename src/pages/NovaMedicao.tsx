@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,7 @@ export default function NovaMedicao() {
   // Verificar se veio do dashboard (via state ou query params)
   const fromDashboard = location.state?.fromDashboard || location.search.includes('fromDashboard=true');
   const prontuarioId = location.state?.prontuarioId;
+  const createProntuario = location.search.includes('createProntuario=true');
 
   useEffect(() => {
     async function fetchData() {
@@ -72,6 +72,30 @@ export default function NovaMedicao() {
     navigate(`/pacientes/${id}/prontuario`);
   };
 
+  // Função para criar prontuário após medição
+  const handleCreateProntuarioAfterMeasurement = async () => {
+    if (!id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('prontuarios')
+        .insert({
+          paciente_id: id,
+          data_criacao: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast.success("Prontuário criado! Redirecionando...");
+      navigate(`/pacientes/${id}/prontuario/${data.id}`);
+    } catch (error) {
+      console.error('Erro ao criar prontuário:', error);
+      toast.error('Erro ao criar prontuário');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -89,8 +113,8 @@ export default function NovaMedicao() {
     );
   }
 
-  // Se veio do dashboard e não há prontuários, força criação
-  if (fromDashboard && prontuarios.length === 0) {
+  // Se veio do dashboard e não há prontuários, força criação ou permite criar após medição
+  if ((fromDashboard && prontuarios.length === 0) || createProntuario) {
     return (
       <div className="space-y-6 animate-fade-in p-4 md:p-6">
         <div className="flex items-center gap-4">
@@ -165,7 +189,14 @@ export default function NovaMedicao() {
         prontuarioId={prontuarioId}
         prontuarios={prontuarios}
         onSuccess={() => {
-          if (fromDashboard) {
+          if (createProntuario) {
+            // Perguntar se quer criar prontuário após medição
+            if (window.confirm("Medição salva! Deseja criar um prontuário para esta consulta?")) {
+              handleCreateProntuarioAfterMeasurement();
+            } else {
+              handleVoltar();
+            }
+          } else if (fromDashboard) {
             navigate('/dashboard');
           } else {
             navigate(`/pacientes/${id}`);
