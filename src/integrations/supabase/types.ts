@@ -697,18 +697,6 @@ export type Database = {
         Args: { token_input: string; user_id_input: string }
         Returns: Json
       }
-      can_manage_collaborator: {
-        Args: { collaborator_empresa_nome: string }
-        Returns: boolean
-      }
-      get_user_company_name: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      is_company_owner: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
       restore_default_system_settings: {
         Args: Record<PropertyKey, never>
         Returns: undefined
