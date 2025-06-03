@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, FileText, Save, Edit, AlertTriangle } from "lucide-react";
+import { Stethoscope, FileText, Save, AlertTriangle } from "lucide-react";
 import { Prontuario } from "@/types";
 import { toast } from "sonner";
 import { useProntuarioBackup } from "@/hooks/useProntuarioBackup";
@@ -13,20 +13,14 @@ interface CondutaTabProps {
   prontuario: Prontuario;
   pacienteId: string;
   onUpdate?: (field: string, value: any) => void;
-  onSaveComplete?: () => Promise<void>;
 }
 
-export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }: CondutaTabProps) {
+export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps) {
   const [localConduta, setLocalConduta] = useState("");
   const [localAtestado, setLocalAtestado] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasBackupData, setHasBackupData] = useState(false);
-  const [isLocallyEditing, setIsLocallyEditing] = useState(false);
-
-  // Estados para rastrear valores salvos
-  const [savedConduta, setSavedConduta] = useState("");
-  const [savedAtestado, setSavedAtestado] = useState("");
 
   const { saveToBackup, loadFromBackup, clearBackup } = useProntuarioBackup(prontuario?.id);
 
@@ -55,13 +49,10 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }:
     }
     
     setHasBackupData(false);
-    setIsLocallyEditing(true);
   }, [loadFromBackup]);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
-    if (!prontuario || isLocallyEditing) return;
-
     console.log("Carregando dados de conduta:", prontuario);
     
     // Verificar backup primeiro
@@ -70,43 +61,41 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }:
     const conduta = prontuario?.conduta || "";
     const atestado = prontuario?.atestado || "";
 
-    // Só sobrescrever se não houver backup
+    // Só sobrescrever se não houver backup ou se os dados do banco forem mais recentes
     if (!hasBackupData) {
       setLocalConduta(conduta);
       setLocalAtestado(atestado);
     }
     
-    setSavedConduta(conduta);
-    setSavedAtestado(atestado);
-
-    // Se há dados salvos, não está em modo de edição
-    const hasData = conduta || atestado;
-    setIsEditing(!hasData);
+    setHasChanges(false);
 
     console.log("Estados locais de conduta definidos:", { conduta, atestado });
-  }, [prontuario, hasBackupData, checkBackupData, isLocallyEditing]);
+  }, [prontuario, hasBackupData, checkBackupData]);
 
-  // Verificar se há mudanças não salvas
-  const hasUnsavedChanges = 
-    localConduta !== savedConduta ||
-    localAtestado !== savedAtestado;
-
-  // Ativar modo de edição quando houver mudanças e fazer backup automático
+  // Verificar mudanças e fazer backup automático
   useEffect(() => {
-    if (hasUnsavedChanges) {
-      setIsEditing(true);
-      setIsLocallyEditing(true);
+    if (!prontuario) return;
 
-      // Auto-backup com debounce
+    const currentConduta = prontuario?.conduta || "";
+    const currentAtestado = prontuario?.atestado || "";
+
+    const changed = 
+      localConduta !== currentConduta ||
+      localAtestado !== currentAtestado;
+
+    setHasChanges(changed);
+
+    // Auto-backup com debounce
+    if (changed) {
       if (autoSaveTimer) {
         clearTimeout(autoSaveTimer);
       }
       
       const timer = setTimeout(() => {
-        if (localConduta !== savedConduta) {
+        if (localConduta !== currentConduta) {
           saveToBackup('conduta', localConduta);
         }
-        if (localAtestado !== savedAtestado) {
+        if (localAtestado !== currentAtestado) {
           saveToBackup('atestado', localAtestado);
         }
       }, 2000); // 2 segundos de debounce
@@ -119,20 +108,10 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }:
         clearTimeout(autoSaveTimer);
       }
     };
-  }, [hasUnsavedChanges, localConduta, localAtestado, savedConduta, savedAtestado, saveToBackup, autoSaveTimer]);
-
-  const handleFieldChange = (field: string, value: string) => {
-    if (field === 'conduta') {
-      setLocalConduta(value);
-    } else if (field === 'atestado') {
-      setLocalAtestado(value);
-    }
-    setIsEditing(true);
-    setIsLocallyEditing(true);
-  };
+  }, [localConduta, localAtestado, prontuario, saveToBackup, autoSaveTimer]);
 
   const handleSave = async () => {
-    if (!hasUnsavedChanges) {
+    if (!hasChanges) {
       toast.info("Nenhuma alteração para salvar.");
       return;
     }
@@ -142,13 +121,16 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }:
       const updates = [];
 
       // Verificar cada campo individualmente e salvar no banco
-      if (localConduta !== savedConduta) {
+      const currentConduta = prontuario?.conduta || "";
+      const currentAtestado = prontuario?.atestado || "";
+
+      if (localConduta !== currentConduta) {
         const condutaValue = localConduta.trim() || null;
         updates.push(onUpdate?.("conduta", condutaValue));
         console.log("Salvando conduta:", condutaValue);
       }
       
-      if (localAtestado !== savedAtestado) {
+      if (localAtestado !== currentAtestado) {
         const atestadoValue = localAtestado.trim() || null;
         updates.push(onUpdate?.("atestado", atestadoValue));
         console.log("Salvando atestado:", atestadoValue);
@@ -157,20 +139,9 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }:
       // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
 
-      // Buscar dados atualizados do banco
-      await onSaveComplete?.();
-
       // Limpar backups após salvamento bem-sucedido
       clearBackup('conduta');
       clearBackup('atestado');
-
-      // Atualizar estados salvos após sucesso
-      setSavedConduta(localConduta);
-      setSavedAtestado(localAtestado);
-
-      // Sair do modo de edição
-      setIsEditing(false);
-      setIsLocallyEditing(false);
       
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
@@ -180,13 +151,6 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }:
       setIsSaving(false);
     }
   };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-    setIsLocallyEditing(true);
-  };
-
-  const showSaveButton = isEditing || hasUnsavedChanges;
 
   return (
     <div className="space-y-6">
@@ -227,25 +191,14 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }:
               <Stethoscope className="h-5 w-5 text-turquesa" />
               Conduta Médica
             </CardTitle>
-            {showSaveButton ? (
-              <Button 
-                onClick={handleSave} 
-                disabled={!hasUnsavedChanges || isSaving}
-                className="bg-turquesa hover:bg-turquesa/90"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {isSaving ? "Salvando..." : "Salvar"}
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleEdit} 
-                variant="outline"
-                className="border-turquesa text-turquesa hover:bg-turquesa hover:text-white"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Editar
-              </Button>
-            )}
+            <Button 
+              onClick={handleSave} 
+              disabled={!hasChanges || isSaving}
+              className="bg-turquesa hover:bg-turquesa/90"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Salvando..." : "Salvar"}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -255,13 +208,12 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }:
               id="conduta"
               placeholder="Descreva a conduta médica, orientações e tratamentos indicados..."
               value={localConduta}
-              onChange={(e) => handleFieldChange('conduta', e.target.value)}
+              onChange={(e) => setLocalConduta(e.target.value)}
               className="min-h-[150px]"
-              disabled={!isEditing}
             />
           </div>
 
-          {hasUnsavedChanges && (
+          {hasChanges && (
             <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
               Há alterações não salvas nesta aba. Os dados estão sendo salvos automaticamente localmente.
             </div>
@@ -283,9 +235,8 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }:
               id="atestado"
               placeholder="Informações para atestado médico, se necessário..."
               value={localAtestado}
-              onChange={(e) => handleFieldChange('atestado', e.target.value)}
+              onChange={(e) => setLocalAtestado(e.target.value)}
               className="min-h-[100px]"
-              disabled={!isEditing}
             />
           </div>
         </CardContent>

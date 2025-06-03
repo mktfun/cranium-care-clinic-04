@@ -31,6 +31,57 @@ export default function ProntuarioMedico() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dados-do-bebe");
   const isMobile = useIsMobile();
+
+  // Função para recarregar dados do prontuário atual com melhor tratamento de erro
+  const reloadCurrentProntuario = async () => {
+    if (!currentProntuario?.id) return;
+    
+    try {
+      console.log('Recarregando prontuário ID:', currentProntuario.id);
+      
+      const { data, error } = await supabase
+        .from('prontuarios')
+        .select('*')
+        .eq('id', currentProntuario.id)
+        .single();
+      
+      if (error) {
+        console.error('Erro ao recarregar prontuário:', error);
+        
+        // Se o erro for de dados não encontrados, manter dados atuais
+        if (error.code === 'PGRST116') {
+          console.warn('Prontuário não encontrado no banco, mantendo dados atuais');
+          return;
+        }
+        
+        toast.error('Erro ao recarregar dados do prontuário');
+        return;
+      }
+      
+      if (data) {
+        console.log('Dados recarregados do banco:', data);
+        
+        // Verificar se os dados realmente mudaram antes de atualizar
+        const hasChanges = JSON.stringify(currentProntuario) !== JSON.stringify(data);
+        
+        if (hasChanges) {
+          setCurrentProntuario(data as Prontuario);
+          // Também atualizar na lista de prontuários
+          setProntuarios(prev => prev.map(p => 
+            p.id === data.id ? data as Prontuario : p
+          ));
+          console.log('Prontuário atualizado com novos dados do banco');
+        } else {
+          console.log('Dados do banco são iguais aos locais, não atualizando');
+        }
+      } else {
+        console.warn('Nenhum dado retornado do banco para o prontuário');
+      }
+    } catch (err) {
+      console.error('Erro inesperado ao recarregar prontuário:', err);
+      toast.error('Erro inesperado ao atualizar dados');
+    }
+  };
   
   useEffect(() => {
     async function fetchData() {
@@ -117,42 +168,6 @@ export default function ProntuarioMedico() {
     navigate(`/pacientes/${id}/prontuario/${prontuario.id}`);
   };
 
-  // Nova função para buscar dados atualizados do prontuário
-  const refreshCurrentProntuario = async () => {
-    if (!currentProntuario) return;
-    
-    try {
-      console.log('Refreshing prontuário data from database...');
-      
-      const { data: updatedProntuario, error } = await supabase
-        .from('prontuarios')
-        .select('*')
-        .eq('id', currentProntuario.id)
-        .single();
-      
-      if (error) {
-        console.error('Erro ao buscar prontuário atualizado:', error);
-        throw error;
-      }
-      
-      console.log('Prontuário atualizado do banco:', updatedProntuario);
-      
-      // Atualizar o prontuário atual
-      setCurrentProntuario(updatedProntuario as Prontuario);
-      
-      // Atualizar também na lista de prontuários
-      setProntuarios(prev => prev.map(p => 
-        p.id === currentProntuario.id ? updatedProntuario as Prontuario : p
-      ));
-      
-      console.log('Estados atualizados com dados do banco');
-    } catch (err) {
-      console.error('Erro ao atualizar prontuário:', err);
-      throw err;
-    }
-  };
-
-  // Função de update modificada - apenas salva no banco, não atualiza estado local
   const handleUpdateProntuario = async (field: string, value: any) => {
     if (!currentProntuario) return;
     
@@ -174,7 +189,22 @@ export default function ProntuarioMedico() {
       
       console.log(`Campo ${field} salvo com sucesso no banco de dados`);
       
-      // NÃO atualizar o estado aqui - isso será feito pela função refresh
+      // Atualizar prontuário local imediatamente para evitar perda de dados
+      const updatedProntuario = {
+        ...currentProntuario,
+        [field]: value,
+        updated_at: new Date().toISOString()
+      };
+      
+      setCurrentProntuario(updatedProntuario);
+      setProntuarios(prev => prev.map(p => 
+        p.id === currentProntuario.id ? updatedProntuario : p
+      ));
+      
+      // Fazer reload apenas como backup, sem sobrescrever dados locais
+      setTimeout(() => {
+        reloadCurrentProntuario();
+      }, 1000);
       
     } catch (err) {
       console.error('Erro ao salvar:', err);
@@ -320,7 +350,6 @@ export default function ProntuarioMedico() {
                       paciente={paciente} 
                       prontuario={currentProntuario} 
                       onUpdate={handleUpdateProntuario}
-                      onSaveComplete={refreshCurrentProntuario}
                     />
                   </TabsContent>
                   
@@ -329,7 +358,6 @@ export default function ProntuarioMedico() {
                       prontuario={currentProntuario} 
                       pacienteId={id || ''} 
                       onUpdate={handleUpdateProntuario}
-                      onSaveComplete={refreshCurrentProntuario}
                     />
                   </TabsContent>
                   
@@ -345,7 +373,6 @@ export default function ProntuarioMedico() {
                       prontuario={currentProntuario} 
                       pacienteId={id || ''} 
                       onUpdate={handleUpdateProntuario}
-                      onSaveComplete={refreshCurrentProntuario}
                     />
                   </TabsContent>
                   
@@ -354,7 +381,6 @@ export default function ProntuarioMedico() {
                       prontuario={currentProntuario} 
                       pacienteId={id || ''} 
                       onUpdate={handleUpdateProntuario}
-                      onSaveComplete={refreshCurrentProntuario}
                     />
                   </TabsContent>
                   
@@ -363,7 +389,6 @@ export default function ProntuarioMedico() {
                       prontuario={currentProntuario} 
                       pacienteId={id || ''} 
                       onUpdate={handleUpdateProntuario}
-                      onSaveComplete={refreshCurrentProntuario}
                     />
                   </TabsContent>
                 </Tabs>

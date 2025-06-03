@@ -14,16 +14,14 @@ interface DiagnosticoTabProps {
   prontuario: Prontuario;
   pacienteId: string;
   onUpdate?: (field: string, value: any) => void;
-  onSaveComplete?: () => Promise<void>;
 }
 
-export function DiagnosticoTab({ prontuario, pacienteId, onUpdate, onSaveComplete }: DiagnosticoTabProps) {
+export function DiagnosticoTab({ prontuario, pacienteId, onUpdate }: DiagnosticoTabProps) {
   const [localDiagnostico, setLocalDiagnostico] = useState("");
   const [localCid, setLocalCid] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasBackupData, setHasBackupData] = useState(false);
-  const [isLocallyEditing, setIsLocallyEditing] = useState(false);
 
   const { saveToBackup, loadFromBackup, clearBackup } = useProntuarioBackup(prontuario?.id);
 
@@ -52,13 +50,10 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate, onSaveComplet
     }
     
     setHasBackupData(false);
-    setIsLocallyEditing(true);
   }, [loadFromBackup]);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
-    if (!prontuario || isLocallyEditing) return;
-
     console.log("Carregando dados de diagnóstico:", prontuario);
     
     // Verificar backup primeiro
@@ -67,7 +62,7 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate, onSaveComplet
     const diagnostico = prontuario?.diagnostico || "";
     const cid = prontuario?.cid || "";
 
-    // Só sobrescrever se não houver backup
+    // Só sobrescrever se não houver backup ou se os dados do banco forem mais recentes
     if (!hasBackupData) {
       setLocalDiagnostico(diagnostico);
       setLocalCid(cid);
@@ -76,7 +71,7 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate, onSaveComplet
     setHasChanges(false);
 
     console.log("Estados locais de diagnóstico definidos:", { diagnostico, cid });
-  }, [prontuario, hasBackupData, checkBackupData, isLocallyEditing]);
+  }, [prontuario, hasBackupData, checkBackupData]);
 
   // Verificar mudanças e fazer backup automático
   useEffect(() => {
@@ -93,8 +88,6 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate, onSaveComplet
 
     // Auto-backup com debounce
     if (changed) {
-      setIsLocallyEditing(true);
-      
       if (autoSaveTimer) {
         clearTimeout(autoSaveTimer);
       }
@@ -128,7 +121,6 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate, onSaveComplet
         : cidDescription;
       setLocalDiagnostico(newDiagnostico);
     }
-    setIsLocallyEditing(true);
   };
 
   const handleSave = async () => {
@@ -160,15 +152,9 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate, onSaveComplet
       // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
 
-      // Buscar dados atualizados do banco
-      await onSaveComplete?.();
-
       // Limpar backups após salvamento bem-sucedido
       clearBackup('diagnostico');
       clearBackup('cid');
-      
-      // Resetar flag de edição local
-      setIsLocallyEditing(false);
       
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
@@ -235,20 +221,14 @@ export function DiagnosticoTab({ prontuario, pacienteId, onUpdate, onSaveComplet
               id="diagnostico"
               placeholder="Descreva o diagnóstico baseado na avaliação clínica..."
               value={localDiagnostico}
-              onChange={(e) => {
-                setLocalDiagnostico(e.target.value);
-                setIsLocallyEditing(true);
-              }}
+              onChange={(e) => setLocalDiagnostico(e.target.value)}
               className="min-h-[150px]"
             />
           </div>
 
           <CIDSearchInput
             value={localCid}
-            onChange={(value) => {
-              setLocalCid(value);
-              setIsLocallyEditing(true);
-            }}
+            onChange={setLocalCid}
             onCIDSelect={handleCIDSelect}
             placeholder="Digite o código CID ou busque por diagnóstico..."
             label="Código CID"
