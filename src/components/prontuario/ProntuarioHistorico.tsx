@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, FilePlus, Calendar } from "lucide-react";
 import { Prontuario } from "@/types";
-import { ProntuarioCreationDialog } from "./ProntuarioCreationDialog";
 import { ProntuarioWizard } from "./wizard/ProntuarioWizard";
 
 interface ProntuarioHistoricoProps {
@@ -26,7 +25,6 @@ export function ProntuarioHistorico({
   pacienteNome,
   paciente
 }: ProntuarioHistoricoProps) {
-  const [showCreationDialog, setShowCreationDialog] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
 
   const formatarData = (dataString: string) => {
@@ -34,17 +32,6 @@ export function ProntuarioHistorico({
     const data = new Date(dataString);
     if (isNaN(data.getTime())) return "Data inválida";
     return data.toLocaleDateString('pt-BR');
-  };
-
-  const handleCreateWithMeasurement = () => {
-    setShowCreationDialog(false);
-    // Redirecionar para página de medição
-    window.location.href = `/pacientes/${pacienteId}/nova-medicao`;
-  };
-
-  const handleCreateWithWizard = () => {
-    setShowCreationDialog(false);
-    setShowWizard(true);
   };
 
   const handleWizardSuccess = (novoProntuario: Prontuario) => {
@@ -63,7 +50,7 @@ export function ProntuarioHistorico({
         </CardHeader>
         <CardContent className="space-y-3">
           <Button 
-            onClick={() => setShowCreationDialog(true)}
+            onClick={() => setShowWizard(true)}
             className="w-full bg-turquesa hover:bg-turquesa/90"
           >
             <FilePlus className="h-4 w-4 mr-2" />
@@ -103,15 +90,6 @@ export function ProntuarioHistorico({
           </div>
         </CardContent>
       </Card>
-
-      <ProntuarioCreationDialog
-        open={showCreationDialog}
-        onOpenChange={setShowCreationDialog}
-        pacienteId={pacienteId}
-        pacienteNome={pacienteNome}
-        onCreateWithMeasurement={handleCreateWithMeasurement}
-        onCreateWithWizard={handleCreateWithWizard}
-      />
 
       <ProntuarioWizard
         open={showWizard}

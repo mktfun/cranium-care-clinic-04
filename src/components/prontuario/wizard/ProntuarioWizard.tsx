@@ -28,7 +28,7 @@ const stepTitles = [
   "Anamnese e Avaliação",
   "Conduta Médica",
   "Diagnóstico",
-  "Prescrição"
+  "Prescrição e Medição"
 ];
 
 export function ProntuarioWizard({
@@ -66,8 +66,9 @@ export function ProntuarioWizard({
     diagnostico: "",
     cid: "",
     
-    // Step 5 - Prescrição
-    prescricao: ""
+    // Step 5 - Prescrição e Medição
+    prescricao: "",
+    realizar_medicao: false
   });
 
   // Criar prontuário inicial ao abrir o wizard
@@ -207,8 +208,15 @@ export function ProntuarioWizard({
         if (prontuario) {
           onSuccess(prontuario);
           onOpenChange(false);
-          navigate(`/pacientes/${pacienteId}/prontuario/${prontuario.id}`);
-          toast.success("Prontuário criado com sucesso!");
+          
+          // Verificar se deve ir para medição ou para prontuário
+          if (formData.realizar_medicao) {
+            navigate(`/pacientes/${pacienteId}/nova-medicao`);
+            toast.success("Prontuário criado! Redirecionando para nova medição...");
+          } else {
+            navigate(`/pacientes/${pacienteId}/prontuario/${prontuario.id}`);
+            toast.success("Prontuário criado com sucesso!");
+          }
         }
       }
     } catch (error) {

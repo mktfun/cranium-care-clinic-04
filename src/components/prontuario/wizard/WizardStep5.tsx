@@ -2,7 +2,8 @@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileCheck } from "lucide-react";
+import { FileCheck, Ruler } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface WizardStep5Props {
   formData: any;
@@ -41,6 +42,30 @@ export function WizardStep5({ formData, updateFormData }: WizardStep5Props) {
               <li>Mencione sinais de alerta para retorno</li>
             </ul>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Ruler className="h-5 w-5 text-turquesa" />
+            Medição Cranial
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="realizar_medicao"
+              checked={formData.realizar_medicao || false}
+              onCheckedChange={(checked) => updateFormData("realizar_medicao", checked)}
+            />
+            <Label htmlFor="realizar_medicao" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Realizar nova medição cranial após finalizar este prontuário
+            </Label>
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Se marcado, você será direcionado para a página de medição cranial após salvar este prontuário.
+          </p>
         </CardContent>
       </Card>
     </div>
