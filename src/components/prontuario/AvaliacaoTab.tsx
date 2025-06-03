@@ -1,14 +1,13 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Activity, Clock, Heart, Brain, Save, AlertTriangle } from "lucide-react";
+import { Activity, Clock, Heart, Brain, Save } from "lucide-react";
 import { Prontuario } from "@/types";
 import { toast } from "sonner";
-import { useProntuarioBackup } from "@/hooks/useProntuarioBackup";
 
 interface AvaliacaoTabProps {
   prontuario: Prontuario;
@@ -24,93 +23,31 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
   const [localAvaliacao, setLocalAvaliacao] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [hasBackupData, setHasBackupData] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  const { saveToBackup, loadFromBackup, clearBackup } = useProntuarioBackup(prontuario?.id);
-
-  // Auto-save timer
-  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
-
-  // Verificar se há dados de backup disponíveis
-  const checkBackupData = useCallback(() => {
-    const queixaBackup = loadFromBackup('queixa_principal');
-    const idadeGestBackup = loadFromBackup('idade_gestacional');
-    const idadeCorrBackup = loadFromBackup('idade_corrigida');
-    const obsAnamBackup = loadFromBackup('observacoes_anamnese');
-    const avaliacaoBackup = loadFromBackup('avaliacao');
-    setHasBackupData(!!(queixaBackup || idadeGestBackup || idadeCorrBackup || obsAnamBackup || avaliacaoBackup));
-  }, [loadFromBackup]);
-
-  // Recuperar dados de backup se disponível
-  const recoverFromBackup = useCallback(() => {
-    const queixaBackup = loadFromBackup('queixa_principal');
-    const idadeGestBackup = loadFromBackup('idade_gestacional');
-    const idadeCorrBackup = loadFromBackup('idade_corrigida');
-    const obsAnamBackup = loadFromBackup('observacoes_anamnese');
-    const avaliacaoBackup = loadFromBackup('avaliacao');
-    
-    if (queixaBackup) {
-      setLocalQueixaPrincipal(queixaBackup);
-      toast.info("Dados de queixa principal recuperados do backup local");
-    }
-    if (idadeGestBackup) {
-      setLocalIdadeGestacional(idadeGestBackup);
-      toast.info("Dados de idade gestacional recuperados do backup local");
-    }
-    if (idadeCorrBackup) {
-      setLocalIdadeCorrigida(idadeCorrBackup);
-      toast.info("Dados de idade corrigida recuperados do backup local");
-    }
-    if (obsAnamBackup) {
-      setLocalObservacoesAnamnese(obsAnamBackup);
-      toast.info("Dados de observações anamnese recuperados do backup local");
-    }
-    if (avaliacaoBackup) {
-      setLocalAvaliacao(avaliacaoBackup);
-      toast.info("Dados de avaliação recuperados do backup local");
-    }
-    
-    setHasBackupData(false);
-  }, [loadFromBackup]);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
-    if (!prontuario) return;
-    
     console.log("Carregando dados de avaliação:", prontuario);
-    
-    // Verificar backup primeiro
-    checkBackupData();
-    
     const queixaPrincipal = prontuario?.queixa_principal || "";
     const idadeGestacional = prontuario?.idade_gestacional || "";
     const idadeCorrigida = prontuario?.idade_corrigida || "";
     const observacoesAnamnese = prontuario?.observacoes_anamnese || "";
     const avaliacao = prontuario?.avaliacao || "";
 
-    // Só sobrescrever se não houver backup E não estiver inicializado OU se não há mudanças locais pendentes
-    const shouldUpdate = (!hasBackupData && !isInitialized) || !hasChanges;
-    
-    if (shouldUpdate) {
-      setLocalQueixaPrincipal(queixaPrincipal);
-      setLocalIdadeGestacional(idadeGestacional);
-      setLocalIdadeCorrigida(idadeCorrigida);
-      setLocalObservacoesAnamnese(observacoesAnamnese);
-      setLocalAvaliacao(avaliacao);
-      setHasChanges(false);
-      setIsInitialized(true);
-    }
+    setLocalQueixaPrincipal(queixaPrincipal);
+    setLocalIdadeGestacional(idadeGestacional);
+    setLocalIdadeCorrigida(idadeCorrigida);
+    setLocalObservacoesAnamnese(observacoesAnamnese);
+    setLocalAvaliacao(avaliacao);
+    setHasChanges(false);
 
     console.log("Estados locais de avaliação definidos:", { 
-      queixaPrincipal, idadeGestacional, idadeCorrigida, observacoesAnamnese, avaliacao,
-      shouldUpdate, hasBackupData, isInitialized, hasChanges
+      queixaPrincipal, idadeGestacional, idadeCorrigida, observacoesAnamnese, avaliacao 
     });
-  }, [prontuario, hasBackupData, isInitialized, hasChanges, checkBackupData]);
+  }, [prontuario]);
 
-  // Verificar mudanças e fazer backup automático
+  // Verificar mudanças
   useEffect(() => {
-    if (!prontuario || !isInitialized) return;
+    if (!prontuario) return;
 
     const currentQueixaPrincipal = prontuario?.queixa_principal || "";
     const currentIdadeGestacional = prontuario?.idade_gestacional || "";
@@ -126,40 +63,7 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
       localAvaliacao !== currentAvaliacao;
 
     setHasChanges(changed);
-
-    // Auto-backup com debounce
-    if (changed) {
-      if (autoSaveTimer) {
-        clearTimeout(autoSaveTimer);
-      }
-      
-      const timer = setTimeout(() => {
-        if (localQueixaPrincipal !== currentQueixaPrincipal) {
-          saveToBackup('queixa_principal', localQueixaPrincipal);
-        }
-        if (localIdadeGestacional !== currentIdadeGestacional) {
-          saveToBackup('idade_gestacional', localIdadeGestacional);
-        }
-        if (localIdadeCorrigida !== currentIdadeCorrigida) {
-          saveToBackup('idade_corrigida', localIdadeCorrigida);
-        }
-        if (localObservacoesAnamnese !== currentObservacoesAnamnese) {
-          saveToBackup('observacoes_anamnese', localObservacoesAnamnese);
-        }
-        if (localAvaliacao !== currentAvaliacao) {
-          saveToBackup('avaliacao', localAvaliacao);
-        }
-      }, 2000); // 2 segundos de debounce
-      
-      setAutoSaveTimer(timer);
-    }
-
-    return () => {
-      if (autoSaveTimer) {
-        clearTimeout(autoSaveTimer);
-      }
-    };
-  }, [localQueixaPrincipal, localIdadeGestacional, localIdadeCorrigida, localObservacoesAnamnese, localAvaliacao, prontuario, saveToBackup, autoSaveTimer, isInitialized]);
+  }, [localQueixaPrincipal, localIdadeGestacional, localIdadeCorrigida, localObservacoesAnamnese, localAvaliacao, prontuario]);
 
   const handleSave = async () => {
     if (!hasChanges) {
@@ -210,17 +114,10 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
 
       // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
-
-      // Limpar backups após salvamento bem-sucedido
-      clearBackup('queixa_principal');
-      clearBackup('idade_gestacional');
-      clearBackup('idade_corrigida');
-      clearBackup('observacoes_anamnese');
-      clearBackup('avaliacao');
       
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
-      toast.error("Erro ao salvar dados. Os dados foram mantidos localmente.");
+      toast.error("Erro ao salvar dados.");
       console.error("Erro ao salvar:", error);
     } finally {
       setIsSaving(false);
@@ -229,36 +126,6 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
 
   return (
     <div className="space-y-6">
-      {hasBackupData && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-orange-700">
-              <AlertTriangle className="h-4 w-4" />
-              <span className="text-sm font-medium">Dados recuperados encontrados</span>
-            </div>
-            <p className="text-sm text-orange-600 mt-1">
-              Foram encontrados dados não salvos anteriormente. Deseja recuperá-los?
-            </p>
-            <div className="flex gap-2 mt-3">
-              <Button 
-                size="sm" 
-                onClick={recoverFromBackup}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                Recuperar Dados
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={() => setHasBackupData(false)}
-              >
-                Descartar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -322,7 +189,7 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
 
           {hasChanges && (
             <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-              Há alterações não salvas nesta aba. Os dados estão sendo salvos automaticamente localmente.
+              Há alterações não salvas nesta aba.
             </div>
           )}
         </CardContent>
