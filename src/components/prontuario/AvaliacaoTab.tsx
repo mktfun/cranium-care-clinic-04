@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Activity, Clock, Heart, Brain, Save } from "lucide-react";
 import { Prontuario } from "@/types";
 import { toast } from "sonner";
+import { useProntuarioBackup } from "@/hooks/useProntuarioBackup";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface AvaliacaoTabProps {
   prontuario: Prontuario;
@@ -23,31 +25,103 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
   const [localAvaliacao, setLocalAvaliacao] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  // Sincronizar com dados do prontuário quando ele mudar
-  useEffect(() => {
-    console.log("Carregando dados de avaliação:", prontuario);
-    const queixaPrincipal = prontuario?.queixa_principal || "";
-    const idadeGestacional = prontuario?.idade_gestacional || "";
-    const idadeCorrigida = prontuario?.idade_corrigida || "";
-    const observacoesAnamnese = prontuario?.observacoes_anamnese || "";
-    const avaliacao = prontuario?.avaliacao || "";
+  // Sistema de backup
+  const { saveToBackup, loadFromBackup, clearBackup } = useProntuarioBackup(prontuario?.id);
+
+  // Debounce para auto-backup
+  const debouncedQueixaPrincipal = useDebounce(localQueixaPrincipal, 1000);
+  const debouncedIdadeGestacional = useDebounce(localIdadeGestacional, 1000);
+  const debouncedIdadeCorrigida = useDebounce(localIdadeCorrigida, 1000);
+  const debouncedObservacoesAnamnese = useDebounce(localObservacoesAnamnese, 1000);
+  const debouncedAvaliacao = useDebounce(localAvaliacao, 1000);
+
+  // Carregar dados iniciais com backup
+  const loadInitialData = useCallback(() => {
+    if (!prontuario?.id) return;
+
+    console.log("Carregando dados iniciais para avaliação:", prontuario);
+
+    // Tentar carregar do backup primeiro
+    const backupQueixa = loadFromBackup('queixa_principal');
+    const backupIdadeGest = loadFromBackup('idade_gestacional');
+    const backupIdadeCorr = loadFromBackup('idade_corrigida');
+    const backupObsAnamnese = loadFromBackup('observacoes_anamnese');
+    const backupAvaliacao = loadFromBackup('avaliacao');
+
+    // Usar backup se disponível, senão usar dados do prontuário
+    const queixaPrincipal = backupQueixa !== null ? backupQueixa : (prontuario?.queixa_principal || "");
+    const idadeGestacional = backupIdadeGest !== null ? backupIdadeGest : (prontuario?.idade_gestacional || "");
+    const idadeCorrigida = backupIdadeCorr !== null ? backupIdadeCorr : (prontuario?.idade_corrigida || "");
+    const observacoesAnamnese = backupObsAnamnese !== null ? backupObsAnamnese : (prontuario?.observacoes_anamnese || "");
+    const avaliacao = backupAvaliacao !== null ? backupAvaliacao : (prontuario?.avaliacao || "");
 
     setLocalQueixaPrincipal(queixaPrincipal);
     setLocalIdadeGestacional(idadeGestacional);
     setLocalIdadeCorrigida(idadeCorrigida);
     setLocalObservacoesAnamnese(observacoesAnamnese);
     setLocalAvaliacao(avaliacao);
-    setHasChanges(false);
+    setDataLoaded(true);
 
     console.log("Estados locais de avaliação definidos:", { 
       queixaPrincipal, idadeGestacional, idadeCorrigida, observacoesAnamnese, avaliacao 
     });
-  }, [prontuario]);
 
-  // Verificar mudanças
+    // Se há backup, indicar que há mudanças
+    if (backupQueixa !== null || backupIdadeGest !== null || backupIdadeCorr !== null || 
+        backupObsAnamnese !== null || backupAvaliacao !== null) {
+      setHasChanges(true);
+      toast.info("Dados recuperados do backup local.");
+    }
+  }, [prontuario, loadFromBackup]);
+
+  // Carregar dados apenas uma vez quando o prontuário muda
   useEffect(() => {
-    if (!prontuario) return;
+    if (prontuario?.id && !dataLoaded) {
+      loadInitialData();
+    }
+  }, [prontuario?.id, loadInitialData, dataLoaded]);
+
+  // Reset dataLoaded quando prontuário muda
+  useEffect(() => {
+    setDataLoaded(false);
+  }, [prontuario?.id]);
+
+  // Auto-backup dos dados
+  useEffect(() => {
+    if (dataLoaded && debouncedQueixaPrincipal !== (prontuario?.queixa_principal || "")) {
+      saveToBackup('queixa_principal', debouncedQueixaPrincipal);
+    }
+  }, [debouncedQueixaPrincipal, saveToBackup, dataLoaded, prontuario?.queixa_principal]);
+
+  useEffect(() => {
+    if (dataLoaded && debouncedIdadeGestacional !== (prontuario?.idade_gestacional || "")) {
+      saveToBackup('idade_gestacional', debouncedIdadeGestacional);
+    }
+  }, [debouncedIdadeGestacional, saveToBackup, dataLoaded, prontuario?.idade_gestacional]);
+
+  useEffect(() => {
+    if (dataLoaded && debouncedIdadeCorrigida !== (prontuario?.idade_corrigida || "")) {
+      saveToBackup('idade_corrigida', debouncedIdadeCorrigida);
+    }
+  }, [debouncedIdadeCorrigida, saveToBackup, dataLoaded, prontuario?.idade_corrigida]);
+
+  useEffect(() => {
+    if (dataLoaded && debouncedObservacoesAnamnese !== (prontuario?.observacoes_anamnese || "")) {
+      saveToBackup('observacoes_anamnese', debouncedObservacoesAnamnese);
+    }
+  }, [debouncedObservacoesAnamnese, saveToBackup, dataLoaded, prontuario?.observacoes_anamnese]);
+
+  useEffect(() => {
+    if (dataLoaded && debouncedAvaliacao !== (prontuario?.avaliacao || "")) {
+      saveToBackup('avaliacao', debouncedAvaliacao);
+    }
+  }, [debouncedAvaliacao, saveToBackup, dataLoaded, prontuario?.avaliacao]);
+
+  // Verificar mudanças apenas após dados carregados
+  useEffect(() => {
+    if (!prontuario || !dataLoaded) return;
 
     const currentQueixaPrincipal = prontuario?.queixa_principal || "";
     const currentIdadeGestacional = prontuario?.idade_gestacional || "";
@@ -63,7 +137,7 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
       localAvaliacao !== currentAvaliacao;
 
     setHasChanges(changed);
-  }, [localQueixaPrincipal, localIdadeGestacional, localIdadeCorrigida, localObservacoesAnamnese, localAvaliacao, prontuario]);
+  }, [localQueixaPrincipal, localIdadeGestacional, localIdadeCorrigida, localObservacoesAnamnese, localAvaliacao, prontuario, dataLoaded]);
 
   const handleSave = async () => {
     if (!hasChanges) {
@@ -86,30 +160,35 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
         const queixaValue = localQueixaPrincipal.trim() || null;
         updates.push(onUpdate?.("queixa_principal", queixaValue));
         console.log("Salvando queixa principal:", queixaValue);
+        clearBackup('queixa_principal');
       }
       
       if (localIdadeGestacional !== currentIdadeGestacional) {
         const idadeGestValue = localIdadeGestacional.trim() || null;
         updates.push(onUpdate?.("idade_gestacional", idadeGestValue));
         console.log("Salvando idade gestacional:", idadeGestValue);
+        clearBackup('idade_gestacional');
       }
       
       if (localIdadeCorrigida !== currentIdadeCorrigida) {
         const idadeCorrValue = localIdadeCorrigida.trim() || null;
         updates.push(onUpdate?.("idade_corrigida", idadeCorrValue));
         console.log("Salvando idade corrigida:", idadeCorrValue);
+        clearBackup('idade_corrigida');
       }
       
       if (localObservacoesAnamnese !== currentObservacoesAnamnese) {
         const obsAnamValue = localObservacoesAnamnese.trim() || null;
         updates.push(onUpdate?.("observacoes_anamnese", obsAnamValue));
         console.log("Salvando observações anamnese:", obsAnamValue);
+        clearBackup('observacoes_anamnese');
       }
       
       if (localAvaliacao !== currentAvaliacao) {
         const avaliacaoValue = localAvaliacao.trim() || null;
         updates.push(onUpdate?.("avaliacao", avaliacaoValue));
         console.log("Salvando avaliação:", avaliacaoValue);
+        clearBackup('avaliacao');
       }
 
       // Aguardar todas as atualizações
@@ -123,6 +202,19 @@ export function AvaliacaoTab({ prontuario, pacienteId, onUpdate }: AvaliacaoTabP
       setIsSaving(false);
     }
   };
+
+  // Proteção contra perda de dados ao sair da página
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = 'Você tem alterações não salvas. Deseja realmente sair?';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasChanges]);
 
   return (
     <div className="space-y-6">
