@@ -117,6 +117,42 @@ export default function ProntuarioMedico() {
     navigate(`/pacientes/${id}/prontuario/${prontuario.id}`);
   };
 
+  // Nova função para buscar dados atualizados do prontuário
+  const refreshCurrentProntuario = async () => {
+    if (!currentProntuario) return;
+    
+    try {
+      console.log('Refreshing prontuário data from database...');
+      
+      const { data: updatedProntuario, error } = await supabase
+        .from('prontuarios')
+        .select('*')
+        .eq('id', currentProntuario.id)
+        .single();
+      
+      if (error) {
+        console.error('Erro ao buscar prontuário atualizado:', error);
+        throw error;
+      }
+      
+      console.log('Prontuário atualizado do banco:', updatedProntuario);
+      
+      // Atualizar o prontuário atual
+      setCurrentProntuario(updatedProntuario as Prontuario);
+      
+      // Atualizar também na lista de prontuários
+      setProntuarios(prev => prev.map(p => 
+        p.id === currentProntuario.id ? updatedProntuario as Prontuario : p
+      ));
+      
+      console.log('Estados atualizados com dados do banco');
+    } catch (err) {
+      console.error('Erro ao atualizar prontuário:', err);
+      throw err;
+    }
+  };
+
+  // Função de update modificada - apenas salva no banco, não atualiza estado local
   const handleUpdateProntuario = async (field: string, value: any) => {
     if (!currentProntuario) return;
     
@@ -138,17 +174,7 @@ export default function ProntuarioMedico() {
       
       console.log(`Campo ${field} salvo com sucesso no banco de dados`);
       
-      // Atualizar prontuário local imediatamente
-      const updatedProntuario = {
-        ...currentProntuario,
-        [field]: value,
-        updated_at: new Date().toISOString()
-      };
-      
-      setCurrentProntuario(updatedProntuario);
-      setProntuarios(prev => prev.map(p => 
-        p.id === currentProntuario.id ? updatedProntuario : p
-      ));
+      // NÃO atualizar o estado aqui - isso será feito pela função refresh
       
     } catch (err) {
       console.error('Erro ao salvar:', err);
@@ -294,6 +320,7 @@ export default function ProntuarioMedico() {
                       paciente={paciente} 
                       prontuario={currentProntuario} 
                       onUpdate={handleUpdateProntuario}
+                      onSaveComplete={refreshCurrentProntuario}
                     />
                   </TabsContent>
                   
@@ -302,6 +329,7 @@ export default function ProntuarioMedico() {
                       prontuario={currentProntuario} 
                       pacienteId={id || ''} 
                       onUpdate={handleUpdateProntuario}
+                      onSaveComplete={refreshCurrentProntuario}
                     />
                   </TabsContent>
                   
@@ -317,6 +345,7 @@ export default function ProntuarioMedico() {
                       prontuario={currentProntuario} 
                       pacienteId={id || ''} 
                       onUpdate={handleUpdateProntuario}
+                      onSaveComplete={refreshCurrentProntuario}
                     />
                   </TabsContent>
                   
@@ -325,6 +354,7 @@ export default function ProntuarioMedico() {
                       prontuario={currentProntuario} 
                       pacienteId={id || ''} 
                       onUpdate={handleUpdateProntuario}
+                      onSaveComplete={refreshCurrentProntuario}
                     />
                   </TabsContent>
                   
@@ -333,6 +363,7 @@ export default function ProntuarioMedico() {
                       prontuario={currentProntuario} 
                       pacienteId={id || ''} 
                       onUpdate={handleUpdateProntuario}
+                      onSaveComplete={refreshCurrentProntuario}
                     />
                   </TabsContent>
                 </Tabs>

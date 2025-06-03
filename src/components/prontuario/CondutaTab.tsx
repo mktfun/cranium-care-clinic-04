@@ -13,14 +13,16 @@ interface CondutaTabProps {
   prontuario: Prontuario;
   pacienteId: string;
   onUpdate?: (field: string, value: any) => void;
+  onSaveComplete?: () => Promise<void>;
 }
 
-export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps) {
+export function CondutaTab({ prontuario, pacienteId, onUpdate, onSaveComplete }: CondutaTabProps) {
   const [localConduta, setLocalConduta] = useState("");
   const [localAtestado, setLocalAtestado] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasBackupData, setHasBackupData] = useState(false);
+  const [isLocallyEditing, setIsLocallyEditing] = useState(false);
 
   // Estados para rastrear valores salvos
   const [savedConduta, setSavedConduta] = useState("");
@@ -53,11 +55,12 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
     }
     
     setHasBackupData(false);
+    setIsLocallyEditing(true);
   }, [loadFromBackup]);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
-    if (!prontuario) return;
+    if (!prontuario || isLocallyEditing) return;
 
     console.log("Carregando dados de conduta:", prontuario);
     
@@ -67,7 +70,7 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
     const conduta = prontuario?.conduta || "";
     const atestado = prontuario?.atestado || "";
 
-    // Só sobrescrever se não houver backup ou se os dados do banco forem mais recentes
+    // Só sobrescrever se não houver backup
     if (!hasBackupData) {
       setLocalConduta(conduta);
       setLocalAtestado(atestado);
@@ -81,7 +84,7 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
     setIsEditing(!hasData);
 
     console.log("Estados locais de conduta definidos:", { conduta, atestado });
-  }, [prontuario, hasBackupData, checkBackupData]);
+  }, [prontuario, hasBackupData, checkBackupData, isLocallyEditing]);
 
   // Verificar se há mudanças não salvas
   const hasUnsavedChanges = 
@@ -92,6 +95,7 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
   useEffect(() => {
     if (hasUnsavedChanges) {
       setIsEditing(true);
+      setIsLocallyEditing(true);
 
       // Auto-backup com debounce
       if (autoSaveTimer) {
@@ -124,6 +128,7 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
       setLocalAtestado(value);
     }
     setIsEditing(true);
+    setIsLocallyEditing(true);
   };
 
   const handleSave = async () => {
@@ -152,16 +157,20 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
       // Aguardar todas as atualizações
       await Promise.all(updates.filter(Boolean));
 
-      // Atualizar estados salvos após sucesso
-      setSavedConduta(localConduta);
-      setSavedAtestado(localAtestado);
+      // Buscar dados atualizados do banco
+      await onSaveComplete?.();
 
       // Limpar backups após salvamento bem-sucedido
       clearBackup('conduta');
       clearBackup('atestado');
 
+      // Atualizar estados salvos após sucesso
+      setSavedConduta(localConduta);
+      setSavedAtestado(localAtestado);
+
       // Sair do modo de edição
       setIsEditing(false);
+      setIsLocallyEditing(false);
       
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
@@ -174,6 +183,7 @@ export function CondutaTab({ prontuario, pacienteId, onUpdate }: CondutaTabProps
 
   const handleEdit = () => {
     setIsEditing(true);
+    setIsLocallyEditing(true);
   };
 
   const showSaveButton = isEditing || hasUnsavedChanges;

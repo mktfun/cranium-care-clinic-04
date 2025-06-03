@@ -1,54 +1,111 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { FileCheck, Save, Edit } from "lucide-react";
+import { FileCheck, Save, Edit, AlertTriangle } from "lucide-react";
 import { Prontuario } from "@/types";
 import { toast } from "sonner";
+import { useProntuarioBackup } from "@/hooks/useProntuarioBackup";
 
 interface PrescricaoTabProps {
   prontuario: Prontuario;
   pacienteId: string;
   onUpdate?: (field: string, value: any) => void;
+  onSaveComplete?: () => Promise<void>;
 }
 
-export function PrescricaoTab({ prontuario, pacienteId, onUpdate }: PrescricaoTabProps) {
+export function PrescricaoTab({ prontuario, pacienteId, onUpdate, onSaveComplete }: PrescricaoTabProps) {
   const [localPrescricao, setLocalPrescricao] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasBackupData, setHasBackupData] = useState(false);
+  const [isLocallyEditing, setIsLocallyEditing] = useState(false);
   const [savedPrescricao, setSavedPrescricao] = useState("");
+
+  const { saveToBackup, loadFromBackup, clearBackup } = useProntuarioBackup(prontuario?.id);
+
+  // Auto-save timer
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Verificar se há dados de backup disponíveis
+  const checkBackupData = useCallback(() => {
+    const prescricaoBackup = loadFromBackup('prescricao');
+    setHasBackupData(!!prescricaoBackup);
+  }, [loadFromBackup]);
+
+  // Recuperar dados de backup se disponível
+  const recoverFromBackup = useCallback(() => {
+    const prescricaoBackup = loadFromBackup('prescricao');
+    
+    if (prescricaoBackup) {
+      setLocalPrescricao(prescricaoBackup);
+      toast.info("Dados de prescrição recuperados do backup local");
+    }
+    
+    setHasBackupData(false);
+    setIsLocallyEditing(true);
+  }, [loadFromBackup]);
 
   // Sincronizar com dados do prontuário quando ele mudar
   useEffect(() => {
-    if (!prontuario) return;
+    if (!prontuario || isLocallyEditing) return;
 
     console.log("Carregando dados de prescrição:", prontuario);
+    
+    // Verificar backup primeiro
+    checkBackupData();
+    
     const prescricao = prontuario?.prescricao || "";
 
-    setLocalPrescricao(prescricao);
+    // Só sobrescrever se não houver backup
+    if (!hasBackupData) {
+      setLocalPrescricao(prescricao);
+    }
+    
     setSavedPrescricao(prescricao);
 
     // Se há dados salvos, não está em modo de edição
     setIsEditing(!prescricao);
 
     console.log("Estados locais de prescrição definidos:", { prescricao });
-  }, [prontuario]);
+  }, [prontuario, hasBackupData, checkBackupData, isLocallyEditing]);
 
   // Verificar se há mudanças não salvas
   const hasUnsavedChanges = localPrescricao !== savedPrescricao;
 
-  // Ativar modo de edição quando houver mudanças
+  // Ativar modo de edição quando houver mudanças e fazer backup automático
   useEffect(() => {
     if (hasUnsavedChanges) {
       setIsEditing(true);
+      setIsLocallyEditing(true);
+
+      // Auto-backup com debounce
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+      
+      const timer = setTimeout(() => {
+        if (localPrescricao !== savedPrescricao) {
+          saveToBackup('prescricao', localPrescricao);
+        }
+      }, 2000); // 2 segundos de debounce
+      
+      setAutoSaveTimer(timer);
     }
-  }, [hasUnsavedChanges]);
+
+    return () => {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+    };
+  }, [hasUnsavedChanges, localPrescricao, savedPrescricao, saveToBackup, autoSaveTimer]);
 
   const handleFieldChange = (value: string) => {
     setLocalPrescricao(value);
     setIsEditing(true);
+    setIsLocallyEditing(true);
   };
 
   const handleSave = async () => {
@@ -63,15 +120,22 @@ export function PrescricaoTab({ prontuario, pacienteId, onUpdate }: PrescricaoTa
       await onUpdate?.("prescricao", prescricaoValue);
       console.log("Salvando prescrição:", prescricaoValue);
 
+      // Buscar dados atualizados do banco
+      await onSaveComplete?.();
+
+      // Limpar backup após salvamento bem-sucedido
+      clearBackup('prescricao');
+
       // Atualizar estado salvo após sucesso
       setSavedPrescricao(localPrescricao);
 
       // Sair do modo de edição
       setIsEditing(false);
+      setIsLocallyEditing(false);
       
       toast.success("Dados salvos com sucesso!");
     } catch (error) {
-      toast.error("Erro ao salvar dados.");
+      toast.error("Erro ao salvar dados. Os dados foram mantidos localmente.");
       console.error("Erro ao salvar:", error);
     } finally {
       setIsSaving(false);
@@ -80,12 +144,43 @@ export function PrescricaoTab({ prontuario, pacienteId, onUpdate }: PrescricaoTa
 
   const handleEdit = () => {
     setIsEditing(true);
+    setIsLocallyEditing(true);
   };
 
   const showSaveButton = isEditing || hasUnsavedChanges;
 
   return (
     <div className="space-y-6">
+      {hasBackupData && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-orange-700">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">Dados recuperados encontrados</span>
+            </div>
+            <p className="text-sm text-orange-600 mt-1">
+              Foram encontrados dados não salvos anteriormente. Deseja recuperá-los?
+            </p>
+            <div className="flex gap-2 mt-3">
+              <Button 
+                size="sm" 
+                onClick={recoverFromBackup}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                Recuperar Dados
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setHasBackupData(false)}
+              >
+                Descartar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -129,7 +224,7 @@ export function PrescricaoTab({ prontuario, pacienteId, onUpdate }: PrescricaoTa
           
           {hasUnsavedChanges && (
             <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-              Há alterações não salvas nesta aba.
+              Há alterações não salvas nesta aba. Os dados estão sendo salvos automaticamente localmente.
             </div>
           )}
           
