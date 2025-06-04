@@ -7,6 +7,7 @@ import { LayoutDashboard, Users, Calendar, BarChart, Settings, X, Menu } from "l
 import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
+import { useAvatar } from "@/hooks/useAvatar";
 
 const Navbar1 = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,6 +21,7 @@ const Navbar1 = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
+  const { avatarUrl } = useAvatar();
 
   // Load user data
   useEffect(() => {
@@ -30,7 +32,7 @@ const Navbar1 = () => {
 
         const { data: usuarioData } = await supabase
           .from('usuarios')
-          .select('nome, email, avatar_url')
+          .select('nome, email')
           .eq('id', session.user.id)
           .single();
 
@@ -175,7 +177,7 @@ const Navbar1 = () => {
             onTouchEnd={handleMouseUp}
           >
             <Avatar className="w-8 h-8">
-              <AvatarImage src={usuario?.avatar_url || ""} />
+              <AvatarImage src={avatarUrl || ""} />
               <AvatarFallback className="bg-turquesa text-white text-sm font-medium">
                 {obterIniciais(usuario?.nome || "Usuário")}
               </AvatarFallback>

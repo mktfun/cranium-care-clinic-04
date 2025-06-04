@@ -23,6 +23,7 @@ import { ColaboradoresTab } from "@/components/configuracoes/ColaboradoresTab";
 import { useNavigate } from "react-router-dom";
 import { ConfiguracoesTab } from "@/components/configuracoes/ConfiguracoesTab";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useAvatar } from "@/hooks/useAvatar";
 
 interface Usuario {
   id: string;
@@ -79,7 +80,6 @@ export default function Configuracoes() {
   const [email, setEmail] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -90,7 +90,6 @@ export default function Configuracoes() {
   const [relatoriosAutomaticos, setRelatoriosAutomaticos] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [activeTab, setActiveTab] = useState("perfil");
@@ -102,6 +101,9 @@ export default function Configuracoes() {
   const [deletandoColaborador, setDeletandoColaborador] = useState<string | null>(null);
   const [exportandoDados, setExportandoDados] = useState(false);
   const [excluindoConta, setExcluindoConta] = useState(false);
+
+  // Usar o hook de avatar
+  const { avatarUrl, loading: avatarLoading, updateAvatar, removeAvatar } = useAvatar();
 
   // Carregar dados do usuário
   useEffect(() => {
@@ -136,10 +138,6 @@ export default function Configuracoes() {
           setEmail(usuarioData.email || '');
           setClinicaNome(usuarioData.clinica_nome || '');
           setCargo(usuarioData.cargo || '');
-          
-          if (usuarioData.avatar_url) {
-            setAvatarUrl(usuarioData.avatar_url);
-          }
         }
         
       } catch (err) {
@@ -269,140 +267,40 @@ export default function Configuracoes() {
     }
   };
   
-  // Upload de avatar
+  // Upload de avatar usando o hook
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const file = e.target.files?.[0];
       if (!file) return;
       
-      setUploadingAvatar(true);
+      const result = await updateAvatar(file);
       
-      // Verificar se usuário está autenticado
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        toast.error("Usuário não autenticado");
-        return;
+      if (result.success) {
+        toast.success("Foto de perfil atualizada com sucesso!");
+      } else {
+        toast.error(`Erro ao atualizar foto de perfil: ${result.error}`);
       }
-      
-      // Verificar se o bucket existe
-      const { data: bucketList, error: bucketListError } = await supabase
-        .storage
-        .listBuckets();
-        
-      let bucketExists = false;
-      
-      if (bucketListError) {
-        console.error("Erro ao verificar buckets:", bucketListError);
-      } else if (bucketList) {
-        bucketExists = bucketList.some(bucket => bucket.name === 'avatars');
-      }
-      
-      // Se o bucket não existir, criar
-      if (!bucketExists) {
-        try {
-          const { error: createBucketError } = await supabase
-            .storage
-            .createBucket('avatars', {
-              public: true
-            });
-            
-          if (createBucketError) {
-            console.error("Erro ao criar bucket:", createBucketError);
-            toast.error("Erro ao criar área de armazenamento para avatares");
-            return;
-          }
-        } catch (err) {
-          console.error("Erro ao criar bucket:", err);
-          toast.error("Erro ao criar área de armazenamento para avatares");
-          return;
-        }
-      }
-      
-      // Upload do arquivo
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase
-        .storage
-        .from('avatars')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-        
-      if (uploadError) {
-        throw uploadError;
-      }
-      
-      // Obter URL pública
-      const { data: urlData } = supabase
-        .storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-      
-      const avatarUrl = urlData.publicUrl;
-      
-      // Atualizar URL no perfil do usuário
-      const { error: updateError } = await supabase
-        .from('usuarios')
-        .update({
-          avatar_url: avatarUrl
-        })
-        .eq('id', session.user.id);
-        
-      if (updateError) {
-        throw updateError;
-      }
-      
-      // Atualizar estado
-      setAvatarUrl(avatarUrl);
-      
-      toast.success("Foto de perfil atualizada com sucesso!");
       
     } catch (err: any) {
       console.error("Erro ao fazer upload do avatar:", err);
       toast.error(`Erro ao atualizar foto de perfil: ${err.message}`);
-    } finally {
-      setUploadingAvatar(false);
     }
   };
   
-  // Remover avatar
+  // Remover avatar usando o hook
   const removerAvatar = async () => {
     try {
-      setUploadingAvatar(true);
+      const result = await removeAvatar();
       
-      // Verificar se usuário está autenticado
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        toast.error("Usuário não autenticado");
-        return;
+      if (result.success) {
+        toast.success("Foto de perfil removida com sucesso!");
+      } else {
+        toast.error(`Erro ao remover foto de perfil: ${result.error}`);
       }
-      
-      // Remover referência do avatar no perfil
-      const { error } = await supabase
-        .from('usuarios')
-        .update({
-          avatar_url: null
-        })
-        .eq('id', session.user.id);
-        
-      if (error) {
-        throw error;
-      }
-      
-      // Atualizar estado
-      setAvatarUrl(null);
-      
-      toast.success("Foto de perfil removida com sucesso!");
       
     } catch (err: any) {
       console.error("Erro ao remover avatar:", err);
       toast.error(`Erro ao remover foto de perfil: ${err.message}`);
-    } finally {
-      setUploadingAvatar(false);
     }
   };
   
@@ -646,9 +544,9 @@ export default function Configuracoes() {
                     variant="outline" 
                     className="mr-2 btn-hover"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingAvatar}
+                    disabled={avatarLoading}
                   >
-                    {uploadingAvatar ? (
+                    {avatarLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Enviando...
@@ -659,7 +557,7 @@ export default function Configuracoes() {
                     variant="outline" 
                     className="text-destructive btn-hover"
                     onClick={removerAvatar}
-                    disabled={!avatarUrl || uploadingAvatar}
+                    disabled={!avatarUrl || avatarLoading}
                   >
                     Remover
                   </Button>
