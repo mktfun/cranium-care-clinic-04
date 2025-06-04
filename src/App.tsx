@@ -1,5 +1,5 @@
+
 import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
@@ -39,27 +39,25 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TooltipProvider>
-          <Toaster />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              
-              {/* Secure login route */}
-              <Route path="/login" element={<SecureLogin />} />
-              
-              {/* Legacy login for backward compatibility */}
-              <Route path="/login-legacy" element={<Login />} />
-              
-              {/* Protected routes */}
-              <Route path="/*" element={
-                <SecureAuthGuard>
-                  <Layout />
-                </SecureAuthGuard>
-              } />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <Toaster />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            
+            {/* Secure login route */}
+            <Route path="/login" element={<SecureLogin />} />
+            
+            {/* Legacy login for backward compatibility */}
+            <Route path="/login-legacy" element={<Login />} />
+            
+            {/* Protected routes */}
+            <Route path="/*" element={
+              <SecureAuthGuard>
+                <Layout />
+              </SecureAuthGuard>
+            } />
+          </Routes>
+        </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
   );

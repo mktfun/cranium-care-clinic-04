@@ -67,13 +67,12 @@ export const sanitizeInput = (input: string): string => {
     .trim();
 };
 
-// Audit logging helper
+// Audit logging helper - use existing security_logs table
 export const createAuditLog = async (
   action: string,
   tableName?: string,
   recordId?: string,
-  oldValues?: any,
-  newValues?: any
+  details?: any
 ) => {
   try {
     const { supabase } = await import('@/integrations/supabase/client');
@@ -81,15 +80,16 @@ export const createAuditLog = async (
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
     
-    await supabase.from('audit_logs').insert({
+    await supabase.from('security_logs').insert({
       user_id: session.user.id,
       action,
-      table_name: tableName,
-      record_id: recordId,
-      old_values: oldValues,
-      new_values: newValues,
-      ip_address: null, // Would need server-side implementation
-      user_agent: navigator.userAgent
+      details: {
+        table_name: tableName,
+        record_id: recordId,
+        ...details,
+        ip_address: null, // Would need server-side implementation
+        user_agent: navigator.userAgent
+      }
     });
   } catch (error) {
     console.error('Failed to create audit log:', error);

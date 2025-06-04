@@ -80,7 +80,7 @@ export function useSecurePermissions() {
         // Check if is collaborator
         const { data: colaboradorData } = await supabase
           .from('colaboradores')
-          .select('permissions, permissao, status, empresa_nome')
+          .select('id, permissions, permissao, status, empresa_nome')
           .eq('email', session.user.email)
           .eq('status', 'ativo')
           .single();
@@ -160,6 +160,10 @@ export function useSecurePermissions() {
     return modulePermissions?.[action] || false;
   };
 
+  const canManageCollaborators = (): boolean => {
+    return isOwner || hasPermission('collaborators', 'manage');
+  };
+
   const logSecurityAction = async (action: string, details?: any) => {
     await createAuditLog(action, undefined, undefined, details);
   };
@@ -171,6 +175,7 @@ export function useSecurePermissions() {
     userRole,
     clinicName,
     hasPermission,
+    canManageCollaborators,
     logSecurityAction,
     refreshPermissions: fetchUserPermissions
   };

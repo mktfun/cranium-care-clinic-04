@@ -5,12 +5,15 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { WelcomeTutorialModal } from "@/components/WelcomeTutorialModal";
 import { Navbar1 } from "@/components/ui/navbar-1";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useIsMobileOrTabletPortrait } from "@/hooks/use-mobile";
+
 export default function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const isSmallScreen = useIsMobileOrTabletPortrait();
   const navigate = useNavigate();
   const location = useLocation();
+  
   useEffect(() => {
     // Colapsar sidebar automaticamente em tablet e mobile
     const checkScreenSize = () => {
@@ -31,9 +34,11 @@ export default function Layout() {
       setSidebarCollapsed(true);
     }
   }, [location.pathname, isSmallScreen]);
+  
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
+  
   const navigateToDashboard = () => {
     navigate('/dashboard');
   };
@@ -60,17 +65,32 @@ export default function Layout() {
     if (path === "/pacientes/registro") return "Novo Paciente";
     return routeNames[path] || "Dashboard";
   };
-  return <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
-      {!isSmallScreen && <Sidebar className="fixed left-0 top-0 z-20 h-screen transition-all duration-300" collapsed={sidebarCollapsed} navigateToDashboard={navigateToDashboard} />}
-      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 lg:ml-[70px] md:group-data-[state=expanded]/sidebar:lg:ml-[300px]">
-        <Header title={getCurrentPageTitle()} toggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
-        <main className="flex-1 overflow-auto mt-16 md:pb-6">
-          <div className="p-3 md:p-6 max-w-7xl mx-auto w-full">
-            <Outlet />
-          </div>
-        </main>
+  
+  return (
+    <TooltipProvider>
+      <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
+        {!isSmallScreen && (
+          <Sidebar 
+            className="fixed left-0 top-0 z-20 h-screen transition-all duration-300" 
+            collapsed={sidebarCollapsed} 
+            navigateToDashboard={navigateToDashboard} 
+          />
+        )}
+        <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 lg:ml-[70px] md:group-data-[state=expanded]/sidebar:lg:ml-[300px]">
+          <Header 
+            title={getCurrentPageTitle()} 
+            toggleSidebar={toggleSidebar} 
+            sidebarCollapsed={sidebarCollapsed} 
+          />
+          <main className="flex-1 overflow-auto mt-16 md:pb-6">
+            <div className="p-3 md:p-6 max-w-7xl mx-auto w-full">
+              <Outlet />
+            </div>
+          </main>
+        </div>
+        {isSmallScreen && <Navbar1 />}
+        <WelcomeTutorialModal />
       </div>
-      {isSmallScreen && <Navbar1 />}
-      <WelcomeTutorialModal />
-    </div>;
+    </TooltipProvider>
+  );
 }
