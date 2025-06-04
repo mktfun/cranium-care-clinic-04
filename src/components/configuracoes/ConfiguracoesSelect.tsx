@@ -43,7 +43,7 @@ export function ConfiguracoesSelect({
         disabled={disabled}
       >
         <SelectTrigger 
-          className="w-full relative group overflow-hidden transition-all duration-300 border-primary/20 hover:border-primary/80 focus:ring-primary/40 bg-card hover:bg-card/90 shadow-sm hover:shadow"
+          className="w-full relative group overflow-hidden transition-all duration-300 border-primary/20 hover:border-primary/80 focus:ring-primary/40 bg-card hover:bg-card/90 shadow-sm hover:shadow [&>svg]:hidden"
         >
           <SelectValue 
             placeholder={placeholder} 
