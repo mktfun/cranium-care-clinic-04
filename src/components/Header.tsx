@@ -11,6 +11,8 @@ import { getCranialStatus } from "@/lib/cranial-utils";
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAvatar } from "@/hooks/useAvatar";
+
 interface HeaderProps {
   toggleSidebar: () => void;
   sidebarCollapsed: boolean;
@@ -54,6 +56,8 @@ export function Header({
   const [clinicaNome, setClinicaNome] = useState("CraniumCare");
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [carregandoUsuario, setCarregandoUsuario] = useState(true);
+  const { avatarUrl } = useAvatar();
+
   const getNotificacoesLidas = (): string[] => {
     const lidas = localStorage.getItem(NOTIFICACOES_LIDAS_STORAGE_KEY);
     return lidas ? JSON.parse(lidas) : [];
@@ -394,7 +398,7 @@ export function Header({
                   {carregandoUsuario ? <div className="h-full w-full flex items-center justify-center bg-muted">
                       <Loader2 className="h-4 w-4 animate-spin" />
                     </div> : <>
-                      <AvatarImage src={usuario?.avatar_url || ""} />
+                      <AvatarImage src={avatarUrl || ""} />
                       <AvatarFallback>{obterIniciais(usuario?.nome || "Usuário")}</AvatarFallback>
                     </>}
                 </Avatar>

@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sidebar,
   SidebarBody,
@@ -19,10 +18,37 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAvatar } from "@/hooks/useAvatar";
 
 export function AnimatedSidebar() {
   const navigate = useNavigate();
   const [carregando, setCarregando] = useState(false);
+  const [usuario, setUsuario] = useState<any>(null);
+  const { avatarUrl } = useAvatar();
+  
+  // Load user data
+  useEffect(() => {
+    async function carregarUsuario() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+
+        const { data: usuarioData } = await supabase
+          .from('usuarios')
+          .select('nome, email')
+          .eq('id', session.user.id)
+          .single();
+
+        if (usuarioData) {
+          setUsuario(usuarioData);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar usuário:", err);
+      }
+    }
+    carregarUsuario();
+  }, []);
   
   const handleLogout = async () => {
     try {
@@ -41,6 +67,11 @@ export function AnimatedSidebar() {
     } finally {
       setCarregando(false);
     }
+  };
+
+  const obterIniciais = (nome: string) => {
+    if (!nome) return "U";
+    return nome.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   };
 
   const links = [
@@ -115,9 +146,12 @@ export function AnimatedSidebar() {
               label: "Perfil",
               href: "/perfil",
               icon: (
-                <div className="h-7 w-7 flex-shrink-0 rounded-full bg-turquesa flex items-center justify-center text-white font-medium">
-                  U
-                </div>
+                <Avatar className="h-7 w-7 flex-shrink-0">
+                  <AvatarImage src={avatarUrl || ""} />
+                  <AvatarFallback className="bg-turquesa text-white text-xs font-medium">
+                    {obterIniciais(usuario?.nome || "U")}
+                  </AvatarFallback>
+                </Avatar>
               ),
             }}
           />
