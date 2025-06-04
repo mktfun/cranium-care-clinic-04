@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown } from "lucide-react";
+import { Plus } from "lucide-react";
 
 interface Option {
   value: string;
@@ -49,8 +49,8 @@ export function ConfiguracoesSelect({
             placeholder={placeholder} 
             className="transition-all duration-300"
           />
-          <span className="absolute inset-y-0 right-3 flex items-center pointer-events-none group-hover:text-primary transition-colors">
-            <ChevronDown className="h-4 w-4 transition-transform duration-300 group-data-[state=open]:rotate-180" />
+          <span className="absolute inset-y-0 right-3 flex items-center pointer-events-none group-hover:text-turquesa transition-colors">
+            <Plus className="h-4 w-4 text-turquesa transition-transform duration-300 group-data-[state=open]:rotate-45" />
           </span>
         </SelectTrigger>
         <SelectContent 
