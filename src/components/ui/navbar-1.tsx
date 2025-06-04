@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -6,6 +5,8 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { LayoutDashboard, Users, Calendar, BarChart, Settings, X, Menu } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar1 = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,11 +14,35 @@ const Navbar1 = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [canDrag, setCanDrag] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
+  const [usuario, setUsuario] = useState<any>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
   
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Load user data
+  useEffect(() => {
+    async function carregarUsuario() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+
+        const { data: usuarioData } = await supabase
+          .from('usuarios')
+          .select('nome, email, avatar_url')
+          .eq('id', session.user.id)
+          .single();
+
+        if (usuarioData) {
+          setUsuario(usuarioData);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar usuário:", err);
+      }
+    }
+    carregarUsuario();
+  }, []);
   
   const toggleMenu = () => {
     if (!isDragging) {
@@ -29,6 +54,17 @@ const Navbar1 = () => {
     if (!isDragging) {
       setIsCompact(!isCompact);
     }
+  };
+
+  const handleAvatarClick = () => {
+    if (!isDragging) {
+      navigate('/perfil');
+    }
+  };
+
+  const obterIniciais = (nome: string) => {
+    if (!nome) return "U";
+    return nome.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   };
   
   const navItems = [
@@ -123,7 +159,7 @@ const Navbar1 = () => {
       >
         <div className="flex items-center">
           <motion.div 
-            className="w-8 h-8" 
+            className="w-8 h-8 cursor-pointer" 
             initial={{ scale: 0.8 }}
             animate={{ 
               scale: isOpen ? 1.1 : 1,
@@ -132,21 +168,18 @@ const Navbar1 = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             transition={{ duration: 0.3 }}
-            onClick={toggleCompactMode}
+            onClick={handleAvatarClick}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onTouchStart={handleMouseDown}
             onTouchEnd={handleMouseUp}
           >
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="16" cy="16" r="16" fill="url(#paint0_linear)" />
-              <defs>
-                <linearGradient id="paint0_linear" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#00CEC9" />
-                  <stop offset="1" stopColor="#0984E3" />
-                </linearGradient>
-              </defs>
-            </svg>
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={usuario?.avatar_url || ""} />
+              <AvatarFallback className="bg-turquesa text-white text-sm font-medium">
+                {obterIniciais(usuario?.nome || "Usuário")}
+              </AvatarFallback>
+            </Avatar>
           </motion.div>
         </div>
         
