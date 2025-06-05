@@ -180,7 +180,7 @@ export const Logo = () => {
       <div
         className="font-medium text-black dark:text-white whitespace-pre"
       >
-        CraniumCare
+        Medikran
       </div>
     </div>
   );
