@@ -13,6 +13,7 @@ import {
   Calendar,
   Loader2,
   UserPlus,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -20,12 +21,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAvatar } from "@/hooks/useAvatar";
+import { useAnalyticsAccess } from "@/hooks/useAnalyticsAccess";
 
 export function AnimatedSidebar() {
   const navigate = useNavigate();
   const [carregando, setCarregando] = useState(false);
   const [usuario, setUsuario] = useState<any>(null);
   const { avatarUrl } = useAvatar();
+  const { hasAccess: hasAnalyticsAccess } = useAnalyticsAccess();
   
   // Load user data
   useEffect(() => {
@@ -96,6 +99,13 @@ export function AnimatedSidebar() {
         <Calendar className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
+    ...(hasAnalyticsAccess ? [{
+      label: "Analytics",
+      href: "/analytics",
+      icon: (
+        <BarChart3 className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+      ),
+    }] : []),
     {
       label: "Colaboradores",
       href: "/colaboradores",
